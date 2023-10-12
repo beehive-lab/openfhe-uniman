@@ -186,6 +186,7 @@ public:
     virtual KeyPair<Element> KeyGen(CryptoContext<Element> cc, bool makeSparse);
 
     virtual Ciphertext<Element> Encrypt(const Element& plaintext, const PrivateKey<Element> privateKey) const {
+        printf("Hello from Encrypt 5\n");
         if (m_PKE) {
             //      if (!plaintext)
             //        OPENFHE_THROW(config_error, "Input plaintext is nullptr");
@@ -198,12 +199,16 @@ public:
     }
 
     virtual Ciphertext<Element> Encrypt(const Element& plaintext, const PublicKey<Element> publicKey) const {
+        printf("Hello from Encrypt 6\n");
         if (m_PKE) {
+            printf("Hello from Encrypt 66\n");
             //      if (!plaintext)
             //        OPENFHE_THROW(config_error, "Input plaintext is nullptr");
-            if (!publicKey)
+            if (!publicKey) {
+                printf("Hello from Encrypt 666\n");
                 OPENFHE_THROW(config_error, "Input public key is nullptr");
-
+            }
+            printf("Hello from Encrypt 6666\n");
             return m_PKE->Encrypt(plaintext, publicKey);
         }
         OPENFHE_THROW(config_error, "Encrypt operation has not been enabled");

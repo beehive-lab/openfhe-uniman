@@ -35,8 +35,20 @@
 
 #include "openfhe.h"
 #include "gpu-acceleration/opencl_utils.h"
+#include <chrono>
+using namespace std::chrono;
 
 using namespace lbcrypto;
+
+void fillVectorWithRandomIntegers(std::vector<int64_t>& vec, int64_t N, int64_t min, int64_t max) {
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<int64_t> distribution(min, max);
+
+    for (int64_t i = 0; i < N; ++i) {
+        vec.push_back(distribution(generator));
+    }
+}
 
 int main() {
     ///// Opencl host code
@@ -67,7 +79,7 @@ int main() {
 
     // Sample Program: Step 1 - Set CryptoContext
     CCParams<CryptoContextBGVRNS> parameters;
-    parameters.SetMultiplicativeDepth(2);
+    parameters.SetMultiplicativeDepth(12);
     parameters.SetPlaintextModulus(65537);
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
@@ -85,7 +97,9 @@ int main() {
     keyPair = cryptoContext->KeyGen();
 
     // Generate the relinearization key
+    printf("multiplication keygen start\n");
     cryptoContext->EvalMultKeyGen(keyPair.secretKey);
+    printf("multiplication keygen end\n");
 
     // Generate the rotation evaluation keys
     cryptoContext->EvalRotateKeyGen(keyPair.secretKey, {1, 2, -1, -2});
@@ -102,10 +116,45 @@ int main() {
     std::vector<int64_t> vectorOfInts3 = {1, 2, 5, 2, 5, 6, 7, 8, 9, 10, 11, 12};
     Plaintext plaintext3               = cryptoContext->MakePackedPlaintext(vectorOfInts3);
 
+    // The number of vectors you want to generate
+    int64_t M = 5;
+
+    // The vector size
+    int64_t N = 3;//32768;
+
+    // The number of multiplications
+    int64_t Z = 1;
+
+    // The range of random integers (e.g., between -100 and 100)
+    int64_t min = 0;
+    int64_t max = 100;
+
+    // Generate random indices in the range [0, M]
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<int64_t> indexDistribution(0, M - 1);
+
+    // Create a vector of vectors to store the random integers
+    std::vector<std::vector<int64_t>> vectorOfVectorsOfInts;
+    std::vector<Plaintext> vectorOfPlaintexts;
+
+    // Generate M vectors, each containing N random integers
+    for (int64_t i = 0; i < M; ++i) {
+        std::vector<int64_t> vectorOfInts;
+        fillVectorWithRandomIntegers(vectorOfInts, N, min, max);
+        vectorOfVectorsOfInts.push_back(vectorOfInts);
+        vectorOfPlaintexts.push_back(cryptoContext->MakePackedPlaintext(vectorOfInts));
+    }
+
     // The encoded vectors are encrypted
     auto ciphertext1 = cryptoContext->Encrypt(keyPair.publicKey, plaintext1);
     auto ciphertext2 = cryptoContext->Encrypt(keyPair.publicKey, plaintext2);
     auto ciphertext3 = cryptoContext->Encrypt(keyPair.publicKey, plaintext3);
+
+    std::vector< Ciphertext<DCRTPoly> > vectorOfCiphertexts;
+    for (int64_t i = 0; i < M; ++i) {
+        vectorOfCiphertexts.push_back(cryptoContext->Encrypt(keyPair.publicKey, vectorOfPlaintexts[i]));
+    }
 
     // Sample Program: Step 4 - Evaluation
 
@@ -116,8 +165,37 @@ int main() {
     // Homomorphic multiplications
     // modulus switching is done automatically because by default the modulus
     // switching method is set to AUTO (rather than MANUAL)
-    auto ciphertextMul12      = cryptoContext->EvalMult(ciphertext1, ciphertext2);
-    auto ciphertextMultResult = cryptoContext->EvalMult(ciphertextMul12, ciphertext3);
+    // one dummy multiplication to initialize result variable
+    auto ciphertextMultResult1 = cryptoContext->EvalMult(vectorOfCiphertexts[0], vectorOfCiphertexts[0]);
+    printf("perform %ld multiplications\n", Z);
+    auto start = high_resolution_clock::now();
+    for (int64_t z = 0; z < Z; ++z) {
+        int64_t index1 = indexDistribution(generator);
+        int64_t index2 = indexDistribution(generator);
+        ciphertextMultResult1 = cryptoContext->EvalMult(vectorOfCiphertexts[index1], vectorOfCiphertexts[index2]);
+    }
+    /*
+    auto ciphertextMultResult2 = cryptoContext->EvalMult(ciphertextMultResult1, ciphertext1);
+    auto ciphertextMultResult3 = cryptoContext->EvalMult(ciphertextMultResult2, ciphertext1);
+    auto ciphertextMultResult4 = cryptoContext->EvalMult(ciphertextMultResult3, ciphertext1);
+    auto ciphertextMultResult5 = cryptoContext->EvalMult(ciphertextMultResult4, ciphertext1);
+    auto ciphertextMultResult6 = cryptoContext->EvalMult(ciphertextMultResult5, ciphertext1);
+    auto ciphertextMultResult7 = cryptoContext->EvalMult(ciphertextMultResult6, ciphertext1);
+    auto ciphertextMultResult8 = cryptoContext->EvalMult(ciphertextMultResult7, ciphertext1);
+    auto ciphertextMultResult9 = cryptoContext->EvalMult(ciphertextMultResult8, ciphertext1);
+    auto ciphertextMultResult10 = cryptoContext->EvalMult(ciphertextMultResult9, ciphertext1);
+    auto ciphertextMultResult11 = cryptoContext->EvalMult(ciphertextMultResult10, ciphertext1);
+    auto ciphertextMultResult12 = cryptoContext->EvalMult(ciphertextMultResult11, ciphertext1);
+     */
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    auto total_mult = duration.count();
+    //auto one_mult = total_mult / 10;
+
+    //ciphertextMultResult10 = cryptoContext->EvalMultAndRelinearize(ciphertextMultResult, ciphertext1);
+    //auto ciphertextMultResult11 = cryptoContext->EvalMultAndRelinearize(ciphertextMultResult9, ciphertext1);
+    //ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    //ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertextMul12);
     // Homomorphic rotations
     auto ciphertextRot1 = cryptoContext->EvalRotate(ciphertext1, 1);
     auto ciphertextRot2 = cryptoContext->EvalRotate(ciphertext1, 2);
@@ -132,7 +210,7 @@ int main() {
 
     // Decrypt the result of multiplications
     Plaintext plaintextMultResult;
-    cryptoContext->Decrypt(keyPair.secretKey, ciphertextMultResult, &plaintextMultResult);
+    cryptoContext->Decrypt(keyPair.secretKey, ciphertextMultResult1, &plaintextMultResult);
 
     // Decrypt the result of rotations
     Plaintext plaintextRot1;
@@ -161,6 +239,8 @@ int main() {
     std::cout << "Left rotation of #1 by 2: " << plaintextRot2 << std::endl;
     std::cout << "Right rotation of #1 by 1: " << plaintextRot3 << std::endl;
     std::cout << "Right rotation of #1 by 2: " << plaintextRot4 << std::endl;
+
+    printf("time elapsed %ld msec.\n", total_mult);
 
     deallocateResources();
 

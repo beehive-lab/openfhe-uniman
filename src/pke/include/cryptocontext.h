@@ -1038,11 +1038,14 @@ public:
    * @return ciphertext (or null on failure)
    */
     Ciphertext<Element> Encrypt(Plaintext plaintext, const PublicKey<Element> publicKey) const {
+        printf("Hello from encrypt 1\n");
         if (plaintext == nullptr)
             OPENFHE_THROW(type_error, "Input plaintext is nullptr");
         CheckKey(publicKey);
 
+        printf("Hello from encrypt 11\n");
         Ciphertext<Element> ciphertext = GetScheme()->Encrypt(plaintext->GetElement<Element>(), publicKey);
+        printf("Hello from encrypt 111\n");
 
         if (ciphertext) {
             ciphertext->SetEncodingType(plaintext->GetEncodingType());
@@ -1057,6 +1060,7 @@ public:
     }
 
     Ciphertext<Element> Encrypt(const PublicKey<Element> publicKey, Plaintext plaintext) const {
+        printf("Hello from encrypt 2\n");
         return Encrypt(plaintext, publicKey);
     }
 
@@ -1067,6 +1071,7 @@ public:
    * @return ciphertext (or null on failure)
    */
     Ciphertext<Element> Encrypt(Plaintext plaintext, const PrivateKey<Element> privateKey) const {
+        printf("Hello from encrypt 3\n");
         //    if (plaintext == nullptr)
         //      OPENFHE_THROW(type_error, "Input plaintext is nullptr");
         CheckKey(privateKey);
@@ -1086,6 +1091,7 @@ public:
     }
 
     Ciphertext<Element> Encrypt(const PrivateKey<Element> privateKey, Plaintext plaintext) const {
+        printf("Hello from encrypt 4\n");
         return Encrypt(plaintext, privateKey);
     }
 
@@ -1454,6 +1460,7 @@ public:
    * @return new ciphertext for ct1 * ct2
    */
     Ciphertext<Element> EvalMult(ConstCiphertext<Element> ciphertext1, ConstCiphertext<Element> ciphertext2) const {
+        //printf("Hello from EvalMult(ConstCiphertext, ConstCiphertext)\n");
         TypeCheck(ciphertext1, ciphertext2);
 
         const auto evalKeyVec = GetEvalMultKeyVector(ciphertext1->GetKeyTag());
@@ -1624,11 +1631,13 @@ public:
     }
 
     Ciphertext<Element> EvalMult(ConstCiphertext<Element> ciphertext, ConstPlaintext plaintext) const {
+        printf("Hello from EvalMult(ConstCiphertext, ConstPlaintext)\n");
         TypeCheck(ciphertext, plaintext);
         return GetScheme()->EvalMult(ciphertext, plaintext);
     }
 
     Ciphertext<Element> EvalMult(ConstPlaintext plaintext, ConstCiphertext<Element> ciphertext) const {
+        printf("Hello from EvalMult(ConstPlaintext, ConstCiphertext)\n");
         return EvalMult(ciphertext, plaintext);
     }
 

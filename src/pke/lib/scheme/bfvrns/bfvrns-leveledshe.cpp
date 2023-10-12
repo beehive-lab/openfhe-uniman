@@ -167,6 +167,7 @@ uint32_t FindLevelsToDrop(usint multiplicativeDepth, std::shared_ptr<CryptoParam
 
 Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalMult(ConstCiphertext<DCRTPoly> ciphertext1,
                                                 ConstCiphertext<DCRTPoly> ciphertext2) const {
+    //printf("Hello from bfvrns-leveledshe.cpp :: EvalMult(ConstCiphertext, ConstCiphertext)\n");
     if (!(ciphertext1->GetCryptoParameters() == ciphertext2->GetCryptoParameters())) {
         std::string errMsg = "AlgorithmSHEBFVrns::EvalMult crypto parameters are not the same";
         OPENFHE_THROW(config_error, errMsg);

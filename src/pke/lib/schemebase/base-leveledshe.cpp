@@ -199,6 +199,7 @@ template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalMult(ConstCiphertext<Element> ciphertext1,
                                                       ConstCiphertext<Element> ciphertext2,
                                                       const EvalKey<Element> evalKey) const {
+    //printf("Hello from base-leveledshe.cpp :: EvalMult(ConstCiphertext, ConstCiphertext, EvalKey<Element>)\n");
     Ciphertext<Element> ciphertext = EvalMult(ciphertext1, ciphertext2);
 
     std::vector<Element>& cv = ciphertext->GetElements();
@@ -341,6 +342,7 @@ template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalMultAndRelinearize(
     ConstCiphertext<Element> ciphertext1, ConstCiphertext<Element> ciphertext2,
     const std::vector<EvalKey<Element>>& evalKeyVec) const {
+    //printf("Hello from EvalMultAndRelinearize\n");
     Ciphertext<Element> result = EvalMult(ciphertext1, ciphertext2);
     RelinearizeInPlace(result, evalKeyVec);
     return result;
@@ -357,6 +359,7 @@ Ciphertext<Element> LeveledSHEBase<Element>::Relinearize(ConstCiphertext<Element
 template <class Element>
 void LeveledSHEBase<Element>::RelinearizeInPlace(Ciphertext<Element>& ciphertext,
                                                  const std::vector<EvalKey<Element>>& evalKeyVec) const {
+    //printf("Hello from RelinearizeInPlace\n");
     std::vector<Element>& cv = ciphertext->GetElements();
     for (auto& c : cv)
         c.SetFormat(Format::EVALUATION);
@@ -641,21 +644,29 @@ void LeveledSHEBase<Element>::EvalSubCoreInPlace(Ciphertext<Element>& ciphertext
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalMultCore(ConstCiphertext<Element> ciphertext1,
                                                           ConstCiphertext<Element> ciphertext2) const {
+    //printf("Hello from base-leveledshe.cpp :: EvalMultCore(ConstCiphertext, ConstCiphertext) \n");
     Ciphertext<Element> result = ciphertext1->CloneZero();
 
     std::vector<Element> cv1        = ciphertext1->GetElements();
     const std::vector<Element>& cv2 = ciphertext2->GetElements();
 
     size_t cResultSize = cv1.size() + cv2.size() - 1;
+
+    //printf("cResultSize: %zu \n", cResultSize);
+    //printf("cv1.size(): %zu\n", cv1.size());
+    //printf("cv2.size(): %zu\n", cv2.size());
+
     std::vector<Element> cvMult(cResultSize);
 
     if (cv1.size() == 2 && cv2.size() == 2) {
+        //printf("if statement\n");
         cvMult[2] = (cv1[1] * cv2[1]);
         cvMult[1] = (cv1[1] *= cv2[0]);
         cvMult[0] = (cv2[0] * cv1[0]);
         cvMult[1] += (cv1[0] *= cv2[1]);
     }
     else {
+        //printf("else statement\n");
         std::vector<bool> isFirstAdd(cResultSize, true);
 
         for (size_t i = 0; i < cv1.size(); i++) {

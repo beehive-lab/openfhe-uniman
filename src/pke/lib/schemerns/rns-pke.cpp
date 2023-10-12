@@ -37,6 +37,7 @@
 namespace lbcrypto {
 
 Ciphertext<DCRTPoly> PKERNS::Encrypt(DCRTPoly plaintext, const PrivateKey<DCRTPoly> privateKey) const {
+    printf("Hello from Encrypt 9\n");
     Ciphertext<DCRTPoly> ciphertext(std::make_shared<CiphertextImpl<DCRTPoly>>(privateKey));
 
     const std::shared_ptr<ParmType> ptxtParams = plaintext.GetParams();
@@ -53,6 +54,7 @@ Ciphertext<DCRTPoly> PKERNS::Encrypt(DCRTPoly plaintext, const PrivateKey<DCRTPo
 }
 
 Ciphertext<DCRTPoly> PKERNS::Encrypt(DCRTPoly plaintext, const PublicKey<DCRTPoly> publicKey) const {
+    //printf("Hello from Encrypt 10\n");
     Ciphertext<DCRTPoly> ciphertext(std::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
 
     const std::shared_ptr<ParmType> ptxtParams = plaintext.GetParams();
@@ -148,6 +150,7 @@ std::shared_ptr<std::vector<DCRTPoly>> PKERNS::EncryptZeroCore(const PrivateKey<
 std::shared_ptr<std::vector<DCRTPoly>> PKERNS::EncryptZeroCore(const PublicKey<DCRTPoly> publicKey,
                                                                const std::shared_ptr<ParmType> params,
                                                                const DggType& dgg) const {
+    printf("Hello from encrypt zero core\n");
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(publicKey->GetCryptoParameters());
 
     const std::vector<DCRTPoly>& pk = publicKey->GetPublicElements();

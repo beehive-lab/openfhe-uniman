@@ -94,6 +94,7 @@ KeyPair<Element> PKEBase<Element>::KeyGen(CryptoContext<Element> cc, bool makeSp
 
 template <class Element>
 Ciphertext<Element> PKEBase<Element>::Encrypt(Element plaintext, const PrivateKey<Element> privateKey) const {
+    printf("Hello from Encrypt 7\n");
     Ciphertext<Element> ciphertext           = std::make_shared<CiphertextImpl<Element>>(privateKey);
     std::shared_ptr<std::vector<Element>> ba = EncryptZeroCore(privateKey, nullptr);
     (*ba)[0] += plaintext;
@@ -106,6 +107,7 @@ Ciphertext<Element> PKEBase<Element>::Encrypt(Element plaintext, const PrivateKe
 
 template <class Element>
 Ciphertext<Element> PKEBase<Element>::Encrypt(Element plaintext, const PublicKey<Element> publicKey) const {
+    printf("Hello from Encrypt 8\n");
     Ciphertext<Element> ciphertext           = std::make_shared<CiphertextImpl<Element>>(publicKey);
     std::shared_ptr<std::vector<Element>> ba = EncryptZeroCore(publicKey, nullptr, DggType());
 

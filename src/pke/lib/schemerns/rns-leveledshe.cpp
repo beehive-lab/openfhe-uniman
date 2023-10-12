@@ -170,6 +170,7 @@ void LeveledSHERNS::EvalSubMutableInPlace(Ciphertext<DCRTPoly>& ciphertext, Plai
 
 Ciphertext<DCRTPoly> LeveledSHERNS::EvalMult(ConstCiphertext<DCRTPoly> ciphertext1,
                                              ConstCiphertext<DCRTPoly> ciphertext2) const {
+    //printf("Hello from rns-leveledshe.cpp :: EvalMult(ConstCiphertext, ConstCiphertext)\n");
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(ciphertext1->GetCryptoParameters());
 
     if (cryptoParams->GetScalingTechnique() == NORESCALE) {
