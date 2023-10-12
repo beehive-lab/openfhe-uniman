@@ -40,6 +40,7 @@
 #include "utils/debug.h"
 #include "utils/utilities-int.h"
 #include "utils/utilities.h"
+#include "gpu-acceleration/opencl_utils.h"
 
 namespace lbcrypto {
 
@@ -1409,32 +1410,187 @@ void DCRTPolyImpl<VecType>::TimesQovert(const std::shared_ptr<DCRTPolyImpl::Para
     *this = this->Times(tInvModq);
 }
 
+template <typename VecType>
+int DCRTPolyImpl<VecType>::configApproxSwitchCRTBasisKernel(
+    m_vectors_struct* mvectors, unsigned long* qhatinvmodq, unsigned long* qhatmodp,
+    usint ringDim, usint sizeQ, usint sizeP) const {
+
+    printf("[host] configApproxSwitchCRTBasisKernel start\n");
+
+    size_t mvectors_buffer_size = (sizeof(unsigned long) * ringDim + sizeof(unsigned long)) * sizeQ;
+    printf("input buffer size = %.2f MB\n", static_cast<double>(mvectors_buffer_size)/(1024.0 * 1024.0));
+    mvectors_buffer = clCreateBuffer(
+        context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        mvectors_buffer_size, mvectors, &status);
+    printf("3\n");
+    if(status != CL_SUCCESS) {
+        perror("Couldn't create mvectors_buffer\n");
+        return -1;
+    }
+
+    size_t qhatinvmodq_buffer_size = (sizeof(unsigned long) * sizeQ);
+    qhatinvmodq_buffer = clCreateBuffer(
+        context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        qhatinvmodq_buffer_size, qhatinvmodq, &status);
+
+    size_t qhatmodp_buffer_size = (sizeof(unsigned long) * sizeQ * sizeP);
+    qhatmodp_buffer = clCreateBuffer(
+        context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        qhatmodp_buffer_size, qhatmodp, &status);
+    if(status != CL_SUCCESS) {
+        perror("Couldn't create mvectors_buffer\n");
+        return -1;
+    }
+
+    /*size_t ans_mvectors_buffer_size = (sizeof(unsigned long) * ringDim + sizeof(unsigned long)) * sizeP;
+    ans_mvectors_buffer = clCreateBuffer(
+        context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        ans_mvectors_buffer_size, ans_mvectors, &status);
+    if(status != CL_SUCCESS) {
+        perror("Couldn't create ans_mvectors_buffer\n");
+        return -1;
+    }*/
+
+    global_size = ringDim;
+    local_size = 32;
+
+    // Create a buffer for the sum array
+    //sum_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_ulong2) * sizeP * global_size, NULL, &status);
+    sum_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(unsigned long long) * sizeP * global_size, NULL, &status);
+    if(status != CL_SUCCESS) {
+        perror("Couldn't create sum buffer\n");
+        return -1;
+    }
+
+
+    printf("4\n");
+    num_groups = global_size/local_size;
+    printf("5\n");
+
+    // Create kernel arguments
+    status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &mvectors_buffer); // <=====INPUT
+    status |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &qhatinvmodq_buffer);
+    status |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &qhatmodp_buffer);
+    //status |= clSetKernelArg(kernel, 3, sizeP * sizeof(cl_ulong2), NULL); // <== local buffer
+    status |= clSetKernelArg(kernel, 3, sizeof(int), &sizeQ);
+    status |= clSetKernelArg(kernel, 4, sizeof(int), &sizeP);
+    status |= clSetKernelArg(kernel, 5, sizeof(cl_mem), &sum_buffer);
+    printf("6\n");
+    //status |= clSetKernelArg(kernel, 1, local_size * sizeof(long), NULL);
+    //status |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &sum_buffer); // <=====OUTPUT
+    if(status < 0) {
+        printf("Couldn't create a kernel argument\n");
+        return -1;
+    }
+    printf("[host] configApproxSwitchCRTBasisKernel end\n");
+    return 0;
+}
+
+
 #if defined(HAVE_INT128) && NATIVEINT == 64
 template <typename VecType>
 DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     const std::shared_ptr<DCRTPolyImpl::Params> paramsQ, const std::shared_ptr<DCRTPolyImpl::Params> paramsP,
     const std::vector<NativeInteger>& QHatInvModq, const std::vector<NativeInteger>& QHatInvModqPrecon,
     const std::vector<std::vector<NativeInteger>>& QHatModp, const std::vector<DoubleNativeInt>& modpBarrettMu) const {
+    std::cout << "HAVE_INT128 = TRUE " << std::endl;
     DCRTPolyType ans(paramsP, this->GetFormat(), true);
 
     usint ringDim = this->GetRingDimension();
     usint sizeQ   = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
     usint sizeP   = ans.m_vectors.size();
 
-    #pragma omp parallel for
+    //printf("NATIVE INT = %d\n", NATIVEINT);
+    std::cout << "ringDim: " << ringDim << ", sizeQ: " << sizeQ << ", sizeP: " << sizeP << std::endl;
+    //configKernel(m_vectors, 256, 128);
+    //enqueueKernel();
+    //std::cout << "m_vectors.data()->GetValues().GetLength()=" << m_vectors.data()->GetValues().GetLength() << " m_vectors.capacity() = " << m_vectors.capacity() << " m_vectors.data()->GetLength() = " << m_vectors.data()->GetLength() << std::endl;
+    //std::vector<unsigned long> myVector(m_vectors.begin(), m_vectors.end());
+
+    // Define the number of vectors you want to store
+    //const int numVectors = sizeQ;
+    // Create an array of m_vectors_struct objects
+    //m_vectors_struct my_m_vectors[sizeQ];
+    m_vectors_struct* my_m_vectors = (m_vectors_struct*)malloc(sizeof(m_vectors_struct) * sizeQ);
+    // QHatInvModq
+    unsigned long* qhatinvmodq = (unsigned long*)malloc(sizeQ * sizeof(unsigned long));
+    // qhatmodp
+    unsigned long* qhatmodp = (unsigned long*)malloc(sizeQ * sizeP * sizeof(unsigned long));
+    // ans_m_vectors
+    //m_vectors_struct* ans_m_vectors = (m_vectors_struct*)malloc(sizeof(m_vectors_struct) * sizeP);
+    //
+    //long long* my_modpBarrettMu = (long long*)malloc(sizeof(long long ) * sizeP);
+    // Define the size for each dynamically allocated array
+    //const size_t arraySize = ringDim;
+    // Iterate through m_vectors and extract m_values
+    for (usint q = 0; q < sizeQ; ++q) {
+        // Dynamically allocate memory for vectorData
+        my_m_vectors[q].data = (unsigned long*) malloc(sizeof(unsigned long) * ringDim);
+        if (my_m_vectors[q].data == NULL) {
+            printf("my_m_vectors[%d].data allocation failed\n",q);
+        }
+        // Populate the dynamically allocated array with extracted values
+        for (size_t rd = 0; rd < ringDim; ++rd) {
+            my_m_vectors[q].data[rd] = m_vectors[q][rd].template ConvertToInt<>();
+        }
+        // Set the modulus value associated with this vector
+        my_m_vectors[q].modulus = m_vectors[q].GetModulus().ConvertToInt();
+        // set the value of qHatInvModQ[q] to qhatinvmodq[q]
+        qhatinvmodq[q] = QHatInvModq[q].ConvertToInt();
+        // Set the values of QHatModp to qhatmodp
+        for(usint sp = 0; sp < sizeP; sp++) {
+            //qhatmodp[q][sp] = QHatModp[q][sp].ConvertToInt();
+            qhatmodp[q * sizeP + sp] = QHatModp[q][sp].ConvertToInt();
+        }
+    }
+
+    /*for(usint sp = 0; sp < sizeP; sp++) {
+        ans_m_vectors[sp].data = (unsigned long*) malloc(sizeof(unsigned long) * ringDim);
+        for (size_t rd = 0; rd < ringDim; ++rd) {
+            ans_m_vectors[sp].data[rd] = ans.m_vectors[sp][rd].template ConvertToInt<>();
+        }
+        ans_m_vectors[sp].modulus = ans.m_vectors[sp].GetModulus().ConvertToInt();
+        my_modpBarrettMu[sp] = modpBarrettMu[sp];
+    }*/
+
+    //if (configApproxSwitchCRTBasisKernel(my_m_vectors, qhatinvmodq, qhatmodp, ringDim, sizeQ, sizeP) == 0 ) {
+        //enqueueKernel(sizeP);
+    //}
+
+    for (usint q = 0; q < sizeQ; ++q) {
+        free(my_m_vectors[q].data);
+    }
+    free(my_m_vectors);
+    free(qhatinvmodq);
+    free(qhatmodp);
+    /*for (usint sp = 0; sp < sizeP; ++sp) {
+        free(ans_m_vectors[sp].data);
+    }
+    free(ans_m_vectors);*/
+    deallocateBuffers();
+
+    //std::vector<NativeInteger> myVector(customSize);
+    //#pragma omp parallel for
     for (usint ri = 0; ri < ringDim; ri++) {
+        // ringDim = 32768
         std::vector<DoubleNativeInt> sum(sizeP);
         for (usint i = 0; i < sizeQ; i++) {
+            // sizeQ = 5
             const NativeInteger& xi     = m_vectors[i][ri];
             const NativeInteger& qi     = m_vectors[i].GetModulus();
-            NativeInteger xQHatInvModqi = xi.ModMulFastConst(QHatInvModq[i], qi, QHatInvModqPrecon[i]);
+            const NativeInteger& b      = QHatInvModq[i];
+            const NativeInteger& bInv   = QHatInvModqPrecon[i];
+            // xQHatInvModqi = ( xi * b ) mod qi
+            NativeInteger xQHatInvModqi = xi.ModMulFastConst(b, qi, bInv);
             for (usint j = 0; j < sizeP; j++) {
                 sum[j] += Mul128(xQHatInvModqi.ConvertToInt(), QHatModp[i][j].ConvertToInt());
             }
         }
 
         for (usint j = 0; j < sizeP; j++) {
+            // sizeP = 10
             const NativeInteger& pj = ans.m_vectors[j].GetModulus();
+            //std::cout << "BarrettUint128ModUint64(" << sum[j] << ", " << << << std::endl;
             ans.m_vectors[j][ri]    = BarrettUint128ModUint64(sum[j], pj.ConvertToInt(), modpBarrettMu[j]);
         }
     }
@@ -1447,6 +1603,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     const std::shared_ptr<DCRTPolyImpl::Params> paramsQ, const std::shared_ptr<DCRTPolyImpl::Params> paramsP,
     const std::vector<NativeInteger>& QHatInvModq, const std::vector<NativeInteger>& QHatInvModqPrecon,
     const std::vector<std::vector<NativeInteger>>& QHatModp, const std::vector<DoubleNativeInt>& modpBarrettMu) const {
+    std::cout << "HAVE_INT128 = FALSE " << std::endl;
     DCRTPolyType ans(paramsP, this->GetFormat(), true);
 
     usint sizeQ = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
@@ -1531,6 +1688,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
     DCRTPolyType partP(paramsP, this->GetFormat(), true);
 
     for (usint i = sizeQ, j = 0; i < sizeQP; i++, j++) {
+        // sizeQP = 16
         partP.m_vectors[j] = m_vectors[i];
     }
 
@@ -1540,6 +1698,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
     if (t > 0) {
 #pragma omp parallel for
         for (usint j = 0; j < sizeP; j++) {
+            // sizeP = 4
             partP.m_vectors[j] *= tInvModp[j];
         }
     }
@@ -1557,6 +1716,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
     if (t > 0) {
 #pragma omp parallel for
         for (usint i = 0; i < sizeQ; i++) {
+            //sizeQ = 12
             partPSwitchedToQ.m_vectors[i] *= t;
         }
     }
@@ -3114,6 +3274,7 @@ void DCRTPolyImpl<VecType>::SwitchFormat() {
 
 #pragma omp parallel for
     for (usint i = 0; i < m_vectors.size(); i++) {
+        // m_vectors.size() = 14
         m_vectors[i].SwitchFormat();
     }
 }

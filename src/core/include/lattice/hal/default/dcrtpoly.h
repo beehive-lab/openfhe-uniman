@@ -50,6 +50,7 @@
 #include "lattice/ildcrtparams.h"
 #include "lattice/hal/dcrtpoly-interface.h"
 #include "math/distrgen.h"
+#include "gpu-acceleration/opencl_utils.h"
 
 namespace lbcrypto {
 
@@ -1364,6 +1365,47 @@ public:
 protected:
     // array of vectors used for double-CRT presentation
     std::vector<PolyType> m_vectors;
+
+    //cl_int num_groups;
+
+    /*void configApproxSwitchCRTBasisKernel(std::vector<unsigned long> vector1, size_t global, size_t local) const {
+        std::cout << "configKernel: Current Thread ID: " << std::this_thread::get_id() << std::endl;
+        size_t global_size = 256;//8; // WHY ONLY 8?
+        size_t local_size = 128;//4;
+        //printf("[configKernel]: ARRAY_SIZE=%d, global_size=%ld, local_size=%ld\n",ARRAY_SIZE,global_size,local_size);
+        num_groups = global_size/local_size;
+        //input_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, ARRAY_SIZE * sizeof(float), data, &status); // <=====INPUT
+        input_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 32768 * sizeof(float), data, &status); // <=====INPUT
+                                                                                                                                     //m_vectors
+        //input_buffer2 = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, m_vectors);
+        sum_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, num_groups * sizeof(float), sum, &status); // <=====OUTPUT
+        if(status < 0) {
+            perror("Couldn't create a buffer\n");
+            exit(1);
+        }
+
+        // Create an output buffer to store get_global_id(0) values
+        output_buffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+                                       sizeof(float) * global_size, NULL, &status);
+
+
+        // Create kernel arguments
+        status = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input_buffer); // <=====INPUT
+        status |= clSetKernelArg(kernel, 1, local_size * sizeof(float), NULL);
+        status |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &sum_buffer); // <=====OUTPUT
+        status |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &output_buffer);
+        if(status < 0) {
+            printf("Couldn't create a kernel argument\n");
+            return;
+        }
+    }*/
+    // Define a struct to store a vector and its associated modulus
+    struct m_vectors_struct {
+        unsigned long* data; // Pointer to dynamically allocated array
+        unsigned long modulus;
+    };
+
+    int configApproxSwitchCRTBasisKernel(m_vectors_struct* mvectors, unsigned long* qhatinvmodq, unsigned long* qhatmodp, usint ringDim, usint sizeQ, usint sizeP) const;
 };
 
 }  // namespace lbcrypto

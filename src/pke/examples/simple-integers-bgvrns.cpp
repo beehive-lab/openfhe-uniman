@@ -34,10 +34,37 @@
  */
 
 #include "openfhe.h"
+#include "gpu-acceleration/opencl_utils.h"
 
 using namespace lbcrypto;
 
 int main() {
+    ///// Opencl host code
+
+    #define PROGRAM_FILE "/home/orion/Encrypt/openfhe-development/gpu-kernels/approx_switch_crt_basis.cl"
+    //#define PROGRAM_FILE "/home/orion/Encrypt/openfhe-development/gpu-kernels/approx_switch_crt_basis.cl"
+    #define KERNEL_FUNC "approx_switch_crt_basis"
+    //#define KERNEL_FUNC "approx_switch_crt_basis"
+
+    printf("init opencl\n");
+    initializeKernel(PROGRAM_FILE, KERNEL_FUNC);
+    printf("success!\n");
+
+    /* Initialize data */
+    for(int a = 0; a < ARRAY_SIZE; a++) {
+        data[a] = 1.0f*a;
+    }
+
+    /* Build program */
+    //printf("build program\n");
+    //program = build_program(context, *devices, PROGRAM_FILE);
+    //printf("success\n");
+
+    //printf("config kernel\n");
+    //configKernel(KERNEL_FUNC, 256, 128); //256, 128
+    //printf("success!\n");
+    /////
+
     // Sample Program: Step 1 - Set CryptoContext
     CCParams<CryptoContextBGVRNS> parameters;
     parameters.SetMultiplicativeDepth(2);
@@ -134,6 +161,8 @@ int main() {
     std::cout << "Left rotation of #1 by 2: " << plaintextRot2 << std::endl;
     std::cout << "Right rotation of #1 by 1: " << plaintextRot3 << std::endl;
     std::cout << "Right rotation of #1 by 2: " << plaintextRot4 << std::endl;
+
+    deallocateResources();
 
     return 0;
 }
