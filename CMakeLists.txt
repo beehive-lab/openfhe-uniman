@@ -87,6 +87,7 @@ option( WITH_INTEL_HEXL "Use Intel HEXL library"                                
 option( WITH_NATIVEOPT "Use machine-specific optimizations"                     OFF )
 option( WITH_COVTEST "Turn on to enable coverage testing"                       OFF )
 option( USE_MACPORTS "Use MacPorts installed packages"                          OFF )
+option( WITH_CUDA "Use CUDA kernels"                                            ON  )
 
 # Set required number of bits for native integer in build by setting NATIVE_SIZE to 64 or 128
 if( NOT NATIVE_SIZE )
@@ -117,6 +118,7 @@ message( STATUS "CKKS_M_FACTOR:    ${CKKS_M_FACTOR}")
 message( STATUS "WITH_NATIVEOPT:   ${WITH_NATIVEOPT}")
 message( STATUS "WITH_COVTEST:     ${WITH_COVTEST}")
 message( STATUS "USE_MACPORTS:     ${USE_MACPORTS}")
+message( STATUS "WITH_CUDA:        ${WITH_CUDA}")
 
 #--------------------------------------------------------------------
 # Compiler logic
@@ -199,6 +201,42 @@ if(WITH_COVTEST)
     set( BUILDDIR ${CMAKE_CURRENT_SOURCE_DIR}/build/)
     set( COVDIR ${BUILDDIR}coverage/)
 endif()
+
+# CUDA compiler flags
+if(WITH_CUDA)
+    if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
+        message(FATAL_ERROR "Build with CUDA requires at least cmake 3.17.0")
+    else ()
+        # inspired by: https://github.com/pytorch/pytorch/blob/59281d563154b82d60b03702095a3fe3cdd45e98/cmake/public/cuda.cmake
+        find_package(CUDA)
+        # Enable CUDA language support
+        set(CUDAToolkit_ROOT "${CUDA_TOOLKIT_ROOT_DIR}")
+        enable_language(CUDA)
+
+        cmake_policy(SET CMP0074 NEW)
+
+        find_package(CUDAToolkit REQUIRED)
+        message(STATUS "GPU ACCELERATION: CUDA detected: " ${CUDA_VERSION})
+        message(STATUS "GPU ACCELERATION: CUDA nvcc is: " ${CUDA_NVCC_EXECUTABLE})
+        message(STATUS "GPU ACCELERATION: CUDA toolkit directory: " ${CUDA_TOOLKIT_ROOT_DIR})
+        if(CUDA_VERSION VERSION_LESS 11.5)
+            message(FATAL_ERROR "GPU ACCELERATION requires CUDA 11.5 or above.")
+        endif()
+
+        # explicit definitions for compiler flags
+        set(CMAKE_CUDA_ARCHITECTURES 61 CACHE STRING "CUDA architectures" FORCE)
+        #set(CMAKE_CUDA_STANDARD 17)
+        #set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+        #list( APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_61,code=compute_61)
+        set( CMAKE_CUDA_FLAGS -arch=sm_61)
+        set( CMAKE_CUDA_FLAGS -cudart=static)
+        list( APPEND CUDA_NVCC_FLAGS -std=c++17)
+        list( APPEND CUDA_NVCC_FLAGS --verbose )
+        #set(CUDA_PROPAGATE_HOST_FLAGS off)
+        #set(CUDA_SEPARABLE_COMPILATION ON)
+
+    endif()
+endif ()
 
 if(BUILD_STATIC)
     set(OpenFHE_STATIC_LIBS OPENFHEcore_static OPENFHEpke_static OPENFHEbinfhe_static)

@@ -2,6 +2,34 @@
 # CMakeLists.txt for CORE library
 #
 
+#--------------------------------------------------------------------
+# CUDA logic
+#--------------------------------------------------------------------
+if (WITH_CUDA)
+
+	include_directories(${CUDA_INCLUDE_DIRS})
+
+	# find all cuda source (.cu) at core/lib/cuda-utils
+	file(GLOB_RECURSE CUDA_SRC_FILES lib/cuda-utils/kernels/*.cu include/cuda-utils/*.cuh)
+	#foreach(cu_file ${CUDA_SRC_FILES})
+		#message(STATUS "Found CUDA source file: ${cu_file}")
+	#endforeach()
+
+	# create a target for the cuda library
+	add_library(CUDALibrary SHARED ${CUDA_SRC_FILES})
+	# STATIC = libraries are archives of object files for use when linking other targets
+	# SHARED = libraries are linked dynamically and loaded at runtime
+	set_target_properties(CUDALibrary PROPERTIES
+			CUDA_SEPARABLE_COMPILATION ON)
+
+	# CUDA libraries to include
+	#message(STATUS "CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}") # /usr/local/cuda-12.2/include
+	#message(STATUS "CUDA_LIBRARIES: ${CUDA_LIBRARIES}") #/usr/local/cuda-12.2/lib64/libcudart_static.a;Threads::Threads;dl;/usr/lib/x86_64-linux-gnu/librt.so
+	target_link_libraries(CUDALibrary ${CUDA_LIBRARIES})
+	target_include_directories(CUDALibrary PUBLIC ${CUDA_INCLUDE_DIRS})
+
+endif ()
+
 # all files named *.c or */cpp are compiled to form the library
 file (GLOB_RECURSE CORE_SRC_FILES CONFIGURE_DEPENDS lib/*.c lib/*.cpp lib/utils/*.cpp)
 
@@ -29,18 +57,37 @@ if ( BUILD_SHARED )
 	set_property(TARGET OPENFHEcore PROPERTY VERSION ${CORE_VERSION})
 	set_property(TARGET OPENFHEcore PROPERTY SOVERSION ${CORE_VERSION_MAJOR})
 	set_property(TARGET OPENFHEcore PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-	install(TARGETS OPENFHEcore
-		EXPORT OpenFHETargets
-		DESTINATION lib)
+	if (WITH_CUDA)
+		# cuda src should be compiled first
+		add_dependencies(OPENFHEcore CUDALibrary)
+		# export also CUDALibrary
+		install(TARGETS OPENFHEcore CUDALibrary
+				EXPORT OpenFHETargets
+				DESTINATION lib)
+	else ()
+		install(TARGETS OPENFHEcore
+				EXPORT OpenFHETargets
+				DESTINATION lib)
+	endif()
+
 endif()
 
 
 if( BUILD_STATIC )
+	#add_library (OPENFHEcore_static STATIC $<TARGET_OBJECTS:coreobj> $<TARGET_OBJECTS:cuda-obj>)
 	add_library (OPENFHEcore_static STATIC $<TARGET_OBJECTS:coreobj>)
 	set_property(TARGET OPENFHEcore_static PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-	install(TARGETS OPENFHEcore_static
-		EXPORT OpenFHETargets
-		DESTINATION lib)
+	if (WITH_CUDA)
+		# cuda src should be compiled first
+		add_dependencies(OPENFHEcore_static CUDALibrary)
+		install(TARGETS OPENFHEcore_static CUDALibrary
+				EXPORT OpenFHETargets
+				DESTINATION lib)
+	else ()
+		install(TARGETS OPENFHEcore_static
+				EXPORT OpenFHETargets
+				DESTINATION lib)
+	endif()
 endif()
 
 install(DIRECTORY include/
@@ -50,13 +97,21 @@ add_custom_target( allcore )
 
 if( BUILD_SHARED )
 set (CORELIBS PUBLIC OPENFHEcore ${THIRDPARTYLIBS} ${OpenMP_CXX_FLAGS})
-	target_link_libraries (OPENFHEcore ${THIRDPARTYLIBS} ${OpenMP_CXX_FLAGS})
+	if (WITH_CUDA)
+		target_link_libraries (OPENFHEcore ${THIRDPARTYLIBS} ${OpenMP_CXX_FLAGS} CUDALibrary)
+	else ()
+		target_link_libraries (OPENFHEcore ${THIRDPARTYLIBS} ${OpenMP_CXX_FLAGS})
+	endif ()
 	add_dependencies( allcore OPENFHEcore)
 endif()
 
 if( BUILD_STATIC )
 set (CORELIBS ${CORELIBS} PUBLIC OPENFHEcore_static ${THIRDPARTYSTATICLIBS} ${OpenMP_CXX_FLAGS})
-	target_link_libraries (OPENFHEcore_static ${THIRDPARTYSTATICLIBS} ${OpenMP_CXX_FLAGS})
+	if (WITH_CUDA)
+		target_link_libraries (OPENFHEcore_static ${THIRDPARTYSTATICLIBS} ${OpenMP_CXX_FLAGS} CUDALibrary)
+	else ()
+		target_link_libraries (OPENFHEcore_static ${THIRDPARTYSTATICLIBS} ${OpenMP_CXX_FLAGS})
+	endif ()
 	add_dependencies( allcore OPENFHEcore_static)
 endif()
 
