@@ -223,18 +223,17 @@ if(WITH_CUDA)
             message(FATAL_ERROR "GPU ACCELERATION requires CUDA 11.5 or above.")
         endif()
 
-        # explicit definitions for compiler flags
+        # explicit configurations for nvcc flags
         set(CMAKE_CUDA_ARCHITECTURES 61 CACHE STRING "CUDA architectures" FORCE)
-        #set(CMAKE_CUDA_STANDARD 17)
-        #set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-        #list( APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_61,code=compute_61)
-        set( CMAKE_CUDA_FLAGS -arch=sm_61)
-        set( CMAKE_CUDA_FLAGS -cudart=static)
+        # specify gpu architecture automatically
+        cuda_select_nvcc_arch_flags(ARCH_FLAGS Auto)
+        #message("==ARCH_FLAGS: " ${ARCH_FLAGS})
+        list( APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+        # compatibility with cxx 17
         list( APPEND CUDA_NVCC_FLAGS -std=c++17)
         list( APPEND CUDA_NVCC_FLAGS --verbose )
         #set(CUDA_PROPAGATE_HOST_FLAGS off)
-        #set(CUDA_SEPARABLE_COMPILATION ON)
-
+        set(CUDA_SEPARABLE_COMPILATION ON)
     endif()
 endif ()
 
