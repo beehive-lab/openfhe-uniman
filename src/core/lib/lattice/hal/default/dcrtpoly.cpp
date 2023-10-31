@@ -41,6 +41,9 @@
 #include "utils/utilities-int.h"
 #include "utils/utilities.h"
 
+#include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
+#include "cuda-utils/cuda-data-utils.h"
+
 namespace lbcrypto {
 
 /*CONSTRUCTORS*/
@@ -1421,7 +1424,15 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     usint sizeQ   = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
     usint sizeP   = ans.m_vectors.size();
 
-    #pragma omp parallel for
+    m_vectors_struct* my_m_vectors = (m_vectors_struct*)malloc(sizeof(m_vectors_struct) * sizeQ);
+    cudaUtils.marshalDataForApproxSwitchCRTBasisKernel(
+        //in
+        ringDim, sizeQ, sizeP, m_vectors, QHatInvModq, QHatModp,
+        //out
+        my_m_vectors);
+    callMyKernel(ringDim, sizeQ, sizeP);
+
+    //#pragma omp parallel for
     for (usint ri = 0; ri < ringDim; ri++) {
         std::vector<DoubleNativeInt> sum(sizeP);
         for (usint i = 0; i < sizeQ; i++) {
