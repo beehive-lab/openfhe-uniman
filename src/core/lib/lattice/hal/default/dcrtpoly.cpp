@@ -1424,13 +1424,79 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     usint sizeQ   = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
     usint sizeP   = ans.m_vectors.size();
 
-    m_vectors_struct* my_m_vectors = (m_vectors_struct*)malloc(sizeof(m_vectors_struct) * sizeQ);
-    cudaUtils.marshalDataForApproxSwitchCRTBasisKernel(
-        //in
-        ringDim, sizeQ, sizeP, m_vectors, QHatInvModq, QHatModp,
-        //out
-        my_m_vectors);
-    callMyKernel(ringDim, sizeQ, sizeP);
+    ////////////////////////////////////////////////////////
+    // CUDA implementation host code: entry point
+    ////////////////////////////////////////////////////////
+    // allocate the host buffers
+    // debugging:
+    //std::cout << "==> allocate the host buffers" << std::endl;
+    m_vectors_struct*   host_m_vectors          = (m_vectors_struct*) malloc(sizeQ * sizeof(m_vectors_struct));
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        host_m_vectors[q].data                  = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
+    }
+    unsigned long*      host_qhatinvmodq        = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
+    unsigned long*      host_QHatInvModqPrecon  = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
+    uint128_t*          host_qhatmodp           = (uint128_t*) malloc(sizeQ * sizeP * sizeof(uint128_t));
+    uint128_t*          host_sum                = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
+
+    cudaUtils.marshalDataForApproxSwitchCRTBasisKernel(ringDim, sizeQ, sizeP,
+                                                       m_vectors,
+                                                       QHatInvModq,
+                                                       QHatInvModqPrecon,
+                                                       QHatModp,
+                                                       host_m_vectors,
+                                                       host_qhatinvmodq,
+                                                       host_QHatInvModqPrecon,
+                                                       host_qhatmodp);
+    // debugging: check values of m_vectors - ok
+    /*for(usint a =0; a<sizeQ; a++) {
+        std::cout <<    "host_m_vectors[" << a << "].modulus = " << host_m_vectors[a].modulus << ", " <<
+                        "m_vectors[" << a << "].modulus = " << m_vectors[a].GetModulus() << std::endl;
+        for(usint ri = 0; ri < 5; ri++) {
+            std::cout <<    "host_m_vectors[" << a << ", " << ri << "] = " << host_m_vectors[a].data[ri] << ", " <<
+                            "m_vectors[" << a << ", " << ri << "] = " << m_vectors[a][ri].ConvertToInt() << std::endl;
+        }
+    }*/
+    // debugging: check values of host_QHatInvModqPrecon
+    /*for(usint a =0; a<sizeQ; a++) {
+        //printf("qhatmodp[%d][%d] = 0x%" PRIx64"%016" PRIX64 ", QHatModp[%d][%d] = %llx\n", a,b,hi1,lo1, a,b,QHatModp[a][b].ConvertToInt());
+        unsigned long tmp = host_QHatInvModqPrecon[a];
+        unsigned long tmp2 = QHatInvModqPrecon[a].ConvertToInt();
+
+        uint128_t tmp128 = (uint128_t)tmp;
+        unsigned long lo = (uint64_t) tmp128;
+        unsigned long hi = (uint64_t) (tmp128 >> 64);
+        std::cout <<    "host_QHatInvModqPrecon[" << a << "] = " << tmp << ", (uint128)[" << (hi | lo) <<"] "
+                                                                                                 "QHatInvModqPrecon[" << a << "] = " << tmp2 << std::endl;
+    }*/
+    // debugging: check values of qhatinvmodq - ok
+    /*for(usint a =0; a<sizeQ; a++) {
+        //printf("qhatmodp[%d][%d] = 0x%" PRIx64"%016" PRIX64 ", QHatModp[%d][%d] = %llx\n", a,b,hi1,lo1, a,b,QHatModp[a][b].ConvertToInt());
+        unsigned long tmp = host_qhatinvmodq[a];
+        unsigned long tmp2 = QHatInvModq[a].ConvertToInt();
+
+        uint128_t tmp128 = (uint128_t)tmp;
+        unsigned long lo = (uint64_t) tmp128;
+        unsigned long hi = (uint64_t) (tmp128 >> 64);
+            std::cout <<    "host_qhatinvmodq[" << a << "] = " << tmp << ", (uint128)[" << (hi | lo) <<"] "
+                "QHatModp[" << a << "] = " << tmp2 << std::endl;
+    }*/
+    // debugging: check values of qhatmodp - ok
+    /*for(usint a =0; a<sizeQ; a++) {
+        for(usint b = 0; b< sizeP; b++) {
+            //printf("qhatmodp[%d][%d] = 0x%" PRIx64"%016" PRIX64 ", QHatModp[%d][%d] = %llx\n", a,b,hi1,lo1, a,b,QHatModp[a][b].ConvertToInt());
+            __int128 tmp = qhatmodp[a * sizeP + b];
+            __int128 tmp2 = QHatModp[a][b].ConvertToInt();
+            std::cout <<    "qhatmodp[" << a << ", " << b << "] = " << (int64_t)tmp << (int64_t)(tmp >> 64) << ", " <<
+                            "QHatModp[" << a << ", " << b << "] = " << (int64_t)tmp2 << (int64_t)(tmp2 >> 64) << std::endl;
+        }
+    }*/
+    callApproxSwitchCRTBasisKernel(ringDim, sizeP, sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum);
+    cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum);
+
+    ////////////////////////////////////////////////////////
+    // CUDA implementation host code: end
+    ////////////////////////////////////////////////////////
 
     //#pragma omp parallel for
     for (usint ri = 0; ri < ringDim; ri++) {

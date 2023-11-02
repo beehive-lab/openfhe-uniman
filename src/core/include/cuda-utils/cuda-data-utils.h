@@ -2,15 +2,8 @@
 #define OPENFHE_CUDA_DATA_UTILS_H
 
 #include "math/hal.h"
+#include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
 #include <cstdint> // for uint32_t type
-
-/*
- * Data type for m_vectors object
- */
-struct m_vectors_struct {
-    unsigned long* data;
-    unsigned long modulus;
-};
 
 // use this namespace in order to access openFHE internal data types
 namespace lbcrypto {
@@ -25,14 +18,23 @@ public:
     cudaDataUtils();
 
     // data marshaling methods
-    void marshalDataForApproxSwitchCRTBasisKernel(
-        // input
-        uint32_t ringDim, uint32_t sizeQ, uint32_t sizeP,
-        const std::vector<PolyImpl<NativeVector>> m_vectors,
-        const std::vector<NativeInteger>& QHatInvModq,
-        const std::vector<std::vector<NativeInteger>>& QHatModp,
-        // output
-        m_vectors_struct* my_m_vectors) const;
+    static void marshalDataForApproxSwitchCRTBasisKernel(uint32_t ringDim, uint32_t sizeQ, uint32_t sizeP,
+                                                         const std::vector<PolyImpl<NativeVector>> m_vectors,
+                                                         const std::vector<NativeInteger>& QHatInvModq,
+                                                         const std::vector<NativeInteger>& QHatInvModqPrecon,
+                                                         const std::vector<std::vector<NativeInteger>>& QHatModp,
+                                                         m_vectors_struct*  host_m_vectors,
+                                                         unsigned long*     host_QHatInvModq,
+                                                         unsigned long*     host_QHatInvModqPrecon,
+                                                         uint128_t*         host_QHatModp);
+
+    // deallocations
+    static void DeallocateMemoryForApproxSwitchCRTBasisKernel(int sizeQ,
+                                                              m_vectors_struct* host_m_vectors,
+                                                              unsigned long*    host_QHatInvModq,
+                                                              unsigned long*    host_QHatInvModqPrecon,
+                                                              uint128_t *       host_QHatModp,
+                                                              uint128_t*        host_sum);
 
 };
 
