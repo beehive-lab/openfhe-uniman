@@ -35,10 +35,12 @@ void cudaDataUtils::marshalDataForApproxSwitchCRTBasisKernel(uint32_t ringDim, u
                                                              const std::vector<NativeInteger>& QHatInvModq,
                                                              const std::vector<NativeInteger>& QHatInvModqPrecon,
                                                              const std::vector<std::vector<NativeInteger>>& QHatModp,
+                                                             const std::vector<PolyImpl<NativeVector>> ans_m_vectors,
                                                              m_vectors_struct*  host_m_vectors,
                                                              unsigned long*     host_QHatInvModq,
                                                              unsigned long*     host_QHatInvModqPrecon,
-                                                             uint128_t*         host_QHatModp) {
+                                                             uint128_t*         host_QHatModp,
+                                                             m_vectors_struct*  host_ans_m_vectors) {
     // debugging:
     //std::cout << "==> marshal data" << std::endl;
     for (uint32_t q = 0; q < sizeQ; ++q) {
@@ -50,6 +52,7 @@ void cudaDataUtils::marshalDataForApproxSwitchCRTBasisKernel(uint32_t ringDim, u
         host_QHatInvModqPrecon[q] = QHatInvModqPrecon[q].ConvertToInt();
         for (uint32_t sp = 0; sp < sizeP; sp++) {
             host_QHatModp[q * sizeP + sp] = QHatModp[q][sp].ConvertToInt();
+            host_ans_m_vectors[sp].modulus = ans_m_vectors[sp].GetModulus().ConvertToInt();
         }
     }
 }

@@ -1438,16 +1438,22 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     unsigned long*      host_QHatInvModqPrecon  = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
     uint128_t*          host_qhatmodp           = (uint128_t*) malloc(sizeQ * sizeP * sizeof(uint128_t));
     uint128_t*          host_sum                = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
+    m_vectors_struct*   host_ans_m_vectors      = (m_vectors_struct*) malloc(sizeP * sizeof(m_vectors_struct));
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        host_ans_m_vectors[q].data              = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
+    }
 
     cudaUtils.marshalDataForApproxSwitchCRTBasisKernel(ringDim, sizeQ, sizeP,
                                                        m_vectors,
                                                        QHatInvModq,
                                                        QHatInvModqPrecon,
                                                        QHatModp,
+                                                       ans.m_vectors,
                                                        host_m_vectors,
                                                        host_qhatinvmodq,
                                                        host_QHatInvModqPrecon,
-                                                       host_qhatmodp);
+                                                       host_qhatmodp,
+                                                       host_ans_m_vectors);
     // debugging: check values of m_vectors - ok
     /*for(usint a =0; a<sizeQ; a++) {
         std::cout <<    "host_m_vectors[" << a << "].modulus = " << host_m_vectors[a].modulus << ", " <<
@@ -1492,6 +1498,11 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
         }
     }*/
     callApproxSwitchCRTBasisKernel(ringDim, sizeP, sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum);
+    // debugging: check values of ans - ok
+    /*for(usint a = 0; a < sizeP; a++) {
+        std::cout <<    "host_ans_m_vectors[" << a << "].modulus = " << host_ans_m_vectors[a].modulus << ", " <<
+                        "ans.m_vectors[" << a << "].modulus = " << ans.m_vectors[a].GetModulus() << std::endl;
+    }*/
     cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum);
 
     ////////////////////////////////////////////////////////
