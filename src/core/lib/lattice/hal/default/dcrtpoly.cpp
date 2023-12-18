@@ -1438,6 +1438,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     unsigned long*      host_QHatInvModqPrecon  = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
     uint128_t*          host_qhatmodp           = (uint128_t*) malloc(sizeQ * sizeP * sizeof(uint128_t));
     uint128_t*          host_sum                = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
+    uint128_t*          host_modpBarrettMu      = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
     m_vectors_struct*   host_ans_m_vectors      = (m_vectors_struct*) malloc(sizeP * sizeof(m_vectors_struct));
     for (uint32_t q = 0; q < sizeQ; ++q) {
         host_ans_m_vectors[q].data              = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
@@ -1448,11 +1449,13 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
                                                        QHatInvModq,
                                                        QHatInvModqPrecon,
                                                        QHatModp,
+                                                       modpBarrettMu,
                                                        ans.m_vectors,
                                                        host_m_vectors,
                                                        host_qhatinvmodq,
                                                        host_QHatInvModqPrecon,
                                                        host_qhatmodp,
+                                                       host_modpBarrettMu,
                                                        host_ans_m_vectors);
     // debugging: check values of m_vectors - ok
     /*for(usint a =0; a<sizeQ; a++) {
@@ -1502,6 +1505,14 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     /*for(usint a = 0; a < sizeP; a++) {
         std::cout <<    "host_ans_m_vectors[" << a << "].modulus = " << host_ans_m_vectors[a].modulus << ", " <<
                         "ans.m_vectors[" << a << "].modulus = " << ans.m_vectors[a].GetModulus() << std::endl;
+    }*/
+    // debugging: check values of modpBarrettMu - ok
+    /*for(usint a =0; a<sizeP; a++) {
+        //printf("qhatmodp[%d][%d] = 0x%" PRIx64"%016" PRIX64 ", QHatModp[%d][%d] = %llx\n", a,b,hi1,lo1, a,b,QHatModp[a][b].ConvertToInt());
+        __int128 tmp = host_modpBarrettMu[a];
+        __int128 tmp2 = modpBarrettMu[a];
+        std::cout <<    "host_modpBarrettMu[" << a << "] = " << (int64_t)tmp << (int64_t)(tmp >> 64) << ", " <<
+                        "QHatModp[" << a << "] = " << (int64_t)tmp2 << (int64_t)(tmp2 >> 64) << std::endl;
     }*/
     cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum);
 
