@@ -54,9 +54,11 @@ void cudaDataUtils::marshalDataForApproxSwitchCRTBasisKernel(uint32_t ringDim, u
         host_QHatInvModqPrecon[q] = QHatInvModqPrecon[q].ConvertToInt();
         for (uint32_t sp = 0; sp < sizeP; sp++) {
             host_QHatModp[q * sizeP + sp] = QHatModp[q][sp].ConvertToInt();
-            host_modpBarrettMu[sp] = modpBarrettMu[sp];
-            host_ans_m_vectors[sp].modulus = ans_m_vectors[sp].GetModulus().ConvertToInt();
         }
+    }
+    for (uint32_t sp = 0; sp < sizeP; sp++) {
+        host_modpBarrettMu[sp] = modpBarrettMu[sp];
+        host_ans_m_vectors[sp].modulus = ans_m_vectors[sp].GetModulus().ConvertToInt();
     }
 }
 
