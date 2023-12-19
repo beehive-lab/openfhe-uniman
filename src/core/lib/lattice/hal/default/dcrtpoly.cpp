@@ -1440,8 +1440,8 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     uint128_t*          host_sum                = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
     uint128_t*          host_modpBarrettMu      = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
     m_vectors_struct*   host_ans_m_vectors      = (m_vectors_struct*) malloc(sizeP * sizeof(m_vectors_struct));
-    for (uint32_t q = 0; q < sizeQ; ++q) {
-        host_ans_m_vectors[q].data              = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
+    for (uint32_t p = 0; p < sizeP; ++p) {
+        host_ans_m_vectors[p].data              = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
     }
 
     cudaUtils.marshalDataForApproxSwitchCRTBasisKernel(ringDim, sizeQ, sizeP,
