@@ -119,7 +119,9 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
                                      ulong*             QHatInvModq,
                                      ulong*             QHatInvModqPrecon,
                                      uint128_t*         QHatModp,
-                                     uint128_t*         sum) {
+                                     uint128_t*         sum,
+                                     uint128_t*         modpBarrettMu,
+                                     m_vectors_struct*  ans_m_vectors) {
 
     for(int ri = 0; ri < ringDim; ri++) {
         //__int128 sum[sizeP];
@@ -140,6 +142,13 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
                 sum[j] += (uint128_t)xQHatInvModqi * QHatModp[i * sizeP + j];
             }
         }
+
+        for(int j = 0; j < sizeP; j++) {
+            //const NativeInteger& pj = ans.m_vectors[j].GetModulus();
+            ulong pj = ans_m_vectors[j].modulus;
+            //ans.m_vectors[j][ri]    = BarrettUint128ModUint64(sum[j], pj.ConvertToInt(), modpBarrettMu[j]);
+            ans_m_vectors[j].data[ri] = BarrettUint128ModUint64(sum[j], pj, modpBarrettMu[j]);
+        }
     }
 }
 
@@ -148,7 +157,9 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
                                     ulong*              host_QHatInvModq,
                                     ulong*              host_QHatInvModqPrecon,
                                     uint128_t*          host_QHatModp,
-                                    uint128_t*          host_sum) {
+                                    uint128_t*          host_sum,
+                                    uint128_t*          host_modpBarrettMu,
+                                    m_vectors_struct*   host_ans_m_vectors) {
 
     // debugging:
     //std::cout << "==> callApproxSwitchCRTBasisKernel" << std::endl;
@@ -160,6 +171,8 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     ulong*              device_QHatInvModqPrecon;
     uint128_t*          device_QHatModp;
     uint128_t*          device_sum;
+    uint128_t*          device_modpBarrettMu;
+    m_vectors_struct*   device_ans_m_vectors;
 
     // m_vectors
     // inspired by: https://stackoverflow.com/questions/30082991/memory-allocation-on-gpu-for-dynamic-array-of-structs
@@ -190,11 +203,27 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     cudaMalloc((void**)&device_sum,         sizeP * sizeof(uint128_t));
     cudaMemset(device_sum, 0, sizeP * sizeof(uint128_t));
 
+    // modpBarrettMu
+    cudaMalloc((void**)&device_modpBarrettMu, sizeP * sizeof(uint128_t));
+    cudaMemcpy(device_modpBarrettMu, host_modpBarrettMu, sizeP * sizeof(uint128_t), cudaMemcpyHostToDevice);
+
+    // ans_m_vectors
+    cudaMalloc((void**)&device_ans_m_vectors, sizeP * sizeof(m_vectors_struct));
+    cudaMemcpy(device_ans_m_vectors, host_ans_m_vectors, sizeP * sizeof(m_vectors_struct), cudaMemcpyHostToDevice);
+
+    unsigned long* tmp_device_ans_m_vectors_data[sizeP];
+
+    for (int p = 0; p < sizeP; ++p) {
+        cudaMalloc((void**)&(tmp_device_ans_m_vectors_data[p]), ringDim * sizeof(unsigned long));
+        cudaMemcpy(&(device_ans_m_vectors[p].data), &(tmp_device_ans_m_vectors_data[p]), sizeof(unsigned long*), cudaMemcpyHostToDevice);
+        //cudaMemcpy(tmp_data[q], host_m_vectors[q].data, ringDim * sizeof(unsigned long), cudaMemcpyHostToDevice);
+    }
+
 
     // cudaLaunchKernel
     dim3 blocks = dim3(1U, 1U, 1U); // Set the grid dimensions
     dim3 threads = dim3(1U, 1U, 1U); // Set the block dimensions
-    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, &device_sum};
+    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, &device_sum, &device_modpBarrettMu, &device_ans_m_vectors};
     // debugging:
     // printf("Before kernel launch\n");
     cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, 0U, nullptr);
@@ -206,7 +235,13 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     // debugging:
     //printf("After kernel launch\n");
 
+    // copy out the result sum
     cudaMemcpy(host_sum, device_sum, sizeP * sizeof(uint128_t), cudaMemcpyDeviceToHost);
+
+    // copy out the result ans vector
+    for(int p = 0; p < sizeP; p++) {
+        cudaMemcpy(host_ans_m_vectors[p].data, tmp_device_ans_m_vectors_data[p], ringDim * sizeof(unsigned long), cudaMemcpyDeviceToHost);
+    }
 
     // debugging: print sum result
     /*printf("gpu_sum size = %d\n", sizeP);
@@ -217,11 +252,19 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
         printf("gpu_sum[%d] = 0x%016llx%016llx\n", i, (unsigned long long)hi, (unsigned long long)lo);
     }*/
 
+    // debugging: print ans_m_vectors result -ok
+    /*int tmp_ri = ringDim-1;
+    for(int p = 0; p < sizeP; p++) {
+        std::cout << "gpu_ans_m_vectors[" << p << ", " << tmp_ri << "] = " << host_ans_m_vectors[p].data[tmp_ri] << std::endl;
+    }*/
+
     cudaFree(device_m_vectors);
     cudaFree(device_QHatInvModq);
     cudaFree(device_QHatInvModqPrecon);
     cudaFree(device_QHatModp);
     cudaFree(device_sum);
+    cudaFree(device_modpBarrettMu);
+    cudaFree(device_ans_m_vectors);
 
 }
 
