@@ -179,7 +179,7 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     cudaMalloc((void**)&device_m_vectors, sizeQ * sizeof(m_vectors_struct));
     cudaMemcpy(device_m_vectors, host_m_vectors, sizeQ * sizeof(m_vectors_struct), cudaMemcpyHostToDevice);
 
-    unsigned long* tmp_data[ringDim];
+    unsigned long* tmp_data[sizeQ];
 
     for (int q = 0; q < sizeQ; ++q) {
         cudaMalloc((void**)&(tmp_data[q]), ringDim * sizeof(unsigned long));
