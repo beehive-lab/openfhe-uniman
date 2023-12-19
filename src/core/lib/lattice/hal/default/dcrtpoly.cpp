@@ -1550,6 +1550,13 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
             const NativeInteger& pj = ans.m_vectors[j].GetModulus();
             ans.m_vectors[j][ri]    = BarrettUint128ModUint64(sum[j], pj.ConvertToInt(), modpBarrettMu[j]);
         }
+
+        // debugging: check ans_m_vectors - ok
+        /*if(ri == (ringDim-1)) {
+            for (usint a = 0; a < sizeP; a++) {
+                std::cout << "cpu_ans_m_vectors[" << a << ", " << ri << "] = " << ans.m_vectors[a][ri] << std::endl;
+            }
+        }*/
     }
 
     return ans;
