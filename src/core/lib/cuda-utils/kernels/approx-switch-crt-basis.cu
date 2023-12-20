@@ -119,13 +119,16 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
                                      ulong*             QHatInvModq,
                                      ulong*             QHatInvModqPrecon,
                                      uint128_t*         QHatModp,
-                                     uint128_t*         sum,
+                                     //uint128_t*         sum,
                                      uint128_t*         modpBarrettMu,
                                      m_vectors_struct*  ans_m_vectors) {
 
-    for(int ri = 0; ri < ringDim; ri++) {
+    int ri = blockIdx.x * blockDim.x + threadIdx.x;
+    //for(int ri = 0; ri < ringDim; ri++) {
+    if (ri < ringDim) {
         //__int128 sum[sizeP];
-        initSumArray(sum, sizeP);
+        //initSumArray(sum, sizeP);
+        uint128_t sum[4] = {0, 0, 0, 0};
         for(int i = 0; i < sizeQ; i++) {
             //const NativeInteger& xi     = m_vectors[i][ri];
             ulong xi = m_vectors[i].data[ri];
@@ -148,6 +151,7 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
             ulong pj = ans_m_vectors[j].modulus;
             //ans.m_vectors[j][ri]    = BarrettUint128ModUint64(sum[j], pj.ConvertToInt(), modpBarrettMu[j]);
             ans_m_vectors[j].data[ri] = BarrettUint128ModUint64(sum[j], pj, modpBarrettMu[j]);
+            //ans_m_vectors[j].data[ri] = ri;
         }
     }
 }
@@ -221,9 +225,11 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
 
 
     // cudaLaunchKernel
-    dim3 blocks = dim3(1U, 1U, 1U); // Set the grid dimensions
-    dim3 threads = dim3(1U, 1U, 1U); // Set the block dimensions
-    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, &device_sum, &device_modpBarrettMu, &device_ans_m_vectors};
+    //dim3 blocks = dim3(1U, 1U, 1U); // Set the grid dimensions
+    //cudaOccupancyMaxActiveBlocksPerMultiprocessor
+    dim3 blocks = dim3(16, 1U, 1U); // Set the grid dimensions
+    dim3 threads = dim3(1024, 1U, 1U); // Set the block dimensions
+    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, /*&device_sum,*/ &device_modpBarrettMu, &device_ans_m_vectors};
     // debugging:
     // printf("Before kernel launch\n");
     cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, 0U, nullptr);
