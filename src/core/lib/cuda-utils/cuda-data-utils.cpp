@@ -62,6 +62,15 @@ void cudaDataUtils::marshalDataForApproxSwitchCRTBasisKernel(uint32_t ringDim, u
     }
 }
 
+void cudaDataUtils::unmarshalDataForApproxSwitchCRTBasisKernel(uint32_t ringDim, uint32_t sizeP, std::vector<PolyImpl<NativeVector>>& ans_m_vectors, m_vectors_struct*  host_ans_m_vectors) {
+    for (usint j = 0; j < sizeP; j++) {
+        for(usint ri = 0; ri < ringDim; ri++) {
+            ans_m_vectors[j][ri] = NativeInteger(host_ans_m_vectors[j].data[ri]);
+        }
+    }
+
+}
+
 void cudaDataUtils::DeallocateMemoryForApproxSwitchCRTBasisKernel(int sizeQ,
                                                                   m_vectors_struct* host_m_vectors,
                                                                   unsigned long*    host_QHatInvModq,

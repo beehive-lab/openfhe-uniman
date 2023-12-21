@@ -32,6 +32,10 @@ public:
                                                          uint128_t*         host_modpBarrettMu,
                                                          m_vectors_struct*  host_ans_m_vectors);
 
+    static void unmarshalDataForApproxSwitchCRTBasisKernel(uint32_t ringDim, uint32_t sizeP,
+                                                           std::vector<PolyImpl<NativeVector>>& ans_m_vectors,
+                                                           m_vectors_struct*  host_ans_m_vectors);
+
     // deallocations
     static void DeallocateMemoryForApproxSwitchCRTBasisKernel(int sizeQ,
                                                               m_vectors_struct* host_m_vectors,
