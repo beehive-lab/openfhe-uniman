@@ -94,4 +94,19 @@ void cudaDataUtils::DeallocateMemoryForApproxSwitchCRTBasisKernel(int sizeQ,
     free(host_ans_m_vectors);
 }
 
+int cudaDataUtils::isValid(uint32_t ringDim, uint32_t sizeP,
+                           const std::vector<PolyImpl<NativeVector>> ans_m_vectors,
+                           m_vectors_struct*  host_ans_m_vectors) {
+
+    for (usint p = 0; p < sizeP; p++) {
+        for (usint ri = 0; ri < ringDim; ri++) {
+            if (ans_m_vectors[p][ri] != host_ans_m_vectors[p].data[ri]) {
+                std::cout << "ans_m_vectors[" << p << "][" << ri << "] = " << ans_m_vectors[p][ri] << ", host_ans_m_vectors[" << p << "].data[" << ri << "] = " << host_ans_m_vectors[p].data[ri] << std::endl;
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
 }
