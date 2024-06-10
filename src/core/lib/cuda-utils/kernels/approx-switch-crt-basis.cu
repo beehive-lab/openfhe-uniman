@@ -32,16 +32,103 @@ __device__ uint128_t Mul128(ulong a, ulong b) {
     return (uint128_t)a * (uint128_t)b;
 }
 
+/**
+ * add two 64-bit number with carry out, c = a + b
+ * @param a: operand 1
+ * @param b: operand 2
+ * @param c: c = a + b
+ * @return 1 if overflow occurs, 0 otherwise
+ */
+
+__device__ ulong AdditionWithCarryOut(ulong a, ulong b, ulong& c) {
+    a += b;
+    c = a;
+    if (a < b)
+        return 1;
+    else
+        return 0;
+}
+
+/**
+ * check if adding two 64-bit number can cause overflow
+ * @param a: operand 1
+ * @param b: operand 2
+ * @return 1 if overflow occurs, 0 otherwise
+ */
+__device__ ulong IsAdditionOverflow(ulong a, ulong b) {
+    a += b;
+    if (a < b)
+        return 1;
+    else
+        return 0;
+}
+
+/**
+ * Barrett reduction of 128-bit integer modulo 64-bit integer. Source: Menezes,
+ * Alfred; Oorschot, Paul; Vanstone, Scott. Handbook of Applied Cryptography,
+ * Section 14.3.3.
+ * @param a: operand (128-bit)
+ * @param m: modulus (64-bit)
+ * @param mu: 2^128/modulus (128-bit)
+ * @return result: 64-bit result = a mod m
+ */
+__device__ ulong BarrettUint128ModUint64(uint128_t a, ulong modulus, uint128_t mu) {
+    // (a * mu)/2^128 // we need the upper 128-bit of (256-bit product)
+    ulong result = 0, a_lo = 0, a_hi = 0, mu_lo = 0, mu_hi = 0, left_hi = 0, middle_lo = 0, middle_hi = 0, tmp1 = 0,
+          tmp2 = 0, carry = 0;
+    uint128_t middle = 0;
+
+    a_lo  = (uint64_t)a;
+    a_hi  = a >> 64;
+    mu_lo = (uint64_t)mu;
+    mu_hi = mu >> 64;
+
+    left_hi = (Mul128(a_lo, mu_lo)) >> 64;  // mul left parts, discard lower word
+
+    middle    = Mul128(a_lo, mu_hi);  // mul middle first
+    middle_lo = (uint64_t)middle;
+    middle_hi = middle >> 64;
+
+    // accumulate and check carry
+    carry = AdditionWithCarryOut(middle_lo, left_hi, tmp1);
+
+    tmp2 = middle_hi + carry;  // accumulate
+
+    middle    = Mul128(a_hi, mu_lo);  // mul middle second
+    middle_lo = (uint64_t)middle;
+    middle_hi = middle >> 64;
+
+    carry = IsAdditionOverflow(middle_lo, tmp1);  // check carry
+
+    left_hi = middle_hi + carry;  // accumulate
+
+    // now we have the lower word of (a * mu)/2^128, no need for higher word
+    tmp1 = a_hi * mu_hi + tmp2 + left_hi;
+
+    // subtract lower words only, higher words should be the same
+    result = a_lo - tmp1 * modulus;
+
+    while (result >= modulus)
+        result -= modulus;
+
+    return result;
+}
+
 __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
                                      m_vectors_struct*  m_vectors,
                                      ulong*             QHatInvModq,
                                      ulong*             QHatInvModqPrecon,
                                      uint128_t*         QHatModp,
-                                     uint128_t*         sum) {
+                                     //uint128_t*         sum,
+                                     uint128_t*         modpBarrettMu,
+                                     m_vectors_struct*  ans_m_vectors) {
 
-    for(int ri = 0; ri < ringDim; ri++) {
+    int ri = blockIdx.x * blockDim.x + threadIdx.x;
+    //for(int ri = 0; ri < ringDim; ri++) {
+    if (ri < ringDim) {
         //__int128 sum[sizeP];
-        initSumArray(sum, sizeP);
+        //initSumArray(sum, sizeP);
+        uint128_t sum[4] = {0, 0, 0, 0};
         for(int i = 0; i < sizeQ; i++) {
             //const NativeInteger& xi     = m_vectors[i][ri];
             ulong xi = m_vectors[i].data[ri];
@@ -58,6 +145,14 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
                 sum[j] += (uint128_t)xQHatInvModqi * QHatModp[i * sizeP + j];
             }
         }
+
+        for(int j = 0; j < sizeP; j++) {
+            //const NativeInteger& pj = ans.m_vectors[j].GetModulus();
+            ulong pj = ans_m_vectors[j].modulus;
+            //ans.m_vectors[j][ri]    = BarrettUint128ModUint64(sum[j], pj.ConvertToInt(), modpBarrettMu[j]);
+            ans_m_vectors[j].data[ri] = BarrettUint128ModUint64(sum[j], pj, modpBarrettMu[j]);
+            //ans_m_vectors[j].data[ri] = ri;
+        }
     }
 }
 
@@ -66,7 +161,9 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
                                     ulong*              host_QHatInvModq,
                                     ulong*              host_QHatInvModqPrecon,
                                     uint128_t*          host_QHatModp,
-                                    uint128_t*          host_sum) {
+                                    uint128_t*          host_sum,
+                                    uint128_t*          host_modpBarrettMu,
+                                    m_vectors_struct*   host_ans_m_vectors) {
 
     // debugging:
     //std::cout << "==> callApproxSwitchCRTBasisKernel" << std::endl;
@@ -78,13 +175,15 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     ulong*              device_QHatInvModqPrecon;
     uint128_t*          device_QHatModp;
     uint128_t*          device_sum;
+    uint128_t*          device_modpBarrettMu;
+    m_vectors_struct*   device_ans_m_vectors;
 
     // m_vectors
     // inspired by: https://stackoverflow.com/questions/30082991/memory-allocation-on-gpu-for-dynamic-array-of-structs
     cudaMalloc((void**)&device_m_vectors, sizeQ * sizeof(m_vectors_struct));
     cudaMemcpy(device_m_vectors, host_m_vectors, sizeQ * sizeof(m_vectors_struct), cudaMemcpyHostToDevice);
 
-    unsigned long* tmp_data[ringDim];
+    unsigned long* tmp_data[sizeQ];
 
     for (int q = 0; q < sizeQ; ++q) {
         cudaMalloc((void**)&(tmp_data[q]), ringDim * sizeof(unsigned long));
@@ -108,11 +207,29 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     cudaMalloc((void**)&device_sum,         sizeP * sizeof(uint128_t));
     cudaMemset(device_sum, 0, sizeP * sizeof(uint128_t));
 
+    // modpBarrettMu
+    cudaMalloc((void**)&device_modpBarrettMu, sizeP * sizeof(uint128_t));
+    cudaMemcpy(device_modpBarrettMu, host_modpBarrettMu, sizeP * sizeof(uint128_t), cudaMemcpyHostToDevice);
+
+    // ans_m_vectors
+    cudaMalloc((void**)&device_ans_m_vectors, sizeP * sizeof(m_vectors_struct));
+    cudaMemcpy(device_ans_m_vectors, host_ans_m_vectors, sizeP * sizeof(m_vectors_struct), cudaMemcpyHostToDevice);
+
+    unsigned long* tmp_device_ans_m_vectors_data[sizeP];
+
+    for (int p = 0; p < sizeP; ++p) {
+        cudaMalloc((void**)&(tmp_device_ans_m_vectors_data[p]), ringDim * sizeof(unsigned long));
+        cudaMemcpy(&(device_ans_m_vectors[p].data), &(tmp_device_ans_m_vectors_data[p]), sizeof(unsigned long*), cudaMemcpyHostToDevice);
+        //cudaMemcpy(tmp_data[q], host_m_vectors[q].data, ringDim * sizeof(unsigned long), cudaMemcpyHostToDevice);
+    }
+
 
     // cudaLaunchKernel
-    dim3 blocks = dim3(1U, 1U, 1U); // Set the grid dimensions
-    dim3 threads = dim3(1U, 1U, 1U); // Set the block dimensions
-    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, &device_sum};
+    //dim3 blocks = dim3(1U, 1U, 1U); // Set the grid dimensions
+    //cudaOccupancyMaxActiveBlocksPerMultiprocessor
+    dim3 blocks = dim3(16, 1U, 1U); // Set the grid dimensions
+    dim3 threads = dim3(1024, 1U, 1U); // Set the block dimensions
+    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, /*&device_sum,*/ &device_modpBarrettMu, &device_ans_m_vectors};
     // debugging:
     // printf("Before kernel launch\n");
     cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, 0U, nullptr);
@@ -124,7 +241,13 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     // debugging:
     //printf("After kernel launch\n");
 
+    // copy out the result sum
     cudaMemcpy(host_sum, device_sum, sizeP * sizeof(uint128_t), cudaMemcpyDeviceToHost);
+
+    // copy out the result ans vector
+    for(int p = 0; p < sizeP; p++) {
+        cudaMemcpy(host_ans_m_vectors[p].data, tmp_device_ans_m_vectors_data[p], ringDim * sizeof(unsigned long), cudaMemcpyDeviceToHost);
+    }
 
     // debugging: print sum result
     /*printf("gpu_sum size = %d\n", sizeP);
@@ -135,11 +258,19 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
         printf("gpu_sum[%d] = 0x%016llx%016llx\n", i, (unsigned long long)hi, (unsigned long long)lo);
     }*/
 
+    // debugging: print ans_m_vectors result -ok
+    /*int tmp_ri = ringDim-1;
+    for(int p = 0; p < sizeP; p++) {
+        std::cout << "gpu_ans_m_vectors[" << p << ", " << tmp_ri << "] = " << host_ans_m_vectors[p].data[tmp_ri] << std::endl;
+    }*/
+
     cudaFree(device_m_vectors);
     cudaFree(device_QHatInvModq);
     cudaFree(device_QHatInvModqPrecon);
     cudaFree(device_QHatModp);
     cudaFree(device_sum);
+    cudaFree(device_modpBarrettMu);
+    cudaFree(device_ans_m_vectors);
 
 }
 
