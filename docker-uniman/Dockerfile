@@ -6,6 +6,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     wget \
     curl \
+    vim \
     git \
     ca-certificates && \
     apt-get clean && \
@@ -36,4 +37,7 @@ WORKDIR /openfhe-uniman
 
 # Run command:
 # docker run --gpus all -it openfhe-uniman-gpu-cuda
+
+# Inside the docker run the example:
+# ./build/bin/examples/pke/simple-integers-bgvrns 
 
