@@ -212,6 +212,7 @@ if(WITH_CUDA)
         # Enable CUDA language support
         set(CUDAToolkit_ROOT "${CUDA_TOOLKIT_ROOT_DIR}")
         enable_language(CUDA)
+        include_directories("${CUDA_INCLUDE_DIRS}")
 
         cmake_policy(SET CMP0074 NEW)
 
