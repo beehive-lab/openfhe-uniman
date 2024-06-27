@@ -1529,23 +1529,23 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
             const NativeInteger& qi     = m_vectors[i].GetModulus();
             NativeInteger xQHatInvModqi = xi.ModMulFastConst(QHatInvModq[i], qi, QHatInvModqPrecon[i]);
             // debugging: check ModMulFastConst - ok
-            /*if(ri < 2) {
-                printf("cpu_ [%d][%d]: ModMulFastConst(%ld, %ld, %ld) = %ld\n", i, ri, xi.ConvertToInt(), QHatInvModq[i].ConvertToInt() ,qi.ConvertToInt(), xQHatInvModqi.ConvertToInt());
-            }*/
+            //if(ri < 2) {
+            //    printf("cpu_ [%d][%d]: ModMulFastConst(%ld, %ld, %ld) = %ld\n", i, ri, xi.ConvertToInt(), QHatInvModq[i].ConvertToInt() ,qi.ConvertToInt(), xQHatInvModqi.ConvertToInt());
+            //}
             for (usint j = 0; j < sizeP; j++) {
                 sum[j] += Mul128(xQHatInvModqi.ConvertToInt(), QHatModp[i][j].ConvertToInt());
             }
         }
 
         // debugging: check sum - ok
-        /*if(ri == (ringDim-1)) {
-            for (usint p = 0; p < sizeP; p++) {
-                uint128_t value = (uint128_t)sum[p];
-                uint64_t lo = (uint64_t) value;
-                uint64_t hi = (uint64_t) (value >> 64);
-                printf("cpu_sum[%d] = 0x%016llx%016llx\n", p, (unsigned long long)hi, (unsigned long long)lo);
-            }
-        }*/
+        //if(ri == (ringDim-1)) {
+        //    for (usint p = 0; p < sizeP; p++) {
+        //        uint128_t value = (uint128_t)sum[p];
+        //        uint64_t lo = (uint64_t) value;
+        //        uint64_t hi = (uint64_t) (value >> 64);
+        //        printf("cpu_sum[%d] = 0x%016llx%016llx\n", p, (unsigned long long)hi, (unsigned long long)lo);
+        //    }
+        //}
 
         for (usint j = 0; j < sizeP; j++) {
             const NativeInteger& pj = ans.m_vectors[j].GetModulus();
@@ -1553,11 +1553,11 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
         }
 
         // debugging: check ans_m_vectors - ok
-        /*if(ri == (ringDim-1)) {
-            for (usint a = 0; a < sizeP; a++) {
-                std::cout << "cpu_ans_m_vectors[" << a << ", " << ri << "] = " << ans.m_vectors[a][ri] << std::endl;
-            }
-        }*/
+        //if(ri == (ringDim-1)) {
+        //    for (usint a = 0; a < sizeP; a++) {
+        //        std::cout << "cpu_ans_m_vectors[" << a << ", " << ri << "] = " << ans.m_vectors[a][ri] << std::endl;
+        //    }
+        //}
     }
 
     cudaUtils.unmarshalDataForApproxSwitchCRTBasisKernel(ringDim, sizeP, ans.m_vectors, host_ans_m_vectors);
