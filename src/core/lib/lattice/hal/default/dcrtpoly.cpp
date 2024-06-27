@@ -1521,7 +1521,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     // CUDA implementation host code: end
     ////////////////////////////////////////////////////////
 
-    //#pragma omp parallel for
+    /*#pragma omp parallel for
     for (usint ri = 0; ri < ringDim; ri++) {
         std::vector<DoubleNativeInt> sum(sizeP);
         for (usint i = 0; i < sizeQ; i++) {
@@ -1558,7 +1558,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
         //        std::cout << "cpu_ans_m_vectors[" << a << ", " << ri << "] = " << ans.m_vectors[a][ri] << std::endl;
         //    }
         //}
-    }
+    }*/
 
     cudaUtils.unmarshalDataForApproxSwitchCRTBasisKernel(ringDim, sizeP, ans.m_vectors, host_ans_m_vectors);
     cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum, host_modpBarrettMu, host_ans_m_vectors);
