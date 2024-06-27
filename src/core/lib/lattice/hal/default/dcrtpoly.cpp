@@ -1514,7 +1514,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
                         "QHatModp[" << a << "] = " << (int64_t)tmp2 << (int64_t)(tmp2 >> 64) << std::endl;
     }*/
     callApproxSwitchCRTBasisKernel(ringDim, sizeP, sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum, host_modpBarrettMu, host_ans_m_vectors);
-//    cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum);
 
     ////////////////////////////////////////////////////////
     // CUDA implementation host code: end
@@ -1558,6 +1557,9 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
             }
         }*/
     }
+
+    cudaUtils.unmarshalDataForApproxSwitchCRTBasisKernel(ringDim, sizeP, ans.m_vectors, host_ans_m_vectors);
+    cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum, host_modpBarrettMu, host_ans_m_vectors);
 
     return ans;
 }
