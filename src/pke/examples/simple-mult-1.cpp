@@ -20,6 +20,10 @@ int main() {
     parameters.SetMultiplicativeDepth(1);
     parameters.SetPlaintextModulus(65537);
 
+    // Set GPU configuration
+    lbcrypto::cudaDataUtils::setGpuBlocks(8);
+    lbcrypto::cudaDataUtils::setGpuThreads(1024);
+
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
     // Enable features that you wish to use
     cryptoContext->Enable(PKE);
