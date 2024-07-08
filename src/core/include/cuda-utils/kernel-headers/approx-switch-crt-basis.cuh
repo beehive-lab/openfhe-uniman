@@ -17,7 +17,8 @@ using uint128_t = unsigned __int128;
 
 void callMyKernel(uint32_t ringDim, uint32_t sizeQ, uint32_t sizeP);
 
-void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
+void callApproxSwitchCRTBasisKernel(int gpuBlocks, int gpuThreads,
+                                    int ringDim, int sizeP, int sizeQ,
                                     m_vectors_struct*   host_m_vectors,
                                     ulong*              host_qhatinvmodq,
                                     ulong*              host_QHatInvModqPrecon,

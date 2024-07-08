@@ -10,9 +10,29 @@ namespace lbcrypto {
 
 using PolyType = PolyImpl<NativeVector>;
 
+int cudaDataUtils::gpuBlocks = 0;
+int cudaDataUtils::gpuThreads = 0;
+
 // constructor impl
 cudaDataUtils::cudaDataUtils() {
 
+}
+
+void cudaDataUtils::setGpuBlocks(int blocks) {
+    cudaDataUtils::gpuBlocks = blocks;
+    return;
+}
+
+void cudaDataUtils::setGpuThreads(int threads) {
+    cudaDataUtils::gpuThreads = threads;
+    return;
+}
+
+int cudaDataUtils::getGpuBlocks() {
+    return cudaDataUtils::gpuBlocks;
+}
+int cudaDataUtils::getGpuThreads() {
+    return cudaDataUtils::gpuThreads;
 }
 
 // data marshaling methods

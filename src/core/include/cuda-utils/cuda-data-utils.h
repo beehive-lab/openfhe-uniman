@@ -12,10 +12,20 @@ using PolyType = PolyImpl<NativeVector>;
 
 class cudaDataUtils {
 
+private:
+    static int gpuBlocks;
+    static int gpuThreads;
+
 public:
 
     // constructor
     cudaDataUtils();
+
+    static void setGpuBlocks(int blocks);
+    static void setGpuThreads(int threads);
+
+    static int getGpuBlocks();
+    static int getGpuThreads();
 
     // data marshaling methods
     static void marshalDataForApproxSwitchCRTBasisKernel(uint32_t ringDim, uint32_t sizeQ, uint32_t sizeP,

@@ -1429,6 +1429,9 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     ////////////////////////////////////////////////////////
     // CUDA implementation host code: entry point
     ////////////////////////////////////////////////////////
+    // get gpu configuration
+    const int gpuBlocks = cudaUtils.getGpuBlocks();
+    const int gpuThreads = cudaUtils.getGpuThreads();
     // allocate the host buffers
     // debugging:
     //std::cout << "==> allocate the host buffers" << std::endl;
@@ -1514,7 +1517,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
         std::cout <<    "host_modpBarrettMu[" << a << "] = " << (int64_t)tmp << (int64_t)(tmp >> 64) << ", " <<
                         "QHatModp[" << a << "] = " << (int64_t)tmp2 << (int64_t)(tmp2 >> 64) << std::endl;
     }*/
-    callApproxSwitchCRTBasisKernel(ringDim, sizeP, sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu, host_ans_m_vectors);
+    callApproxSwitchCRTBasisKernel(gpuBlocks, gpuThreads, ringDim, sizeP, sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu, host_ans_m_vectors);
 
     ////////////////////////////////////////////////////////
     // CUDA implementation host code: end
