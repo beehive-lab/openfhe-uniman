@@ -1439,7 +1439,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     unsigned long*      host_qhatinvmodq        = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
     unsigned long*      host_QHatInvModqPrecon  = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
     uint128_t*          host_qhatmodp           = (uint128_t*) malloc(sizeQ * sizeP * sizeof(uint128_t));
-    uint128_t*          host_sum                = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
     uint128_t*          host_modpBarrettMu      = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
     m_vectors_struct*   host_ans_m_vectors      = (m_vectors_struct*) malloc(sizeP * sizeof(m_vectors_struct));
     for (uint32_t p = 0; p < sizeP; ++p) {
@@ -1515,7 +1514,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
         std::cout <<    "host_modpBarrettMu[" << a << "] = " << (int64_t)tmp << (int64_t)(tmp >> 64) << ", " <<
                         "QHatModp[" << a << "] = " << (int64_t)tmp2 << (int64_t)(tmp2 >> 64) << std::endl;
     }*/
-    callApproxSwitchCRTBasisKernel(ringDim, sizeP, sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum, host_modpBarrettMu, host_ans_m_vectors);
+    callApproxSwitchCRTBasisKernel(ringDim, sizeP, sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu, host_ans_m_vectors);
 
     ////////////////////////////////////////////////////////
     // CUDA implementation host code: end
@@ -1561,7 +1560,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     }*/
 
     cudaUtils.unmarshalDataForApproxSwitchCRTBasisKernel(ringDim, sizeP, ans.m_vectors, host_ans_m_vectors);
-    cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_sum, host_modpBarrettMu, host_ans_m_vectors);
+    cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu, host_ans_m_vectors);
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);

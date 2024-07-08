@@ -22,7 +22,6 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
                                     ulong*              host_qhatinvmodq,
                                     ulong*              host_QHatInvModqPrecon,
                                     uint128_t*          host_qhatmodp,
-                                    uint128_t*          host_sum,
                                     uint128_t*          host_modpBarrettMu,
                                     m_vectors_struct*   host_ans_m_vectors);
 

@@ -76,7 +76,6 @@ void cudaDataUtils::DeallocateMemoryForApproxSwitchCRTBasisKernel(int sizeQ,
                                                                   unsigned long*    host_QHatInvModq,
                                                                   unsigned long*    host_QHatInvModqPrecon,
                                                                   uint128_t *       host_QHatModp,
-                                                                  uint128_t*        host_sum,
                                                                   uint128_t*        host_modpBarrettMu,
                                                                   m_vectors_struct* host_ans_m_vectors) {
 
@@ -89,7 +88,6 @@ void cudaDataUtils::DeallocateMemoryForApproxSwitchCRTBasisKernel(int sizeQ,
     free(host_QHatInvModq);
     free(host_QHatInvModqPrecon);
     free(host_QHatModp);
-    free(host_sum);
     free(host_modpBarrettMu);
     free(host_ans_m_vectors);
 }

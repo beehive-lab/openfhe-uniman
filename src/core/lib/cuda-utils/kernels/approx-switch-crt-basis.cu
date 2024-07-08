@@ -119,7 +119,7 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
                                      ulong*             QHatInvModq,
                                      ulong*             QHatInvModqPrecon,
                                      uint128_t*         QHatModp,
-                                     //uint128_t*         sum,
+                                     uint128_t*         sum,
                                      uint128_t*         modpBarrettMu,
                                      m_vectors_struct*  ans_m_vectors) {
 
@@ -128,7 +128,6 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
     if (ri < ringDim) {
         //__int128 sum[sizeP];
         //initSumArray(sum, sizeP);
-        uint128_t sum[4] = {0, 0, 0, 0};
         for(int i = 0; i < sizeQ; i++) {
             //const NativeInteger& xi     = m_vectors[i][ri];
             ulong xi = m_vectors[i].data[ri];
@@ -142,7 +141,7 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
             }*/
             for(int j = 0; j < sizeP; j++) {
                 // sum[j] += Mul128(xQHatInvModqi.ConvertToInt(), QHatModp[i][j].ConvertToInt());
-                sum[j] += (uint128_t)xQHatInvModqi * QHatModp[i * sizeP + j];
+                sum[ri * sizeP + j] += (uint128_t)xQHatInvModqi * QHatModp[i * sizeP + j];
             }
         }
 
@@ -150,7 +149,7 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
             //const NativeInteger& pj = ans.m_vectors[j].GetModulus();
             ulong pj = ans_m_vectors[j].modulus;
             //ans.m_vectors[j][ri]    = BarrettUint128ModUint64(sum[j], pj.ConvertToInt(), modpBarrettMu[j]);
-            ans_m_vectors[j].data[ri] = BarrettUint128ModUint64(sum[j], pj, modpBarrettMu[j]);
+            ans_m_vectors[j].data[ri] = BarrettUint128ModUint64(sum[ri * sizeP + j], pj, modpBarrettMu[j]);
             //ans_m_vectors[j].data[ri] = ri;
         }
     }
@@ -161,7 +160,6 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
                                     ulong*              host_QHatInvModq,
                                     ulong*              host_QHatInvModqPrecon,
                                     uint128_t*          host_QHatModp,
-                                    uint128_t*          host_sum,
                                     uint128_t*          host_modpBarrettMu,
                                     m_vectors_struct*   host_ans_m_vectors) {
 
@@ -204,8 +202,8 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     cudaMemcpy(device_QHatModp, host_QHatModp, sizeQ * sizeP * sizeof(uint128_t), cudaMemcpyHostToDevice);
 
     // sum
-    cudaMalloc((void**)&device_sum,         sizeP * sizeof(uint128_t));
-    cudaMemset(device_sum, 0, sizeP * sizeof(uint128_t));
+    cudaMalloc((void**)&device_sum,         sizeP * ringDim * sizeof(uint128_t));
+    cudaMemset(device_sum, 0, sizeP * ringDim * sizeof(uint128_t));
 
     // modpBarrettMu
     cudaMalloc((void**)&device_modpBarrettMu, sizeP * sizeof(uint128_t));
@@ -229,7 +227,7 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     //cudaOccupancyMaxActiveBlocksPerMultiprocessor
     dim3 blocks = dim3(16, 1U, 1U); // Set the grid dimensions
     dim3 threads = dim3(1024, 1U, 1U); // Set the block dimensions
-    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, /*&device_sum,*/ &device_modpBarrettMu, &device_ans_m_vectors};
+    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, &device_sum, &device_modpBarrettMu, &device_ans_m_vectors};
     // debugging:
     // printf("Before kernel launch\n");
     cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, 0U, nullptr);
@@ -240,9 +238,6 @@ void callApproxSwitchCRTBasisKernel(int ringDim, int sizeP, int sizeQ,
     cudaDeviceSynchronize();
     // debugging:
     //printf("After kernel launch\n");
-
-    // copy out the result sum
-    cudaMemcpy(host_sum, device_sum, sizeP * sizeof(uint128_t), cudaMemcpyDeviceToHost);
 
     // copy out the result ans vector
     for(int p = 0; p < sizeP; p++) {
