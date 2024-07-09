@@ -45,6 +45,18 @@ file (GLOB_RECURSE CORE_SRC_FILES CONFIGURE_DEPENDS lib/*.c lib/*.cpp lib/utils/
 
 list(APPEND CORE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include")
 list(APPEND CORE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+
+# Find and exclude CUDA-related files when CUDA is not used
+if(NOT WITH_CUDA)
+	# Find CUDA-related files
+	file(GLOB_RECURSE CUDA_UTILS_CPP_FILES lib/cuda-utils/*.cpp)
+	file(GLOB_RECURSE CUDA_UTILS_H_FILES include/cuda-utils/*.h)
+
+	# Remove them from the source files list
+	list(REMOVE_ITEM CORE_SRC_FILES ${CUDA_UTILS_CPP_FILES})
+	list(REMOVE_ITEM CORE_SRC_FILES ${CUDA_UTILS_H_FILES})
+endif ()
+
 include_directories(${CORE_INCLUDE_DIRS})
 set(CORE_INCLUDE_DIRS "${CORE_INCLUDE_DIRS}" CACHE INTERNAL "")
 

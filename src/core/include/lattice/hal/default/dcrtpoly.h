@@ -50,7 +50,9 @@
 #include "lattice/ildcrtparams.h"
 #include "lattice/hal/dcrtpoly-interface.h"
 #include "math/distrgen.h"
+#if defined(WITH_CUDA)
 #include "cuda-utils/cuda-data-utils.h"
+#endif
 
 namespace lbcrypto {
 
@@ -69,7 +71,9 @@ namespace lbcrypto {
 template <typename VecType>
 class DCRTPolyImpl : public DCRTPolyInterface<DCRTPolyImpl<VecType>, VecType, NativeVector, PolyImpl> {
 public:
+ #if defined(WITH_CUDA)
     cudaDataUtils cudaUtils;
+ #endif
     using Integer = typename VecType::Integer;
     using Params  = ILDCRTParams<Integer>;
 

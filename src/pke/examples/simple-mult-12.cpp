@@ -20,9 +20,11 @@ int main() {
     parameters.SetMultiplicativeDepth(12);
     parameters.SetPlaintextModulus(65537);
 
+    #if defined(WITH_CUDA)
     // Set GPU configuration
     lbcrypto::cudaDataUtils::setGpuBlocks(32);
     lbcrypto::cudaDataUtils::setGpuThreads(1024);
+    #endif
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
     // Enable features that you wish to use
