@@ -1,5 +1,10 @@
 # Build Instructions with CUDA
 
+## Requirements
+We have implemented and tested using the following environment:
+1. Cmake version 3.22
+2. CUDA version 12.2
+
 To successfully build with CUDA the following environment configurations are needed:
 
 1. Locate the installation path of CUDAToolkit:
