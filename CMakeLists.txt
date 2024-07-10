@@ -204,11 +204,7 @@ endif()
 
 # CUDA compiler flags
 if(WITH_CUDA)
-    if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
-        message(FATAL_ERROR "Build with CUDA requires at least cmake 3.17.0")
-    else ()
-        include(cuda/cuda.cmake)
-    endif()
+    include(cuda/cuda-configs.cmake)
 endif ()
 
 if(BUILD_STATIC)

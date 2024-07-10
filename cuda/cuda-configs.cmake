@@ -1,3 +1,7 @@
+if(${CMAKE_VERSION} VERSION_LESS "3.22.0")
+    message(FATAL_ERROR "Build with CUDA requires at least cmake 3.22.0")
+endif ()
+
 # inspired by: https://github.com/pytorch/pytorch/blob/59281d563154b82d60b03702095a3fe3cdd45e98/cmake/public/cuda.cmake
 find_package(CUDA)
 # Enable CUDA language support
