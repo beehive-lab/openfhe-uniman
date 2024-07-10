@@ -87,7 +87,7 @@ option( WITH_INTEL_HEXL "Use Intel HEXL library"                                
 option( WITH_NATIVEOPT "Use machine-specific optimizations"                     OFF )
 option( WITH_COVTEST "Turn on to enable coverage testing"                       OFF )
 option( USE_MACPORTS "Use MacPorts installed packages"                          OFF )
-option( WITH_CUDA "Use CUDA kernels"                                            ON  )
+option( WITH_CUDA "Use CUDA kernels"                                            OFF )
 
 # Set required number of bits for native integer in build by setting NATIVE_SIZE to 64 or 128
 if( NOT NATIVE_SIZE )

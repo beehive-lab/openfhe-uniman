@@ -27,7 +27,7 @@ export LD_LIBRARY_PATH=$CUDAToolkit_ROOT/lib64:$LD_LIBRARY_PATH
 3. Build the cmake project:
 ```commandline
 cd openfhe-uniman/
-cmake .
+cmake -DWITH_CUDA=ON .
 make
 ```
 
