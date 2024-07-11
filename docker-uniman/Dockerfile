@@ -23,7 +23,7 @@ RUN git clone https://github.com/beehive-lab/openfhe-uniman.git && \
     git checkout gpu-cuda && \
     mkdir build && \
     cd build && \
-    cmake .. && \
+    cmake -DWITH_CUDA=ON .. && \
     make
 
 # Set the working directory
