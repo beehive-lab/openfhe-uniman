@@ -2,9 +2,10 @@
 
 - **`build.sh`**: Builds the Docker image.
 - **`run.sh`**: Runs the Docker container and executes the example.
+- **`run_bdt_server.sh`**: Runs the Docker container and executes an example of a binary decision tree application.
 - **`README.md`**: Provides usage instructions and troubleshooting tips.
 
 Ensure you save each script with the correct file extension and make them executable with:
 
 ```bash
-chmod +x build.sh run.sh
+chmod +x build.sh run.sh run_bdt_server.sh
