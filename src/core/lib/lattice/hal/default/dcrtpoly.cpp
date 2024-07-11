@@ -35,6 +35,7 @@
 
 #include <fstream>
 #include <memory>
+#include <utils/timers.h>
 
 #include "lattice/lat-hal.h"
 #include "utils/debug.h"
@@ -1420,7 +1421,10 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     const std::shared_ptr<DCRTPolyImpl::Params> paramsQ, const std::shared_ptr<DCRTPolyImpl::Params> paramsP,
     const std::vector<NativeInteger>& QHatInvModq, const std::vector<NativeInteger>& QHatInvModqPrecon,
     const std::vector<std::vector<NativeInteger>>& QHatModp, const std::vector<DoubleNativeInt>& modpBarrettMu) const {
-    auto start = std::chrono::high_resolution_clock::now();
+
+    TimeVar t;
+    TIC(t);
+
     DCRTPolyType ans(paramsP, this->GetFormat(), true);
 
     usint ringDim = this->GetRingDimension();
@@ -1494,9 +1498,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu, host_ans_m_vectors);
 #endif
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    std::cout << "Time taken in ApproxSwitchCRTBasis: " << duration.count() << " ns." << std::endl;
+    accumulateTimer(approxSwitchTimer, TOC_MS(t));
 
     return ans;
 }
