@@ -1,3 +1,5 @@
+#include <utils/timers.h>
+
 #include "openfhe.h"
 
 using namespace lbcrypto;
@@ -76,6 +78,8 @@ int main() {
     // Output results
     std::cout << "\nResults of homomorphic computations" << std::endl;
     std::cout << "#1 * #2 * #3: " << plaintextMultResult << std::endl;
+
+    printTimers();
 
     return 0;
 
