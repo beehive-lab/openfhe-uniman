@@ -1,10 +1,10 @@
-#include "openfhe.h"
+#include "../../include/openfhe.h"
 
 // header files needed for serialization
-#include "ciphertext-ser.h"
-#include "cryptocontext-ser.h"
-#include "key/key-ser.h"
-#include "scheme/bgvrns/bgvrns-ser.h"
+#include "../../include/ciphertext-ser.h"
+#include "../../include/cryptocontext-ser.h"
+#include "../../include/key/key-ser.h"
+#include "../../include/scheme/bgvrns/bgvrns-ser.h"
 
 using namespace lbcrypto;
 
