@@ -1428,7 +1428,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     DCRTPolyType ans(paramsP, this->GetFormat(), true);
 
     usint ringDim = this->GetRingDimension();
-    std::cout << "ringDim =" << ringDim << std::endl;
     usint sizeQ   = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
     usint sizeP   = ans.m_vectors.size();
 
