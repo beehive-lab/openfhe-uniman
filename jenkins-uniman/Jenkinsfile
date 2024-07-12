@@ -1,0 +1,90 @@
+pipeline {
+    agent any
+
+    environment {
+        GITHUB_REPO = 'https://github.com/beehive-lab/openfhe-uniman'
+        BUILD_DIR = 'build'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git credentialsId: 'jenkins-xps', url: 'git@github.com:beehive-lab/openfhe-uniman.git'
+            }
+        }
+
+        stage('Build Configurations') {
+            parallel {
+                stage('CPU') {
+                    steps {
+                        script {
+                            sh 'mkdir -p ${BUILD_DIR}/cpu'
+                            sh 'cd ${BUILD_DIR}/cpu'
+                            sh 'cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_OPENMP=OFF -DWITH_CUDA=OFF ../..'
+                            sh 'make'
+                        }
+                    }
+                }
+                /* stage('CPU-OpenMP') {
+                    steps {
+                        script {
+                            sh 'mkdir -p ${BUILD_DIR}/cpu-openmp'
+                            sh 'cd ${BUILD_DIR}/cpu-openmp'
+                            sh 'cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_OPENMP=ON -DWITH_CUDA=OFF ../..'
+                            sh 'make'
+                        }
+                    }
+                } */
+                stage('CUDA') {
+                    steps {
+                        script {
+                            sh 'mkdir -p ${BUILD_DIR}/cuda'
+                            sh 'cd ${BUILD_DIR}/cuda'
+                            sh 'cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_OPENMP=OFF -DWITH_CUDA=ON ../..'
+                            sh 'make'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Run CPU Applications') {
+            steps {
+                script {
+                    runTests('cpu')
+                }
+            }
+        }
+
+        /* stage('Run CPU-OpenMP Applications') {
+            steps {
+                script {
+                    runTests('cpu-openmp')
+                }
+            }
+        } */
+
+        stage('Run CUDA Applications') {
+            steps {
+                script {
+                    runTests('cuda')
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            junit '**/test-results/*.xml'
+            archiveArtifacts artifacts: '**/build/**/*', allowEmptyArchive: true
+        }
+    }
+}
+
+def runTests(config) {
+    //def apps = ['simple-mult-1', 'simple-mult-5', 'simple-mult-12', 'simple-mult-24', 'bdt-server-with-treebuilder']
+    def apps = ['simple-mult-1', 'simple-mult-5']
+    apps.each { app ->
+        sh "${BUILD_DIR}/${config}/bin/examples/encrypt/${app}"
+    }
+}
