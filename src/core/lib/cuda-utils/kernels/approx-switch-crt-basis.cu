@@ -155,6 +155,41 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
     }
 }
 
+void approxSwitchCRTBasisKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+    //std::cout << "New approxSwitchCRTBasisKernelWrapper" << std::endl;
+    cudaError_t         cudaStatus;
+
+    // Calculate resources needed
+    int smCount;
+    cudaDeviceGetAttribute(&smCount, cudaDevAttrMultiProcessorCount, 0);
+
+    cudaFuncAttributes attr;
+    cudaFuncGetAttributes(&attr, approxSwitchCRTBasis);
+
+    // Calculate the total number of registers and shared memory usage
+    int totalThreadsPerBlock = threads.x;
+    int sharedMemPerBlock = attr.sharedSizeBytes;
+    int numRegsPerThread = attr.numRegs;
+
+    //std::cout << "Total threads per block: " << totalThreadsPerBlock << std::endl;
+    //std::cout << "Total shared memory per block: " << sharedMemPerBlock << " bytes" << std::endl;
+    //std::cout << "Number of registers per thread: " << numRegsPerThread << std::endl;
+    //std::cout << "Max threads per multiprocessor: " << attr.maxThreadsPerBlock << std::endl;
+    //std::cout << "Number of multiprocessors: " << smCount << std::endl;
+
+    //cudaDeviceSynchronize();
+    cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, 0U, nullptr);
+    if (cudaStatus != cudaSuccess) {
+        printf("approxSwitchCRTBasis kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
+        //return;
+        exit(-1);
+    }
+    //cudaDeviceSynchronize();
+
+    //std::cout << "End New approxSwitchCRTBasisKernelWrapper" << std::endl;
+
+}
+
 void callApproxSwitchCRTBasisKernel(int gpuBlocks, int gpuThreads,
                                     int ringDim, int sizeP, int sizeQ,
                                     m_vectors_struct*   host_m_vectors,
@@ -163,6 +198,8 @@ void callApproxSwitchCRTBasisKernel(int gpuBlocks, int gpuThreads,
                                     uint128_t*          host_QHatModp,
                                     uint128_t*          host_modpBarrettMu,
                                     m_vectors_struct*   host_ans_m_vectors) {
+
+    std::cout << "[callApproxSwitchCRTBasisKernel]: sizeP = " << sizeP << ", sizeQ = " << sizeQ << std::endl;
 
     // debugging:
     //std::cout << "==> callApproxSwitchCRTBasisKernel" << std::endl;
@@ -268,7 +305,25 @@ void callApproxSwitchCRTBasisKernel(int gpuBlocks, int gpuThreads,
     cudaFree(device_modpBarrettMu);
     cudaFree(device_ans_m_vectors);
 
+    //std::cout << "END Old callApproxSwitchCRTBasisKernel" << std::endl;
+
 }
+
+void printMemoryInfo() {
+    size_t freeMem;
+    size_t totalMem;
+
+    cudaError_t err = cudaMemGetInfo(&freeMem, &totalMem);
+    if (err != cudaSuccess) {
+        std::cerr << "Error getting memory info: " << cudaGetErrorString(err) << std::endl;
+        return;
+    }
+
+    std::cout << "Total device memory: " << totalMem / (1024 * 1024) << " MB" << std::endl;
+    std::cout << "Free device memory: " << freeMem / (1024 * 1024) << " MB" << std::endl;
+    std::cout << "Used device memory: " << (totalMem - freeMem) / (1024 * 1024) << " MB" << std::endl;
+}
+
 
 /**
  * A dummy CUDA kernel.

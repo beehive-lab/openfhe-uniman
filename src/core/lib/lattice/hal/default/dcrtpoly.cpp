@@ -33,6 +33,7 @@
   Implementation of the integer lattice using double-CRT representations
  */
 
+#include <cassert>
 #include <fstream>
 #include <memory>
 #include <utils/timers.h>
@@ -1487,6 +1488,10 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
                                                        host_modpBarrettMu,
                                                        host_ans_m_vectors);
 
+    cudaUtils.printParams(sizeQ, sizeP, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu);
+
+    cudaUtils.print_host_m_vectors(sizeQ, host_m_vectors);
+
     // invoke CUDA kernel
     callApproxSwitchCRTBasisKernel(gpuBlocks, gpuThreads, ringDim, sizeP, sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu, host_ans_m_vectors);
 
@@ -1545,6 +1550,7 @@ void DCRTPolyImpl<VecType>::ApproxModUp(const std::shared_ptr<Params> paramsQ, c
     usint sizeP  = paramsP->GetParams().size();
     usint sizeQP = paramsQP->GetParams().size();
 
+    std::cout << "Call from ApproxModUp" << std::endl;
     DCRTPolyType partP =
         ApproxSwitchCRTBasis(paramsQ, paramsP, QHatInvModq, QHatInvModqPrecon, QHatModp, modpBarrettMu);
 
@@ -1577,6 +1583,103 @@ void DCRTPolyImpl<VecType>::ApproxModUp(const std::shared_ptr<Params> paramsQ, c
 }
 
 template <typename VecType>
+DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
+    const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
+    const std::vector<NativeInteger>& PInvModq, const std::vector<NativeInteger>& PInvModqPrecon,
+    const std::vector<NativeInteger>& PHatInvModp, const std::vector<NativeInteger>& PHatInvModpPrecon,
+    const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
+    const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
+    const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
+    std::shared_ptr<cudaPortalForApproxModDown> portal) const {
+    std::cout << "[START] ApproxModDownCUDA" << std::endl;
+    usint sizeQP = m_vectors.size();
+    usint sizeP  = paramsP->GetParams().size();
+    usint sizeQ  = sizeQP - sizeP;
+
+    DCRTPolyType partP(paramsP, this->GetFormat(), true);
+
+    for (usint i = sizeQ, j = 0; i < sizeQP; i++, j++) {
+        partP.m_vectors[j] = m_vectors[i];
+    }
+
+    partP.SetFormat(COEFFICIENT);
+
+    // Multiply everything by -t^(-1) mod P (BGVrns only)
+    if (t > 0) {
+        #pragma omp parallel for
+        for (usint j = 0; j < sizeP; j++) {
+            partP.m_vectors[j] *= tInvModp[j];
+        }
+    }
+
+    /*DCRTPolyType partPSwitchedToQ =
+        partP.ApproxSwitchCRTBasis(paramsP, paramsQ, PHatInvModp, PHatInvModpPrecon, PHatModq, modqBarrettMu);*/
+
+    // replace approxSwitchCRTBasis call with:
+    //DCRTPolyType partPSwitchedToQ(paramsQ, partP->GetFormat(), true);
+    DCRTPolyType partPSwitchedToQ(paramsQ, partP.GetFormat(), true);
+
+    //usint ringDim_approx = partP.GetRingDimension();
+    //usint sizeQ_approx   = (partP.m_vectors.size() > paramsP->GetParams().size()) ? paramsP->GetParams().size() : partP.m_vectors.size();
+    //usint sizeP_approx   = partPSwitchedToQ.m_vectors.size();
+
+    assert(partP.GetRingDimension() == portal->getParamsData()->getRingDim()   && "ringDim_approx should be equal to paramsData.ringDim");
+    assert((partP.m_vectors.size() > paramsP->GetParams().size()) ? paramsP->GetParams().size() : partP.m_vectors.size() == portal->getParamsData()->getSizeQ()       && "sizeQ_approx should be equal to paramsData.sizeQ");
+    assert(partPSwitchedToQ.m_vectors.size() == portal->getParamsData()->getSizeP()       && "sizeP_approx should be equal to paramsData.sizeP");
+
+
+    // get gpu configuration
+    const int gpuBlocks = cudaUtils.getGpuBlocks();
+    const int gpuThreads = cudaUtils.getGpuThreads();
+
+    // marshal work data
+    portal->marshalWorkData(partP.m_vectors, partPSwitchedToQ.m_vectors);
+
+    // transfer work data
+    portal->copyInWorkData();
+
+    portal->print_host_m_vectors();
+
+    portal->invokeKernelOfApproxSwitchCRTBasis(gpuBlocks, gpuThreads);
+
+    portal->copyOutResult();
+
+    portal->unmarshalWorkData(partPSwitchedToQ.m_vectors);
+
+    /*std::cout << "DEBUG Print: partPSwitchedToQ.m_vectors - ApproxModDownCUDA " << std::endl;
+    for (uint32_t p = 0; p < sizeP_approx; p++) {
+        std::cout << "partPSwitchedToQ.m_vectors[" << p << "][0]= " << partPSwitchedToQ.m_vectors[p][0] << std::endl;
+        std::cout << "partPSwitchedToQ.m_vectors[" << p << "][1]= " << partPSwitchedToQ.m_vectors[p][1] << std::endl;
+        std::cout << "partPSwitchedToQ.m_vectors[" << p << "][2]= " << partPSwitchedToQ.m_vectors[p][2] << std::endl;
+    }*/
+
+    // Combine the switched DCRTPoly with the Q part of this to get the result
+    DCRTPolyType ans(paramsQ, EVALUATION, true);
+    uint32_t diffQ = paramsQ->GetParams().size() - sizeQ;
+    if (diffQ > 0)
+        ans.DropLastElements(diffQ);
+
+    // Multiply everything by t mod Q (BGVrns only)
+    if (t > 0) {
+        #pragma omp parallel for
+        for (usint i = 0; i < sizeQ; i++) {
+            partPSwitchedToQ.m_vectors[i] *= t;
+        }
+    }
+
+    partPSwitchedToQ.SetFormat(EVALUATION);
+
+    #pragma omp parallel for
+    for (usint i = 0; i < sizeQ; i++) {
+        auto diff        = m_vectors[i] - partPSwitchedToQ.m_vectors[i];
+        ans.m_vectors[i] = diff * PInvModq[i];
+    }
+    std::cout << "[END] ApproxModDownCUDA" << std::endl;
+
+    return ans;
+}
+
+template <typename VecType>
 DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
     const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
     const std::vector<NativeInteger>& PInvModq, const std::vector<NativeInteger>& PInvModqPrecon,
@@ -1584,6 +1687,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
     const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
     const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon) const {
+    std::cout << "[START] ApproxModDown" << std::endl;
     usint sizeQP = m_vectors.size();
     usint sizeP  = paramsP->GetParams().size();
     usint sizeQ  = sizeQP - sizeP;
@@ -1604,8 +1708,17 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
         }
     }
 
+    //std::cout << "Call from ApproxModDown" << std::endl;
     DCRTPolyType partPSwitchedToQ =
         partP.ApproxSwitchCRTBasis(paramsP, paramsQ, PHatInvModp, PHatInvModpPrecon, PHatModq, modqBarrettMu);
+    //std::cout << "End from ApproxModDown" << std::endl;
+
+    std::cout << "DEBUG Print: partPSwitchedToQ.m_vectors - ApproxModDown " << std::endl;
+    for (uint32_t p = 0; p < partPSwitchedToQ.m_vectors.size(); p++) {
+        std::cout << "partPSwitchedToQ.m_vectors[" << p << "][0]= " << partPSwitchedToQ.m_vectors[p][0] << std::endl;
+        std::cout << "partPSwitchedToQ.m_vectors[" << p << "][1]= " << partPSwitchedToQ.m_vectors[p][1] << std::endl;
+        std::cout << "partPSwitchedToQ.m_vectors[" << p << "][2]= " << partPSwitchedToQ.m_vectors[p][2] << std::endl;
+    }
 
     // Combine the switched DCRTPoly with the Q part of this to get the result
     DCRTPolyType ans(paramsQ, EVALUATION, true);
@@ -1629,6 +1742,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
         ans.m_vectors[i] = diff * PInvModq[i];
     }
 
+    std::cout << "[END] ApproxModDown" << std::endl;
     return ans;
 }
 

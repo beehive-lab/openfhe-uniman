@@ -4,21 +4,20 @@
 #include <cstdint> // for uint32_t type
 #include <cuda_runtime.h>
 #include <cuda-utils/cuda-data-utils.h>
-#include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
 
 namespace lbcrypto {
-
-class cudaPortalForParamsData {
-
-protected:
-
-    cudaStream_t paramsStream;
+    /**
+     * This class: 1) holds all data related to parameters (QHatInvModq, QHatInvModqPrecon, QhatModp, modpBarrettMu)
+     * and, 2) implements all functionality needed related to CUDA for these data.
+     */
+    class cudaPortalForParamsData {
 
 private:
+    cudaStream_t        paramsStream;
 
-    uint32_t             ringDim;
-    uint32_t             sizeP;
-    uint32_t             sizeQ;
+    uint32_t            ringDim;
+    uint32_t            sizeP;
+    uint32_t            sizeQ;
 
     unsigned long*      host_qhatinvmodq;
     unsigned long*      host_QHatInvModqPrecon;
@@ -30,13 +29,28 @@ private:
     uint128_t*          device_QHatModp;
     uint128_t*          device_modpBarrettMu;
 
+    void allocateHostParams();
+
+    static void handleMallocError(const std::string& allocationName, void* ptr);
+    static void freePtrAndHandleError(const std::string& operation, void* ptr);
+    static void freeCUDAPtrAndHandleError(void* device_ptr);
+    static void handleCUDAError(const std::string& operation, cudaError_t err);
+
+    void createCUDAStream();
+    void destroyCUDAStream();
+
+    void freeHostMemory() const;
+    void freeDeviceMemory() const;
+
 public:
 
-    //constructor
+    // Constructor
     cudaPortalForParamsData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ);
 
+    // Destructor
     ~cudaPortalForParamsData();
 
+    // Get Functions
     uint32_t            getRingDim();
     uint32_t            getSizeP();
     uint32_t            getSizeQ();
@@ -48,19 +62,16 @@ public:
     uint128_t*          getDevice_QHatModp();
     uint128_t*          getDevice_modpBarrettMu();
 
-    static void printUint128(unsigned __int128 value);
-
-    void printParams();
-
-    void allocateHostParams(uint32_t sizeP, uint32_t sizeQ);
-
-    void marshalParams(uint32_t sizeP, uint32_t sizeQ,
-                       const std::vector<NativeInteger>& QHatInvModq,
+    void marshalParams(const std::vector<NativeInteger>& QHatInvModq,
                        const std::vector<NativeInteger>& QHatInvModqPrecon,
                        const std::vector<std::vector<NativeInteger>>& QHatModp,
-                       const std::vector<DoubleNativeInt>& modpBarrettMu);
+                       const std::vector<DoubleNativeInt>& modpBarrettMu) const;
 
-    void copyInParams(uint32_t sizeP, uint32_t sizeQ);
+    void copyInParams();
+
+    static void printUint128(unsigned __int128 value);
+
+    void printParams() const;
 };
 }
 

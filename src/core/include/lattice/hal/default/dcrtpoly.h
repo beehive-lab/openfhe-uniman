@@ -52,6 +52,7 @@
 #include "math/distrgen.h"
 #if defined(WITH_CUDA)
 #include "cuda-utils/cuda-data-utils.h"
+#include "cuda-utils/cudaPortalForApproxModDown.h"
 #endif
 
 namespace lbcrypto {
@@ -920,6 +921,21 @@ public:
         const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
         const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
         const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon) const override;
+
+  /**
+   * Replacement function for ApproxModDown that offloads the same functionality to GPU with CUDA.
+   *
+   * @see ApproxModDown
+   * @param portal The only different arg. A portal for CUDA functionality.
+   */
+    DCRTPolyType ApproxModDownCUDA(
+    const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
+    const std::vector<NativeInteger>& PInvModq, const std::vector<NativeInteger>& PInvModqPrecon,
+    const std::vector<NativeInteger>& PHatInvModp, const std::vector<NativeInteger>& PHatInvModpPrecon,
+    const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
+    const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
+    const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
+    std::shared_ptr<cudaPortalForApproxModDown> portal) const override;
 
     /**
    * @brief Performs CRT basis switching:

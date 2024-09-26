@@ -54,6 +54,9 @@
 #include "lattice/poly.h"
 #include "math/distrgen.h"
 
+#include <cuda_runtime.h>
+#include <cuda-utils/cudaPortalForApproxModDown.h>
+
 namespace lbcrypto {
 
 /**
@@ -987,6 +990,20 @@ public:
         const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
         const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon) const = 0;
 
+   /**
+   * Replacement function for ApproxModDown that offloads the same functionality to GPU with CUDA.
+   *
+   * @see ApproxModDown
+   * @param portal The only different arg. A portal for CUDA functionality.
+   */
+    virtual DerivedType ApproxModDownCUDA(
+        const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
+        const std::vector<NativeInteger>& PInvModq, const std::vector<NativeInteger>& PInvModqPrecon,
+        const std::vector<NativeInteger>& PHatInvModp, const std::vector<NativeInteger>& PHatInvModpPrecon,
+        const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
+        const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
+        const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
+        std::shared_ptr<cudaPortalForApproxModDown> portal) const = 0;
     /**
    * @brief Performs CRT basis switching:
    * {X}_{Q} -> {X}_{P}

@@ -26,5 +26,10 @@ void callApproxSwitchCRTBasisKernel(int gpuBlocks, int gpuThreads,
                                     uint128_t*          host_modpBarrettMu,
                                     m_vectors_struct*   host_ans_m_vectors);
 
+void approxSwitchCRTBasisKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
+
+void printMemoryInfo();
+
+
 #endif
 
