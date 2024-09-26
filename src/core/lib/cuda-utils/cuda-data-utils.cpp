@@ -1,8 +1,8 @@
-#include "math/hal.h"
-#include "lattice/poly.h"
-#include <cstdint> // for uint32_t type
 #include <cassert>
 #include "cuda-utils/cuda-data-utils.h"
+
+#include <iomanip>
+
 #include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
 
 // use this namespace in order to access openFHE internal data types
@@ -112,6 +112,8 @@ void cudaDataUtils::DeallocateMemoryForApproxSwitchCRTBasisKernel(int sizeQ,
     free(host_ans_m_vectors);
 }
 
+// Misc Functions
+
 int cudaDataUtils::isValid(uint32_t ringDim, uint32_t sizeP,
                            const std::vector<PolyImpl<NativeVector>> ans_m_vectors,
                            m_vectors_struct*  host_ans_m_vectors) {
@@ -125,6 +127,72 @@ int cudaDataUtils::isValid(uint32_t ringDim, uint32_t sizeP,
         }
     }
     return 0;
+}
+
+void cudaDataUtils::printUint128(uint128_t value) {
+    // Cast the higher and lower 64 bits of the uint128_t value
+    uint64_t high = static_cast<uint64_t>(value >> 64); // Upper 64 bits
+    uint64_t low = static_cast<uint64_t>(value);        // Lower 64 bits
+
+    // Print the parts in hex or as two parts (high, low)
+    std::cout << "0x" << std::hex << high << std::setw(16) << std::setfill('0') << low << std::dec;
+}
+
+
+void cudaDataUtils::printParams(uint32_t sizeQ, uint32_t sizeP,
+                                        const unsigned long* host_QHatInvModq,
+                                        const unsigned long* host_QHatInvModqPrecon,
+                                        const uint128_t* host_QHatModp,
+                                        const uint128_t* host_modpBarrettMu) {
+
+    std::cout << "cudaDataUtils::printMarshalledData" << std::endl;
+
+    // Print host_QHatInvModq
+    std::cout << "host_QHatInvModq: ";
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        std::cout << host_QHatInvModq[q] << " ";
+    }
+    std::cout << std::endl;
+
+    // Print host_QHatInvModqPrecon
+    std::cout << "host_QHatInvModqPrecon: ";
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        std::cout << host_QHatInvModqPrecon[q] << " ";
+    }
+    std::cout << std::endl;
+
+    // Print host_QHatModp (flattened 2D array)
+    std::cout << "host_QHatModp: " << std::endl;
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        std::cout << "QHatModp[" << q << "]: ";
+        for (uint32_t sp = 0; sp < sizeP; ++sp) {
+            printUint128(host_QHatModp[q * sizeP + sp]);
+            std::cout << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    // Print host_modpBarrettMu
+    std::cout << "host_modpBarrettMu: ";
+    for (uint32_t sp = 0; sp < sizeP; ++sp) {
+        printUint128(host_modpBarrettMu[sp]);
+        std::cout << " ";
+    }
+    std::cout << std::endl;
+
+}
+
+void cudaDataUtils::print_host_m_vectors(uint32_t sizeQ, m_vectors_struct*  host_m_vectors) {
+
+    std::cout << "cudaDataUtils::print_host_m_vectors" << std::endl;
+
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        std::cout << "host_m_vectors[" << q << "].data[0-3/ringDim]: ";
+        for (uint32_t rd = 0; rd < 3; ++rd) {
+            std::cout << host_m_vectors[q].data[rd] << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
 }

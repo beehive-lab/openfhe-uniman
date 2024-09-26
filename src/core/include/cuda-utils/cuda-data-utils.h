@@ -1,7 +1,8 @@
 #ifndef OPENFHE_CUDA_DATA_UTILS_H
 #define OPENFHE_CUDA_DATA_UTILS_H
 
-#include "math/hal.h"
+//#include "math/hal.h"
+#include "lattice/poly.h"
 #include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
 #include <cstdint> // for uint32_t type
 
@@ -55,10 +56,20 @@ public:
                                                               uint128_t*        host_modpBarrettMu,
                                                               m_vectors_struct* host_ans_m_vectors);
 
-    // validations
+    // Misc Functions
     static int isValid(uint32_t ringDim, uint32_t sizeP,
                                const std::vector<PolyImpl<NativeVector>> ans_m_vectors,
                                m_vectors_struct*  host_ans_m_vectors);
+
+    static void printUint128(uint128_t value);
+
+    static void printParams(uint32_t sizeQ, uint32_t sizeP,
+                                    const unsigned long* host_QHatInvModq,
+                                    const unsigned long* host_QHatInvModqPrecon,
+                                    const uint128_t* host_QHatModp,
+                                    const uint128_t* host_modpBarrettMu);
+
+    static void print_host_m_vectors(uint32_t sizeQ, m_vectors_struct*  host_m_vectors);
 
 };
 
