@@ -1,7 +1,10 @@
+# cuda-files.cmake
+
 include_directories(${CUDA_INCLUDE_DIRS})
 
 # find all cuda source (.cu) at core/lib/cuda-utils
-file(GLOB_RECURSE CUDA_SRC_FILES lib/cuda-utils/kernels/*.cu include/cuda-utils/kernel-headers/*.cuh)
+file(GLOB_RECURSE CUDA_SRC_FILES lib/cuda-utils/kernels/*.cu)
+file(GLOB_RECURSE CUDA_HEADER_FILES include/cuda-utils/kernel-headers/*.cuh)
 
 set_source_files_properties(${CUDA_SRC_FILES} PROPERTIES LANGUAGE CUDA)
 
@@ -9,8 +12,12 @@ foreach(cu_file ${CUDA_SRC_FILES})
     message(STATUS "Found CUDA source file: ${cu_file}")
 endforeach()
 
+foreach(cuh_file ${CUDA_HEADER_FILES})
+    message(STATUS "Found CUDA header file: ${cuh_file}")
+endforeach()
+
 # create a target for the cuda library
-add_library(CUDALibrary SHARED ${CUDA_SRC_FILES})
+add_library(CUDALibrary SHARED ${CUDA_SRC_FILES} ${CUDA_HEADER_FILES})
 # STATIC = libraries are archives of object files for use when linking other targets
 # SHARED = libraries are linked dynamically and loaded at runtime
 set_target_properties(CUDALibrary PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
