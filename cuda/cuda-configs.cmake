@@ -19,14 +19,25 @@ if(CUDA_VERSION VERSION_LESS 11.5)
     message(FATAL_ERROR "GPU ACCELERATION requires CUDA 11.5 or above.")
 endif()
 
+# Automatically detect GPU architecture
+cuda_detect_installed_gpus(INSTALLED_GPU_CCS_1)
+if(NOT INSTALLED_GPU_CCS_1)
+    message(FATAL_ERROR "No GPU architectures detected.")
+else()
+    string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
+    string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
+    string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
+    SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+    message(STATUS "Detected CUDA architecture(s): ${CUDA_ARCH_LIST}")
+endif()
+
 # explicit configurations for nvcc flags
-set(CMAKE_CUDA_ARCHITECTURES 61 CACHE STRING "CUDA architectures" FORCE)
-# specify gpu architecture automatically
-cuda_select_nvcc_arch_flags(ARCH_FLAGS Auto)
 #message("==ARCH_FLAGS: " ${ARCH_FLAGS})
-list( APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+#list( APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
 # compatibility with cxx 17
 list( APPEND CUDA_NVCC_FLAGS -std=c++17)
 list( APPEND CUDA_NVCC_FLAGS --verbose )
 #set(CUDA_PROPAGATE_HOST_FLAGS off)
 set(CUDA_SEPARABLE_COMPILATION ON)
+# enable debug information
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G")
