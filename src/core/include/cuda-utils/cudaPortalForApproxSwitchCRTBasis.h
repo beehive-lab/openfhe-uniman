@@ -2,8 +2,10 @@
 #define CUDAPORTALFORAPPROXMODDOWN_H
 
 #include <cstdint> // for uint32_t type
+#include <iostream> // for printf
+
+#include "lattice/poly.h"
 #include <cuda_runtime.h>
-#include <cuda-utils/cuda-data-utils.h>
 
 #include "cudaPortalForParamsData.h"
 #include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"

@@ -1,10 +1,10 @@
 #ifndef OPENFHE_CUDA_DATA_UTILS_H
 #define OPENFHE_CUDA_DATA_UTILS_H
 
-//#include "math/hal.h"
+#include <cstdint> // for uint32_t type
 #include "lattice/poly.h"
 #include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
-#include <cstdint> // for uint32_t type
+
 
 // use this namespace in order to access openFHE internal data types
 namespace lbcrypto {

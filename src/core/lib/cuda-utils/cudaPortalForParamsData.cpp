@@ -1,10 +1,4 @@
-#include <cstdint>
-#include <cstdlib>
-
 #include "cuda-utils/cudaPortalForParamsData.h"
-
-#include <iomanip>
-#include <vector>
 
 namespace lbcrypto {
 

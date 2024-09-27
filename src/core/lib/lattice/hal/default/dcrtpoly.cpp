@@ -43,11 +43,6 @@
 #include "utils/utilities-int.h"
 #include "utils/utilities.h"
 
-#if defined(WITH_CUDA)
-#include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
-#include "cuda-utils/cuda-data-utils.h"
-#endif
-
 namespace lbcrypto {
 
 /*CONSTRUCTORS*/

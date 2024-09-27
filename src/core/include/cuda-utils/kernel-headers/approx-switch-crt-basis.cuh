@@ -1,9 +1,9 @@
 #ifndef APPROX_SWITCH_CRT_BASIS_CUH
 #define APPROX_SWITCH_CRT_BASIS_CUH
 
-#include <cuda_runtime.h>
 #include <cstdint> // for uint32_t type
 #include <iostream> // for printf
+#include <cuda_runtime.h>
 
 /*
  * Data type for m_vectors object

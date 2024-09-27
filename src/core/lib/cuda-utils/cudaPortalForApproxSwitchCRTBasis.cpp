@@ -1,10 +1,4 @@
-//#include "math/hal.h"
-//#include "lattice/poly.h"
-#include <cstdint> // for uint32_t type
-
-#include "cuda-utils/cudaPortalForApproxModDown.h"
-#include <cuda_runtime.h>
-#include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
+#include "cuda-utils/cudaPortalForApproxSwitchCRTBasis.h"
 
 namespace lbcrypto {
 

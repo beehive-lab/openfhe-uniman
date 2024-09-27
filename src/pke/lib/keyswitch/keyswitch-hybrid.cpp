@@ -37,13 +37,15 @@
 
 #include "keyswitch/keyswitch-hybrid.h"
 
-#include <future>
-
 #include "key/privatekey.h"
 #include "key/publickey.h"
 #include "key/evalkeyrelin.h"
 #include "scheme/ckksrns/ckksrns-cryptoparameters.h"
 #include "ciphertext.h"
+
+#if defined(WITH_CUDA)
+#include <future>
+#endif
 
 namespace lbcrypto {
 

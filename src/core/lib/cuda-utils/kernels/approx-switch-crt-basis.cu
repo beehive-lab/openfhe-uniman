@@ -2,8 +2,6 @@
  * CUDA kernel for ApproxSwitchCRTBasis() function
  */
 
-#include <iostream>
-#include <cstdint> // for uint32_t type
 #include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
 
 __device__ void initSumArray(uint128_t* sum, int sizeP) {

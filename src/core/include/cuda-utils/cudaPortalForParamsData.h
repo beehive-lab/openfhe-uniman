@@ -2,8 +2,14 @@
 #define CUDAPORTALFORPARAMDATA_H
 
 #include <cstdint> // for uint32_t type
+#include <iostream> // for printf
+#include <iomanip>
+#include <vector>
+#include <cstdint>
+#include <cstdlib>
+
+#include "lattice/poly.h"
 #include <cuda_runtime.h>
-#include <cuda-utils/cuda-data-utils.h>
 
 namespace lbcrypto {
     /**

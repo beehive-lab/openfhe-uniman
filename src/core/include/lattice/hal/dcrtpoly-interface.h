@@ -54,8 +54,10 @@
 #include "lattice/poly.h"
 #include "math/distrgen.h"
 
-#include <cuda_runtime.h>
+#if defined(WITH_CUDA)
 #include <cuda-utils/cudaPortalForApproxSwitchCRTBasis.h>
+#include <cuda-utils/cuda-data-utils.h>
+#endif
 
 namespace lbcrypto {
 

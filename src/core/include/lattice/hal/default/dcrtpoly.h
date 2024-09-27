@@ -50,10 +50,6 @@
 #include "lattice/ildcrtparams.h"
 #include "lattice/hal/dcrtpoly-interface.h"
 #include "math/distrgen.h"
-#if defined(WITH_CUDA)
-#include "cuda-utils/cuda-data-utils.h"
-#include "cuda-utils/cudaPortalForApproxModDown.h"
-#endif
 
 namespace lbcrypto {
 
