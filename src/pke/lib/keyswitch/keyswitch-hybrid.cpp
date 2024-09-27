@@ -571,7 +571,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     // transfer params -once for both kernel invocations-
     paramsDataPortal->copyInParams();
 
-    DCRTPoly ct0_copy = (*cTildaCopy)[0].ApproxModDown(paramsQl, cryptoParams->GetParamsP(), cryptoParams->GetPInvModq(),
+    /*DCRTPoly ct0_copy = (*cTildaCopy)[0].ApproxModDown(paramsQl, cryptoParams->GetParamsP(), cryptoParams->GetPInvModq(),
                                               cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
                                               cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(),
                                               cryptoParams->GetModqBarrettMu(), cryptoParams->GettInvModp(),
@@ -581,7 +581,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                                               cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
                                               cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(),
                                               cryptoParams->GetModqBarrettMu(), cryptoParams->GettInvModp(),
-                                              cryptoParams->GettInvModpPrecon(), t, cryptoParams->GettModqPrecon());
+                                              cryptoParams->GettInvModpPrecon(), t, cryptoParams->GettModqPrecon());*/
 
     //std::future<DCRTPoly> resultCt0 = std::async(std::launch::async,[cTilda, paramsQl, cryptoParams, t, portal, strm0]() {
             //return
