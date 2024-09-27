@@ -6,7 +6,7 @@ using PolyType = PolyImpl<NativeVector>;
 
 //constructor impl
 cudaPortalForApproxSwitchCRTBasis::cudaPortalForApproxSwitchCRTBasis(const std::shared_ptr<cudaPortalForParamsData> params_data) {
-    std::cout << "[CONSTRUCTOR] Call constructor for " << this << "(cudaPortalForApproxModDown)" << std::endl;
+    //std::cout << "[CONSTRUCTOR] Call constructor for " << this << "(cudaPortalForApproxModDown)" << std::endl;
 
     this->paramsData = params_data;
 
@@ -20,7 +20,7 @@ cudaPortalForApproxSwitchCRTBasis::cudaPortalForApproxSwitchCRTBasis(const std::
 }
 
 cudaPortalForApproxSwitchCRTBasis::~cudaPortalForApproxSwitchCRTBasis() {
-    std::cout << "[DESTRUCTOR] Call destructor for " << this << "(cudaPortalForApproxModDown)" << std::endl;
+    //std::cout << "[DESTRUCTOR] Call destructor for " << this << "(cudaPortalForApproxModDown)" << std::endl;
 
     destroyCUDAStream();
     freeHostMemory();
@@ -51,13 +51,13 @@ void cudaPortalForApproxSwitchCRTBasis::marshalWorkData(const std::vector<PolyIm
     }
 
     // print for debugging
-    std::cout << "[DEBUG Print]: " << std::endl;
+    /*std::cout << "[DEBUG Print]: " << std::endl;
     for (uint32_t q = 0; q < sizeQ; ++q) {
         for (uint32_t rd = 0; rd < 3; ++rd) {
             std::cout << "host_m_vectors[" << q << "].data[" << rd << "] = " << host_m_vectors[q].data[rd] <<
                          ", m_vectors["      << q << "]["      << rd << "] = " << m_vectors[q][rd].template ConvertToInt<>() << std::endl;
         }
-    }
+    }*/
 }
 
 void cudaPortalForApproxSwitchCRTBasis::unmarshalWorkData(std::vector<PolyImpl<NativeVector>>& ans_m_vectors) {
@@ -66,7 +66,7 @@ void cudaPortalForApproxSwitchCRTBasis::unmarshalWorkData(std::vector<PolyImpl<N
     if (err != cudaSuccess) {
         std::cerr << "Stream synchronization failed: " << cudaGetErrorString(err) << std::endl;
     }
-    std::cout << "==> UNMARSHAL START" << std::endl;
+    //std::cout << "==> UNMARSHAL START" << std::endl;
 
     for (usint j = 0; j < sizeP; j++) {
         for(usint ri = 0; ri < ringDim; ri++) {
@@ -166,7 +166,7 @@ void cudaPortalForApproxSwitchCRTBasis::copyOutResult() {
         cudaMemcpyAsync(host_ans_m_vectors[p].data, device_ans_m_vectors_data_ptr[p], ringDim * sizeof(unsigned long), cudaMemcpyDeviceToHost, stream);
     }
 
-    std::cout << "==> COPY OUT FINISHED" << std::endl;
+    //std::cout << "==> COPY OUT FINISHED" << std::endl;
 }
 
 // Kernel Invocation Function

@@ -477,10 +477,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalKeySwitchPrecomputeC
         partCtClone.SetFormat(Format::COEFFICIENT);
 
         uint32_t sizePartQl = partsCt[part].GetNumOfElements();
-        ////////////
-        /// TODO
-        std::cout << "=====> [START] EvalKeySwitchPrecomputeCore" << std::endl;
-        ///
+        //std::cout << "=====> [START] EvalKeySwitchPrecomputeCore" << std::endl;
         #if !defined(WITH_CUDA)
         partsCtCompl[part]  = partCtClone.ApproxSwitchCRTBasis(
             cryptoParams->GetParamsPartQ(part), cryptoParams->GetParamsComplPartQ(sizeQl - 1, part),
@@ -497,7 +494,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalKeySwitchPrecomputeC
             cryptoParams->GetmodComplPartqBarrettMu(sizeQl - 1, part));
         #endif
 
-        std::cout << "=====> [END] EvalKeySwitchPrecomputeCore" << std::endl;
+        //std::cout << "=====> [END] EvalKeySwitchPrecomputeCore" << std::endl;
 
         partsCtCompl[part].SetFormat(Format::EVALUATION);
 
@@ -522,14 +519,14 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalKeySwitchPrecomputeC
 std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     const std::shared_ptr<std::vector<DCRTPoly>> digits, const EvalKey<DCRTPoly> evalKey,
     const std::shared_ptr<ParmType> paramsQl) const {
-    std::cout << "   [START] EvalFastKeySwitchCore" << std::endl;
-    std::cout << "   => 2 CALLS IN APPROXMODDOWN EXPECTED!! " << std::endl;
+    //std::cout << "   [START] EvalFastKeySwitchCore" << std::endl;
+    //std::cout << "   => 2 CALLS IN APPROXMODDOWN EXPECTED!! " << std::endl;
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(evalKey->GetCryptoParameters());
 
     std::shared_ptr<std::vector<DCRTPoly>> cTilda = EvalFastKeySwitchCoreExt(digits, evalKey, paramsQl);
 
     // Deep copy
-    std::shared_ptr<std::vector<DCRTPoly>> cTildaCopy = std::make_shared<std::vector<DCRTPoly>>(*cTilda);
+    //std::shared_ptr<std::vector<DCRTPoly>> cTildaCopy = std::make_shared<std::vector<DCRTPoly>>(*cTilda);
 
     PlaintextModulus t = (cryptoParams->GetNoiseScale() == 1) ? 0 : cryptoParams->GetPlaintextModulus();
 
@@ -547,14 +544,14 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                                               cryptoParams->GettInvModpPrecon(), t, cryptoParams->GettModqPrecon());
 
     #else
-
+    ///
     uint32_t ringDim = (*cTilda)[0].GetRingDimension();
     uint32_t m_vectors_size = (*digits)[0].GetParams()->GetParams().size();
     // Note: sizeP and sizeQ are swaped later so we asssign the swapped values to prepare them for transfer
     uint32_t sizeQ = cryptoParams->GetParamsP()->GetParams().size();
     uint32_t sizeP = (m_vectors_size > paramsQl->GetParams().size()) ? paramsQl->GetParams().size() : m_vectors_size;
 
-    std::cout << "[EvalFastKeySwitchCore - opt implementation]: sizeP = " << sizeP << ", sizeQ = " << sizeQ << std::endl;
+    //std::cout << "[EvalFastKeySwitchCore - opt implementation]: sizeP = " << sizeP << ", sizeQ = " << sizeQ << std::endl;
 
     // create portal obj for parameters
     std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ);
@@ -609,7 +606,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
     #endif
 
-    std::cout << "   [END] EvalFastKeySwitchCore" << std::endl;
+    //std::cout << "   [END] EvalFastKeySwitchCore" << std::endl;
     return std::make_shared<std::vector<DCRTPoly>>(std::initializer_list<DCRTPoly>{std::move(ct0), std::move(ct1)});
 }
 

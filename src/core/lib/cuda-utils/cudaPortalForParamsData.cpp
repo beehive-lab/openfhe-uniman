@@ -7,13 +7,13 @@ using uint128_t = unsigned __int128;
 cudaPortalForParamsData::cudaPortalForParamsData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ)
     : ringDim(ringDim), sizeP(sizeP), sizeQ(sizeQ) // Initializer list
 {
-    std::cout << "[CONSTRUCTOR] Call constructor for " << this << "(cudaPortalForParamsData)" << std::endl;
+    //std::cout << "[CONSTRUCTOR] Call constructor for " << this << "(cudaPortalForParamsData)" << std::endl;
     createCUDAStream();
     allocateHostParams();
 }
 
 cudaPortalForParamsData::~cudaPortalForParamsData() {
-    std::cout << "[DESTRUCTOR] Call destructor for " << this << "(cudaPortalForParamsData)" << std::endl;
+    //std::cout << "[DESTRUCTOR] Call destructor for " << this << "(cudaPortalForParamsData)" << std::endl;
 
     destroyCUDAStream();
     freeHostMemory();
