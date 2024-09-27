@@ -1592,6 +1592,10 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
     std::shared_ptr<cudaPortalForApproxModDown> portal) const {
     std::cout << "[START] ApproxModDownCUDA" << std::endl;
+
+    TimeVar timer;
+    TIC(timer);
+
     usint sizeQP = m_vectors.size();
     usint sizeP  = paramsP->GetParams().size();
     usint sizeQ  = sizeQP - sizeP;
@@ -1674,6 +1678,8 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
         auto diff        = m_vectors[i] - partPSwitchedToQ.m_vectors[i];
         ans.m_vectors[i] = diff * PInvModq[i];
     }
+
+    accumulateTimer(approxModDownTimer_GPU, TOC_MS(timer));
     std::cout << "[END] ApproxModDownCUDA" << std::endl;
 
     return ans;
@@ -1688,6 +1694,10 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
     const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon) const {
     std::cout << "[START] ApproxModDown" << std::endl;
+
+    TimeVar timer;
+    TIC(timer);
+
     usint sizeQP = m_vectors.size();
     usint sizeP  = paramsP->GetParams().size();
     usint sizeQ  = sizeQP - sizeP;
@@ -1741,6 +1751,8 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
         auto diff        = m_vectors[i] - partPSwitchedToQ.m_vectors[i];
         ans.m_vectors[i] = diff * PInvModq[i];
     }
+
+    accumulateTimer(approxModDownTimer_CPU, TOC(timer));
 
     std::cout << "[END] ApproxModDown" << std::endl;
     return ans;
