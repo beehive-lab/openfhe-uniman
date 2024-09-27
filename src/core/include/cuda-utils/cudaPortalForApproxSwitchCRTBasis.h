@@ -13,7 +13,7 @@ namespace lbcrypto {
 
     using PolyType = PolyImpl<NativeVector>;
 
-class cudaPortalForApproxModDown {
+class cudaPortalForApproxSwitchCRTBasis {
 
 private:
 
@@ -39,10 +39,10 @@ private:
 public:
 
     // Constructor
-    cudaPortalForApproxModDown(std::shared_ptr<cudaPortalForParamsData> params_data);
+    cudaPortalForApproxSwitchCRTBasis(std::shared_ptr<cudaPortalForParamsData> params_data);
 
     // Destructor
-    ~cudaPortalForApproxModDown();
+    ~cudaPortalForApproxSwitchCRTBasis();
 
     // Getter Functions
     cudaStream_t                                getStream() const;

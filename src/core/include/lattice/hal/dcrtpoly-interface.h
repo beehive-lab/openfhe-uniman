@@ -55,7 +55,7 @@
 #include "math/distrgen.h"
 
 #include <cuda_runtime.h>
-#include <cuda-utils/cudaPortalForApproxModDown.h>
+#include <cuda-utils/cudaPortalForApproxSwitchCRTBasis.h>
 
 namespace lbcrypto {
 
@@ -1010,7 +1010,7 @@ public:
         const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
         const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
         const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
-        std::shared_ptr<cudaPortalForApproxModDown> portal) const = 0;
+        std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> portal) const = 0;
     /**
    * @brief Performs CRT basis switching:
    * {X}_{Q} -> {X}_{P}

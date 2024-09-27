@@ -941,7 +941,7 @@ public:
     const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
     const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
-    std::shared_ptr<cudaPortalForApproxModDown> portal) const override;
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> portal) const override;
 
     /**
    * @brief Performs CRT basis switching:

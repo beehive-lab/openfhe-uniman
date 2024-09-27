@@ -38,7 +38,6 @@
 #include "keyswitch/keyswitch-hybrid.h"
 
 #include <future>
-#include <cuda-utils/cudaPortalForApproxModDown.h>
 
 #include "key/privatekey.h"
 #include "key/publickey.h"
@@ -558,8 +557,8 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     // create portal obj for parameters
     std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ);
     // create portal objs for work data
-    std::shared_ptr<cudaPortalForApproxModDown> workDataPortal0 = std::make_shared<cudaPortalForApproxModDown>(paramsDataPortal);
-    std::shared_ptr<cudaPortalForApproxModDown> workDataPortal1 = std::make_shared<cudaPortalForApproxModDown>(paramsDataPortal);
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal0 = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal);
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal1 = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal);
 
     // marshal params
     paramsDataPortal->marshalParams(cryptoParams->GetPHatInvModp(),

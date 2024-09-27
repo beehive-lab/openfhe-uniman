@@ -1436,7 +1436,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasisCUDA(
     // create portal obj for parameters
     std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ);
     // create portal obj for work data
-    std::shared_ptr<cudaPortalForApproxModDown> workDataPortal = std::make_shared<cudaPortalForApproxModDown>(paramsDataPortal);
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal);
 
     // marshal params
     paramsDataPortal->marshalParams(QHatInvModq,
@@ -1590,7 +1590,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
     const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
-    std::shared_ptr<cudaPortalForApproxModDown> portal) const {
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> portal) const {
     std::cout << "[START] ApproxModDownCUDA" << std::endl;
 
     TimeVar timer;

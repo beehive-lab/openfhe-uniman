@@ -11,7 +11,7 @@ namespace lbcrypto {
 using PolyType = PolyImpl<NativeVector>;
 
 //constructor impl
-cudaPortalForApproxModDown::cudaPortalForApproxModDown(const std::shared_ptr<cudaPortalForParamsData> params_data) {
+cudaPortalForApproxSwitchCRTBasis::cudaPortalForApproxSwitchCRTBasis(const std::shared_ptr<cudaPortalForParamsData> params_data) {
     std::cout << "[CONSTRUCTOR] Call constructor for " << this << "(cudaPortalForApproxModDown)" << std::endl;
 
     this->paramsData = params_data;
@@ -25,7 +25,7 @@ cudaPortalForApproxModDown::cudaPortalForApproxModDown(const std::shared_ptr<cud
     allocateHostData();
 }
 
-cudaPortalForApproxModDown::~cudaPortalForApproxModDown() {
+cudaPortalForApproxSwitchCRTBasis::~cudaPortalForApproxSwitchCRTBasis() {
     std::cout << "[DESTRUCTOR] Call destructor for " << this << "(cudaPortalForApproxModDown)" << std::endl;
 
     destroyCUDAStream();
@@ -35,16 +35,16 @@ cudaPortalForApproxModDown::~cudaPortalForApproxModDown() {
 
 
 // Getter Functions
-cudaStream_t                                cudaPortalForApproxModDown::getStream() const { return stream; }
-std::shared_ptr<cudaPortalForParamsData>    cudaPortalForApproxModDown::getParamsData() const { return paramsData; }
-m_vectors_struct*                           cudaPortalForApproxModDown::getHost_ans_m_vectors() const {return host_ans_m_vectors;}
-uint128_t*                                  cudaPortalForApproxModDown::getDevice_sum() const { return device_sum;}
-m_vectors_struct*                           cudaPortalForApproxModDown::getDevice_m_vectors() const { return device_m_vectors;}
-m_vectors_struct*                           cudaPortalForApproxModDown::getDevice_ans_m_vectors() const { return device_ans_m_vectors;}
+cudaStream_t                                cudaPortalForApproxSwitchCRTBasis::getStream() const { return stream; }
+std::shared_ptr<cudaPortalForParamsData>    cudaPortalForApproxSwitchCRTBasis::getParamsData() const { return paramsData; }
+m_vectors_struct*                           cudaPortalForApproxSwitchCRTBasis::getHost_ans_m_vectors() const {return host_ans_m_vectors;}
+uint128_t*                                  cudaPortalForApproxSwitchCRTBasis::getDevice_sum() const { return device_sum;}
+m_vectors_struct*                           cudaPortalForApproxSwitchCRTBasis::getDevice_m_vectors() const { return device_m_vectors;}
+m_vectors_struct*                           cudaPortalForApproxSwitchCRTBasis::getDevice_ans_m_vectors() const { return device_ans_m_vectors;}
 
 // marshal
 
-void cudaPortalForApproxModDown::marshalWorkData(const std::vector<PolyImpl<NativeVector>>& m_vectors,
+void cudaPortalForApproxSwitchCRTBasis::marshalWorkData(const std::vector<PolyImpl<NativeVector>>& m_vectors,
                                                  const std::vector<PolyImpl<NativeVector>>& ans_m_vectors) {
     for (uint32_t q = 0; q < sizeQ; ++q) {
         for (uint32_t rd = 0; rd < ringDim; ++rd) {
@@ -66,7 +66,7 @@ void cudaPortalForApproxModDown::marshalWorkData(const std::vector<PolyImpl<Nati
     }
 }
 
-void cudaPortalForApproxModDown::unmarshalWorkData(std::vector<PolyImpl<NativeVector>>& ans_m_vectors) {
+void cudaPortalForApproxSwitchCRTBasis::unmarshalWorkData(std::vector<PolyImpl<NativeVector>>& ans_m_vectors) {
     // make sure stream has finished all queued tasks before touching the results from host
     cudaError_t err = cudaStreamSynchronize(stream);
     if (err != cudaSuccess) {
@@ -83,7 +83,7 @@ void cudaPortalForApproxModDown::unmarshalWorkData(std::vector<PolyImpl<NativeVe
 
 // Data Transfer Functions
 
-void cudaPortalForApproxModDown::copyInWorkData() {
+void cudaPortalForApproxSwitchCRTBasis::copyInWorkData() {
 
     cudaError_t err = cudaMalloc((void**)&device_m_vectors, sizeQ * sizeof(m_vectors_struct));
     if (err != cudaSuccess) {
@@ -166,7 +166,7 @@ void cudaPortalForApproxModDown::copyInWorkData() {
     }
 }
 
-void cudaPortalForApproxModDown::copyOutResult() {
+void cudaPortalForApproxSwitchCRTBasis::copyOutResult() {
 
     for(uint32_t p = 0; p < sizeP; p++) {
         cudaMemcpyAsync(host_ans_m_vectors[p].data, device_ans_m_vectors_data_ptr[p], ringDim * sizeof(unsigned long), cudaMemcpyDeviceToHost, stream);
@@ -177,7 +177,7 @@ void cudaPortalForApproxModDown::copyOutResult() {
 
 // Kernel Invocation Function
 
-void cudaPortalForApproxModDown::invokeKernelOfApproxSwitchCRTBasis(int gpuBlocks, int gpuThreads) {
+void cudaPortalForApproxSwitchCRTBasis::invokeKernelOfApproxSwitchCRTBasis(int gpuBlocks, int gpuThreads) {
 
     dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
     dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
@@ -194,7 +194,7 @@ void cudaPortalForApproxModDown::invokeKernelOfApproxSwitchCRTBasis(int gpuBlock
 
 // Resources Allocation/Deallocation - Error Handling - Misc Functions
 
-void cudaPortalForApproxModDown::allocateHostData() {
+void cudaPortalForApproxSwitchCRTBasis::allocateHostData() {
     host_m_vectors          = (m_vectors_struct*) malloc(sizeQ * sizeof(m_vectors_struct));
     for (uint32_t q = 0; q < sizeQ; ++q) {
         host_m_vectors[q].data                  = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
@@ -206,7 +206,7 @@ void cudaPortalForApproxModDown::allocateHostData() {
     }
 }
 
-void cudaPortalForApproxModDown::handleFreeError(const std::string& operation, void* ptr) {
+void cudaPortalForApproxSwitchCRTBasis::handleFreeError(const std::string& operation, void* ptr) {
     if (ptr == nullptr) {
         throw std::runtime_error("Memory error during " + operation + ": null pointer passed for freeing.");
     } else {
@@ -216,13 +216,13 @@ void cudaPortalForApproxModDown::handleFreeError(const std::string& operation, v
 }
 
 
-void cudaPortalForApproxModDown::handleCUDAError(const std::string& operation, cudaError_t err) {
+void cudaPortalForApproxSwitchCRTBasis::handleCUDAError(const std::string& operation, cudaError_t err) {
     if (err != cudaSuccess) {
         throw std::runtime_error("CUDA error during " + operation + ": " + std::string(cudaGetErrorString(err)));
     }
 }
 
-void cudaPortalForApproxModDown::createCUDAStream() {
+void cudaPortalForApproxSwitchCRTBasis::createCUDAStream() {
     cudaError_t err = cudaStreamCreate(&stream);
     if (err != cudaSuccess) {
         handleCUDAError("stream creation", err);
@@ -230,7 +230,7 @@ void cudaPortalForApproxModDown::createCUDAStream() {
 
 }
 
-void cudaPortalForApproxModDown::destroyCUDAStream() {
+void cudaPortalForApproxSwitchCRTBasis::destroyCUDAStream() {
     if (stream) {
         cudaError_t err = cudaStreamDestroy(stream);
         if (err != cudaSuccess) {
@@ -240,7 +240,7 @@ void cudaPortalForApproxModDown::destroyCUDAStream() {
     }
 }
 
-void cudaPortalForApproxModDown::freeHostMemory() {
+void cudaPortalForApproxSwitchCRTBasis::freeHostMemory() {
     // Free host_m_vectors[q].data memory
     for (uint32_t q = 0; q < sizeQ; ++q) {
         handleFreeError("host_m_vectors[" + std::to_string(q) + "].data", host_m_vectors[q].data);
@@ -258,7 +258,7 @@ void cudaPortalForApproxModDown::freeHostMemory() {
     handleFreeError("host_ans_m_vectors", host_ans_m_vectors);
 }
 
-void cudaPortalForApproxModDown::freeDeviceMemory() {
+void cudaPortalForApproxSwitchCRTBasis::freeDeviceMemory() {
     cudaError_t err;
 
     // Free device_m_vectors_data_ptr memory
@@ -301,7 +301,7 @@ void cudaPortalForApproxModDown::freeDeviceMemory() {
     }
 }
 
-void cudaPortalForApproxModDown::print_host_m_vectors() {
+void cudaPortalForApproxSwitchCRTBasis::print_host_m_vectors() {
 
     std::cout << "cudaPortalForApproxModDown::print_host_m_vectors" << std::endl;
 
