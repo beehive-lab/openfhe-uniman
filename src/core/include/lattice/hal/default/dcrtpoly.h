@@ -857,6 +857,12 @@ public:
                                       const std::vector<std::vector<NativeInteger>>& QHatModp,
                                       const std::vector<DoubleNativeInt>& modpBarrettMu) const override;
 
+    DCRTPolyType ApproxSwitchCRTBasisCUDA(const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
+                                      const std::vector<NativeInteger>& QHatInvModq,
+                                      const std::vector<NativeInteger>& QHatInvModqPrecon,
+                                      const std::vector<std::vector<NativeInteger>>& QHatModp,
+                                      const std::vector<DoubleNativeInt>& modpBarrettMu) const override;
+
     /**
    * @brief Performs approximate modulus raising:
    * {X}_{Q} -> {X'}_{Q,P}.

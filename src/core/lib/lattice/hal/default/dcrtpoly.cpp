@@ -1416,6 +1416,59 @@ void DCRTPolyImpl<VecType>::TimesQovert(const std::shared_ptr<DCRTPolyImpl::Para
     *this = this->Times(tInvModq);
 }
 
+template <typename VecType>
+DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasisCUDA(
+    const std::shared_ptr<DCRTPolyImpl::Params> paramsQ, const std::shared_ptr<DCRTPolyImpl::Params> paramsP,
+    const std::vector<NativeInteger>& QHatInvModq, const std::vector<NativeInteger>& QHatInvModqPrecon,
+    const std::vector<std::vector<NativeInteger>>& QHatModp, const std::vector<DoubleNativeInt>& modpBarrettMu) const {
+
+    std::cout << "[START] ApproxSwitchCRTBasisCUDA" << std::endl;
+
+    TimeVar t;
+    TIC(t);
+
+    DCRTPolyType ans(paramsP, this->GetFormat(), true);
+
+    usint ringDim = this->GetRingDimension();
+    usint sizeQ   = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
+    usint sizeP   = ans.m_vectors.size();
+
+    // create portal obj for parameters
+    std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ);
+    // create portal obj for work data
+    std::shared_ptr<cudaPortalForApproxModDown> workDataPortal = std::make_shared<cudaPortalForApproxModDown>(paramsDataPortal);
+
+    // marshal params
+    paramsDataPortal->marshalParams(QHatInvModq,
+                                    QHatInvModqPrecon,
+                                    QHatModp,
+                                    modpBarrettMu);
+
+    // transfer params
+    paramsDataPortal->copyInParams();
+
+    // marshal work data
+    workDataPortal->marshalWorkData(m_vectors, ans.m_vectors);
+
+    // transfer work data
+    workDataPortal->copyInWorkData();
+
+    // invoke approxSwitchCRTBasis kernel
+    const int gpuBlocks = cudaUtils.getGpuBlocks();
+    const int gpuThreads = cudaUtils.getGpuThreads();
+    workDataPortal->invokeKernelOfApproxSwitchCRTBasis(gpuBlocks, gpuThreads);
+
+    workDataPortal->copyOutResult();
+
+    workDataPortal->unmarshalWorkData(ans.m_vectors);
+
+    accumulateTimer(approxSwitchTimer_GPU, TOC_MS(t));
+
+    std::cout << "[END] ApproxSwitchCRTBasisCUDA" << std::endl;
+
+    return ans;
+}
+
 #if defined(HAVE_INT128) && NATIVEINT == 64
 template <typename VecType>
 DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
@@ -1432,7 +1485,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     usint sizeQ   = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
     usint sizeP   = ans.m_vectors.size();
 
-#if !defined(WITH_CUDA)
     #pragma omp parallel for
     for (usint ri = 0; ri < ringDim; ri++) {
         std::vector<DoubleNativeInt> sum(sizeP);
@@ -1451,59 +1503,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
         }
 
     }
-#else
-    
-    /* CUDA library replacement for ApproxSwitchCRTBasis function. */
-
-    // get gpu configuration
-    const int gpuBlocks = cudaUtils.getGpuBlocks();
-    const int gpuThreads = cudaUtils.getGpuThreads();
-
-    // allocate the host buffers
-    m_vectors_struct*   host_m_vectors          = (m_vectors_struct*) malloc(sizeQ * sizeof(m_vectors_struct));
-    for (uint32_t q = 0; q < sizeQ; ++q) {
-        host_m_vectors[q].data                  = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
-    }
-    unsigned long*      host_qhatinvmodq        = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
-    unsigned long*      host_QHatInvModqPrecon  = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
-    uint128_t*          host_qhatmodp           = (uint128_t*) malloc(sizeQ * sizeP * sizeof(uint128_t));
-    uint128_t*          host_modpBarrettMu      = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
-    m_vectors_struct*   host_ans_m_vectors      = (m_vectors_struct*) malloc(sizeP * sizeof(m_vectors_struct));
-    for (uint32_t p = 0; p < sizeP; ++p) {
-        host_ans_m_vectors[p].data              = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
-    }
-
-    // marshal OpenFHE data types to CUDA data types
-    cudaUtils.marshalDataForApproxSwitchCRTBasisKernel(ringDim, sizeQ, sizeP,
-                                                       m_vectors,
-                                                       QHatInvModq,
-                                                       QHatInvModqPrecon,
-                                                       QHatModp,
-                                                       modpBarrettMu,
-                                                       ans.m_vectors,
-                                                       host_m_vectors,
-                                                       host_qhatinvmodq,
-                                                       host_QHatInvModqPrecon,
-                                                       host_qhatmodp,
-                                                       host_modpBarrettMu,
-                                                       host_ans_m_vectors);
-
-    cudaUtils.printParams(sizeQ, sizeP, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu);
-
-    cudaUtils.print_host_m_vectors(sizeQ, host_m_vectors);
-
-    // invoke CUDA kernel
-    callApproxSwitchCRTBasisKernel(gpuBlocks, gpuThreads, ringDim, sizeP, sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu, host_ans_m_vectors);
-
-    // unmarshal CUDA data types back to OpenFHE data types
-    cudaUtils.unmarshalDataForApproxSwitchCRTBasisKernel(ringDim, sizeP, ans.m_vectors, host_ans_m_vectors);
-
-    // free memory
-    cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu, host_ans_m_vectors);
-#endif
-
-    accumulateTimer(approxSwitchTimer, TOC_MS(t));
-
+    accumulateTimer(approxSwitchTimer_CPU, TOC(t));
     return ans;
 }
 #else
