@@ -51,10 +51,10 @@ int main() {
     // Sample Program: Step 3 - Encryption
 
     // First plaintext vector is encoded
-    std::vector<int64_t> vectorOfInts1 = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+    std::vector<int64_t> vectorOfInts1 = {1,1,1,1};
     Plaintext plaintext1               = cryptoContext->MakePackedPlaintext(vectorOfInts1);
     // Second plaintext vector is encoded
-    std::vector<int64_t> vectorOfInts2 = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+    std::vector<int64_t> vectorOfInts2 = {1,1,1,1};
     Plaintext plaintext2               = cryptoContext->MakePackedPlaintext(vectorOfInts2);
 
     // The encoded vectors are encrypted
