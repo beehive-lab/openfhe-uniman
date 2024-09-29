@@ -853,12 +853,6 @@ public:
                                       const std::vector<std::vector<NativeInteger>>& QHatModp,
                                       const std::vector<DoubleNativeInt>& modpBarrettMu) const override;
 
-    DCRTPolyType ApproxSwitchCRTBasisCUDA(const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
-                                      const std::vector<NativeInteger>& QHatInvModq,
-                                      const std::vector<NativeInteger>& QHatInvModqPrecon,
-                                      const std::vector<std::vector<NativeInteger>>& QHatModp,
-                                      const std::vector<DoubleNativeInt>& modpBarrettMu) const override;
-
     /**
    * @brief Performs approximate modulus raising:
    * {X}_{Q} -> {X'}_{Q,P}.
@@ -924,6 +918,7 @@ public:
         const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
         const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon) const override;
 
+#if defined(WITH_CUDA)
   /**
    * Replacement function for ApproxModDown that offloads the same functionality to GPU with CUDA.
    *
@@ -938,6 +933,13 @@ public:
     const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
     std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> portal) const override;
+
+    DCRTPolyType ApproxSwitchCRTBasisCUDA(const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
+                                          const std::vector<NativeInteger>& QHatInvModq,
+                                          const std::vector<NativeInteger>& QHatInvModqPrecon,
+                                          const std::vector<std::vector<NativeInteger>>& QHatModp,
+                                          const std::vector<DoubleNativeInt>& modpBarrettMu) const override;
+#endif
 
     /**
    * @brief Performs CRT basis switching:

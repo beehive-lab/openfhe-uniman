@@ -1411,68 +1411,12 @@ void DCRTPolyImpl<VecType>::TimesQovert(const std::shared_ptr<DCRTPolyImpl::Para
     *this = this->Times(tInvModq);
 }
 
-template <typename VecType>
-DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasisCUDA(
-    const std::shared_ptr<DCRTPolyImpl::Params> paramsQ, const std::shared_ptr<DCRTPolyImpl::Params> paramsP,
-    const std::vector<NativeInteger>& QHatInvModq, const std::vector<NativeInteger>& QHatInvModqPrecon,
-    const std::vector<std::vector<NativeInteger>>& QHatModp, const std::vector<DoubleNativeInt>& modpBarrettMu) const {
-
-    //std::cout << "[START] ApproxSwitchCRTBasisCUDA" << std::endl;
-
-    TimeVar t;
-    TIC(t);
-
-    DCRTPolyType ans(paramsP, this->GetFormat(), true);
-
-    usint ringDim = this->GetRingDimension();
-    usint sizeQ   = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
-    usint sizeP   = ans.m_vectors.size();
-
-    // create portal obj for parameters
-    std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ);
-    // create portal obj for work data
-    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal);
-
-    // marshal params
-    paramsDataPortal->marshalParams(QHatInvModq,
-                                    QHatInvModqPrecon,
-                                    QHatModp,
-                                    modpBarrettMu);
-
-    // transfer params
-    paramsDataPortal->copyInParams();
-
-    // marshal work data
-    workDataPortal->marshalWorkData(m_vectors, ans.m_vectors);
-
-    // transfer work data
-    workDataPortal->copyInWorkData();
-
-    // invoke approxSwitchCRTBasis kernel
-    const int gpuBlocks = cudaUtils.getGpuBlocks();
-    const int gpuThreads = cudaUtils.getGpuThreads();
-    workDataPortal->invokeKernelOfApproxSwitchCRTBasis(gpuBlocks, gpuThreads);
-
-    workDataPortal->copyOutResult();
-
-    workDataPortal->unmarshalWorkData(ans.m_vectors);
-
-    accumulateTimer(approxSwitchTimer_GPU, TOC_MS(t));
-
-    //std::cout << "[END] ApproxSwitchCRTBasisCUDA" << std::endl;
-
-    return ans;
-}
-
 #if defined(HAVE_INT128) && NATIVEINT == 64
 template <typename VecType>
 DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     const std::shared_ptr<DCRTPolyImpl::Params> paramsQ, const std::shared_ptr<DCRTPolyImpl::Params> paramsP,
     const std::vector<NativeInteger>& QHatInvModq, const std::vector<NativeInteger>& QHatInvModqPrecon,
     const std::vector<std::vector<NativeInteger>>& QHatModp, const std::vector<DoubleNativeInt>& modpBarrettMu) const {
-
-    TimeVar t;
-    TIC(t);
 
     DCRTPolyType ans(paramsP, this->GetFormat(), true);
 
@@ -1498,7 +1442,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
         }
 
     }
-    accumulateTimer(approxSwitchTimer_CPU, TOC(t));
     return ans;
 }
 #else
@@ -1577,6 +1520,7 @@ void DCRTPolyImpl<VecType>::ApproxModUp(const std::shared_ptr<Params> paramsQ, c
     this->m_params = paramsQP;
 }
 
+#if defined(WITH_CUDA)
 template <typename VecType>
 DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
@@ -1587,9 +1531,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
     std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> portal) const {
     //std::cout << "[START] ApproxModDownCUDA" << std::endl;
-
-    TimeVar timer;
-    TIC(timer);
 
     usint sizeQP = m_vectors.size();
     usint sizeP  = paramsP->GetParams().size();
@@ -1673,12 +1614,59 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
         auto diff        = m_vectors[i] - partPSwitchedToQ.m_vectors[i];
         ans.m_vectors[i] = diff * PInvModq[i];
     }
-
-    accumulateTimer(approxModDownTimer_GPU, TOC_MS(timer));
     //std::cout << "[END] ApproxModDownCUDA" << std::endl;
 
     return ans;
 }
+
+template <typename VecType>
+DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasisCUDA(
+    const std::shared_ptr<DCRTPolyImpl::Params> paramsQ, const std::shared_ptr<DCRTPolyImpl::Params> paramsP,
+    const std::vector<NativeInteger>& QHatInvModq, const std::vector<NativeInteger>& QHatInvModqPrecon,
+    const std::vector<std::vector<NativeInteger>>& QHatModp, const std::vector<DoubleNativeInt>& modpBarrettMu) const {
+
+    //std::cout << "[START] ApproxSwitchCRTBasisCUDA" << std::endl;
+
+    DCRTPolyType ans(paramsP, this->GetFormat(), true);
+
+    usint ringDim = this->GetRingDimension();
+    usint sizeQ   = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
+    usint sizeP   = ans.m_vectors.size();
+
+    // create portal obj for parameters
+    std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ);
+    // create portal obj for work data
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal);
+
+    // marshal params
+    paramsDataPortal->marshalParams(QHatInvModq,
+                                    QHatInvModqPrecon,
+                                    QHatModp,
+                                    modpBarrettMu);
+
+    // transfer params
+    paramsDataPortal->copyInParams();
+
+    // marshal work data
+    workDataPortal->marshalWorkData(m_vectors, ans.m_vectors);
+
+    // transfer work data
+    workDataPortal->copyInWorkData();
+
+    // invoke approxSwitchCRTBasis kernel
+    const int gpuBlocks = cudaUtils.getGpuBlocks();
+    const int gpuThreads = cudaUtils.getGpuThreads();
+    workDataPortal->invokeKernelOfApproxSwitchCRTBasis(gpuBlocks, gpuThreads);
+
+    workDataPortal->copyOutResult();
+
+    workDataPortal->unmarshalWorkData(ans.m_vectors);
+
+    //std::cout << "[END] ApproxSwitchCRTBasisCUDA" << std::endl;
+
+    return ans;
+}
+#endif
 
 template <typename VecType>
 DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
@@ -1688,10 +1676,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
     const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
     const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon) const {
-    std::cout << "[START] ApproxModDown" << std::endl;
-
-    TimeVar timer;
-    TIC(timer);
+    //std::cout << "[START] ApproxModDown" << std::endl;
 
     usint sizeQP = m_vectors.size();
     usint sizeP  = paramsP->GetParams().size();
@@ -1746,8 +1731,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
         auto diff        = m_vectors[i] - partPSwitchedToQ.m_vectors[i];
         ans.m_vectors[i] = diff * PInvModq[i];
     }
-
-    accumulateTimer(approxModDownTimer_CPU, TOC(timer));
 
     //std::cout << "[END] ApproxModDown" << std::endl;
     return ans;
