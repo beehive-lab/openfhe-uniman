@@ -37,6 +37,8 @@
 
 #include "keyswitch/keyswitch-hybrid.h"
 
+#include <utils/timers.h>
+
 #include "key/privatekey.h"
 #include "key/publickey.h"
 #include "key/evalkeyrelin.h"
@@ -479,19 +481,27 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalKeySwitchPrecomputeC
         uint32_t sizePartQl = partsCt[part].GetNumOfElements();
         //std::cout << "=====> [START] EvalKeySwitchPrecomputeCore" << std::endl;
         #if !defined(WITH_CUDA)
+        TimeVar t;
+        TIC(t);
         partsCtCompl[part]  = partCtClone.ApproxSwitchCRTBasis(
             cryptoParams->GetParamsPartQ(part), cryptoParams->GetParamsComplPartQ(sizeQl - 1, part),
             cryptoParams->GetPartQlHatInvModq(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatInvModqPrecon(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatModp(sizeQl - 1, part),
             cryptoParams->GetmodComplPartqBarrettMu(sizeQl - 1, part));
+        accumulateTimer(approxSwitchTimer_CPU, TOC_MS(t));
+        incrementInvocationCounter(approxSwitchCRTBasisCounter_CPU);
         #else
+        TimeVar t;
+        TIC(t);
         partsCtCompl[part]  = partCtClone.ApproxSwitchCRTBasisCUDA(
             cryptoParams->GetParamsPartQ(part), cryptoParams->GetParamsComplPartQ(sizeQl - 1, part),
             cryptoParams->GetPartQlHatInvModq(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatInvModqPrecon(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatModp(sizeQl - 1, part),
             cryptoParams->GetmodComplPartqBarrettMu(sizeQl - 1, part));
+        accumulateTimer(approxSwitchTimer_GPU, TOC_MS(t));
+        incrementInvocationCounter(approxSwitchCRTBasisCounter_GPU);
         #endif
 
         //std::cout << "=====> [END] EvalKeySwitchPrecomputeCore" << std::endl;
@@ -531,6 +541,8 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     PlaintextModulus t = (cryptoParams->GetNoiseScale() == 1) ? 0 : cryptoParams->GetPlaintextModulus();
 
     #if !defined(WITH_CUDA)
+    TimeVar timer;
+    TIC(timer);
     DCRTPoly ct0 = (*cTilda)[0].ApproxModDown(paramsQl, cryptoParams->GetParamsP(), cryptoParams->GetPInvModq(),
                                               cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
                                               cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(),
@@ -543,7 +555,11 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                                               cryptoParams->GetModqBarrettMu(), cryptoParams->GettInvModp(),
                                               cryptoParams->GettInvModpPrecon(), t, cryptoParams->GettModqPrecon());
 
+    accumulateTimer(approxModDownTimer_CPU, TOC_MS(timer));
+    incrementInvocationCounter(approxModDownCounter_CPU);
     #else
+    TimeVar timer;
+    TIC(timer);
     ///
     uint32_t ringDim = (*cTilda)[0].GetRingDimension();
     uint32_t m_vectors_size = (*digits)[0].GetParams()->GetParams().size();
@@ -603,7 +619,8 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
     //DCRTPoly ct0 = resultCt0.get();
     //DCRTPoly ct1 = resultCt1.get();
-
+    accumulateTimer(approxModDownTimer_GPU, TOC_MS(timer));
+    incrementInvocationCounter(approxModDownCounter_GPU);
     #endif
 
     //std::cout << "   [END] EvalFastKeySwitchCore" << std::endl;
