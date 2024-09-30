@@ -24,8 +24,8 @@ int main() {
 
     #if defined(WITH_CUDA)
     // Set GPU configuration
-    lbcrypto::cudaDataUtils::setGpuBlocks(8);
-    lbcrypto::cudaDataUtils::setGpuThreads(1024);
+    lbcrypto::cudaDataUtils::setGpuBlocks(16);
+    lbcrypto::cudaDataUtils::setGpuThreads(512);
     #endif
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
