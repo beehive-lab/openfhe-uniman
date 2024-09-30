@@ -37,6 +37,8 @@
 
 #include "keyswitch/keyswitch-hybrid.h"
 
+#include <utils/timers.h>
+
 #include "key/privatekey.h"
 #include "key/publickey.h"
 #include "key/evalkeyrelin.h"
@@ -473,13 +475,19 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalKeySwitchPrecomputeC
         partCtClone.SetFormat(Format::COEFFICIENT);
 
         uint32_t sizePartQl = partsCt[part].GetNumOfElements();
+        TimeVar timer;
+        TIC(timer);
         partsCtCompl[part]  = partCtClone.ApproxSwitchCRTBasis(
             cryptoParams->GetParamsPartQ(part), cryptoParams->GetParamsComplPartQ(sizeQl - 1, part),
             cryptoParams->GetPartQlHatInvModq(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatInvModqPrecon(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatModp(sizeQl - 1, part),
             cryptoParams->GetmodComplPartqBarrettMu(sizeQl - 1, part));
-
+        #if defined(WITH_CUDA)
+        accumulateTimer(evalKeySwitchPrecomputeCoreTimer_GPU, TOC_MS(timer));
+        #else
+        accumulateTimer(evalKeySwitchPrecomputeCoreTimer_CPU, TOC_MS(timer));
+        #endif
         partsCtCompl[part].SetFormat(Format::EVALUATION);
 
         partsCtExt[part] = DCRTPoly(paramsQlP, Format::EVALUATION, true);
@@ -509,6 +517,8 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
     PlaintextModulus t = (cryptoParams->GetNoiseScale() == 1) ? 0 : cryptoParams->GetPlaintextModulus();
 
+    TimeVar timer;
+    TIC(timer);
     DCRTPoly ct0 = (*cTilda)[0].ApproxModDown(paramsQl, cryptoParams->GetParamsP(), cryptoParams->GetPInvModq(),
                                               cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
                                               cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(),
@@ -520,7 +530,11 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                                               cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(),
                                               cryptoParams->GetModqBarrettMu(), cryptoParams->GettInvModp(),
                                               cryptoParams->GettInvModpPrecon(), t, cryptoParams->GettModqPrecon());
-
+    #if defined(WITH_CUDA)
+    accumulateTimer(evalFastKeySwitchCoreTimer_GPU, TOC_MS(timer));
+    #else
+    accumulateTimer(evalFastKeySwitchCoreTimer_CPU, TOC_MS(timer));
+    #endif
     return std::make_shared<std::vector<DCRTPoly>>(std::initializer_list<DCRTPoly>{std::move(ct0), std::move(ct1)});
 }
 

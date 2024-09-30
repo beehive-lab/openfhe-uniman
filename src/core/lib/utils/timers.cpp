@@ -11,36 +11,36 @@
 
 namespace lbcrypto {
 
-double approxSwitchTimer_CPU = 0;
-double approxSwitchTimer_GPU = 0;
-double approxModDownTimer_CPU = 0;
-double approxModDownTimer_GPU = 0;
+double evalKeySwitchPrecomputeCoreTimer_CPU = 0;
+double evalKeySwitchPrecomputeCoreTimer_GPU = 0;
+double evalFastKeySwitchCoreTimer_CPU = 0;
+double evalFastKeySwitchCoreTimer_GPU = 0;
 
 void accumulateTimer(double &timer, double toc) {
     timer += toc;
 }
 
-double getApproxSwitchTimerCPU() {
-    return approxSwitchTimer_CPU;
+double getEvalKeySwitchPrecomputeCoreTimer_CPU() {
+    return evalKeySwitchPrecomputeCoreTimer_CPU;
 }
 
-double getApproxSwitchTimerGPU() {
-    return approxSwitchTimer_GPU;
+double getEvalKeySwitchPrecomputeCoreTimer_GPU() {
+    return evalKeySwitchPrecomputeCoreTimer_GPU;
 }
 
-double getApproxModDownTimerCPU() {
-    return approxSwitchTimer_CPU;
+double getEvalFastKeySwitchCoreTimer_CPU() {
+    return evalFastKeySwitchCoreTimer_CPU;
 }
 
-double getApproxModDownTimerGPU() {
-    return approxModDownTimer_GPU;
+double getEvalFastKeySwitchCoreTimer_GPU() {
+    return evalFastKeySwitchCoreTimer_GPU;
 }
 
 void printTimers() {
-    std::cout << "Total time in ApproxSwitchCRTBasis_CPU = " << getApproxSwitchTimerCPU() << "ms" << std::endl;
-    std::cout << "Total time in ApproxSwitchCRTBasis_GPU = " << getApproxSwitchTimerGPU() << "ms" << std::endl;
-    std::cout << "Total time in ApproxModDown_CPU = " << getApproxModDownTimerCPU() << "ms" << std::endl;
-    std::cout << "Total time in ApproxModDown_GPU = " << getApproxModDownTimerGPU() << "ms" << std::endl;
+    std::cout << "Total time in evalKeySwitchPrecomputeCoreTimer_CPU = " << getEvalKeySwitchPrecomputeCoreTimer_CPU() << "ms" << std::endl;
+    std::cout << "Total time in evalKeySwitchPrecomputeCoreTimer_GPU = " << getEvalKeySwitchPrecomputeCoreTimer_GPU() << "ms" << std::endl;
+    std::cout << "Total time in evalFastKeySwitchCoreTimer_CPU = " << getEvalFastKeySwitchCoreTimer_CPU() << "ms" << std::endl;
+    std::cout << "Total time in evalFastKeySwitchCoreTimer_GPU = " << getEvalFastKeySwitchCoreTimer_GPU() << "ms" << std::endl;
 }
 
 };

@@ -7,17 +7,17 @@
 
 namespace lbcrypto {
 
-extern double approxSwitchTimer_CPU;
-extern double approxSwitchTimer_GPU;
-extern double approxModDownTimer_CPU;
-extern double approxModDownTimer_GPU;
+extern double evalKeySwitchPrecomputeCoreTimer_CPU;
+extern double evalKeySwitchPrecomputeCoreTimer_GPU;
+extern double evalFastKeySwitchCoreTimer_CPU;
+extern double evalFastKeySwitchCoreTimer_GPU;
 
 void accumulateTimer(double &timer, double toc);
 
-double getApproxSwitchTimerCPU();
-double getApproxSwitchTimerGPU();
-double getApproxModDownTimerCPU();
-double getApproxModDownTimerGPU();
+double getEvalKeySwitchPrecomputeCoreTimer_CPU();
+double getEvalKeySwitchPrecomputeCoreTimer_GPU();
+double getEvalFastKeySwitchCoreTimer_CPU();
+double getEvalFastKeySwitchCoreTimer_GPU();
 
 void printTimers();
 

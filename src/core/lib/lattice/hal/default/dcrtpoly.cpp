@@ -1422,8 +1422,8 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     const std::vector<NativeInteger>& QHatInvModq, const std::vector<NativeInteger>& QHatInvModqPrecon,
     const std::vector<std::vector<NativeInteger>>& QHatModp, const std::vector<DoubleNativeInt>& modpBarrettMu) const {
 
-    TimeVar t;
-    TIC(t);
+    //TimeVar t;
+    //TIC(t);
 
     DCRTPolyType ans(paramsP, this->GetFormat(), true);
 
@@ -1497,7 +1497,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasis(
     cudaUtils.DeallocateMemoryForApproxSwitchCRTBasisKernel(sizeQ, host_m_vectors, host_qhatinvmodq, host_QHatInvModqPrecon, host_qhatmodp, host_modpBarrettMu, host_ans_m_vectors);
 #endif
 
-    accumulateTimer(approxSwitchTimer, TOC_MS(t));
+    //accumulateTimer(approxSwitchTimer, TOC_MS(t));
 
     return ans;
 }
