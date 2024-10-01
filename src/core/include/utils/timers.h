@@ -7,28 +7,28 @@
 
 namespace lbcrypto {
 
-extern double approxSwitchTimer_CPU;
-extern double approxSwitchTimer_GPU;
-extern double approxModDownTimer_CPU;
-extern double approxModDownTimer_GPU;
+extern double evalKeySwitchPrecomputeCoreTimer_CPU;
+extern double evalKeySwitchPrecomputeCoreTimer_GPU;
+extern double evalFastKeySwitchCoreTimer_CPU;
+extern double evalFastKeySwitchCoreTimer_GPU;
 
-extern int    approxSwitchCRTBasisCounter_CPU;
-extern int    approxSwitchCRTBasisCounter_GPU;
-extern int    approxModDownCounter_CPU;
-extern int    approxModDownCounter_GPU;
+/*extern int    evalKeySwitchPrecomputeCoreCounter_CPU;
+extern int    evalKeySwitchPrecomputeCoreCounter_GPU;
+extern int    evalFastKeySwitchCoreCounter_CPU;
+extern int    evalFastKeySwitchCoreCounter_GPU;*/
 
 void accumulateTimer(double &timer, double toc);
 void incrementInvocationCounter(int &counter);
 
-double getApproxSwitchTimerCPU();
-double getApproxSwitchTimerGPU();
-double getApproxModDownTimerCPU();
-double getApproxModDownTimerGPU();
+double getEvalKeySwitchPrecomputeCoreTimer_CPU();
+double getEvalKeySwitchPrecomputeCoreTimer_GPU();
+double getEvalFastKeySwitchCoreTimer_CPU();
+double getEvalFastKeySwitchCoreTimer_GPU();
 
-int getApproxSwitchCRTBasisCounter_CPU();
+/*int getApproxSwitchCRTBasisCounter_CPU();
 int getApproxSwitchCRTBasisCounter_GPU();
 int getApproxModDownCounter_CPU();
-int getApproxModDownCounter_GPU();
+int getApproxModDownCounter_GPU();*/
 
 void printTimers();
 

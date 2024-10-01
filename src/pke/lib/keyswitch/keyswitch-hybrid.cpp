@@ -489,8 +489,8 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalKeySwitchPrecomputeC
             cryptoParams->GetPartQlHatInvModqPrecon(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatModp(sizeQl - 1, part),
             cryptoParams->GetmodComplPartqBarrettMu(sizeQl - 1, part));
-        accumulateTimer(approxSwitchTimer_CPU, TOC_MS(t));
-        incrementInvocationCounter(approxSwitchCRTBasisCounter_CPU);
+        accumulateTimer(evalKeySwitchPrecomputeCoreTimer_CPU, TOC_MS(t));
+        //incrementInvocationCounter(approxSwitchCRTBasisCounter_CPU);
         #else
         TimeVar t;
         TIC(t);
@@ -500,8 +500,8 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalKeySwitchPrecomputeC
             cryptoParams->GetPartQlHatInvModqPrecon(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatModp(sizeQl - 1, part),
             cryptoParams->GetmodComplPartqBarrettMu(sizeQl - 1, part));
-        accumulateTimer(approxSwitchTimer_GPU, TOC_MS(t));
-        incrementInvocationCounter(approxSwitchCRTBasisCounter_GPU);
+        accumulateTimer(evalKeySwitchPrecomputeCoreTimer_GPU, TOC_MS(t));
+        //incrementInvocationCounter(approxSwitchCRTBasisCounter_GPU);
         #endif
 
         //std::cout << "=====> [END] EvalKeySwitchPrecomputeCore" << std::endl;
@@ -555,8 +555,8 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                                               cryptoParams->GetModqBarrettMu(), cryptoParams->GettInvModp(),
                                               cryptoParams->GettInvModpPrecon(), t, cryptoParams->GettModqPrecon());
 
-    accumulateTimer(approxModDownTimer_CPU, TOC_MS(timer));
-    incrementInvocationCounter(approxModDownCounter_CPU);
+    accumulateTimer(evalFastKeySwitchCoreTimer_CPU, TOC_MS(timer));
+    //incrementInvocationCounter(approxModDownCounter_CPU);
     #else
     TimeVar timer;
     TIC(timer);
@@ -619,8 +619,8 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
     //DCRTPoly ct0 = resultCt0.get();
     //DCRTPoly ct1 = resultCt1.get();
-    accumulateTimer(approxModDownTimer_GPU, TOC_MS(timer));
-    incrementInvocationCounter(approxModDownCounter_GPU);
+    accumulateTimer(evalFastKeySwitchCoreTimer_GPU, TOC_MS(timer));
+    //incrementInvocationCounter(approxModDownCounter_GPU);
     #endif
 
     //std::cout << "   [END] EvalFastKeySwitchCore" << std::endl;
