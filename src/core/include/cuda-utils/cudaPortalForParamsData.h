@@ -42,16 +42,13 @@ private:
     static void freeCUDAPtrAndHandleError(void* device_ptr);
     static void handleCUDAError(const std::string& operation, cudaError_t err);
 
-    void createCUDAStream();
-    void destroyCUDAStream();
-
     void freeHostMemory() const;
     void freeDeviceMemory() const;
 
 public:
 
     // Constructor
-    cudaPortalForParamsData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ);
+    cudaPortalForParamsData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ, cudaStream_t stream);
 
     // Destructor
     ~cudaPortalForParamsData();

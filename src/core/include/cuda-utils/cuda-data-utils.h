@@ -39,18 +39,80 @@ public:
     int getGpuBlocks() const { return gpuBlocks; }
     int getGpuThreads() const { return gpuThreads; }
 
+    cudaStream_t getParamsStream() const { return paramsStream; }
+    cudaStream_t getWorkDataStream0() const { return workDataStream0; }
+    cudaStream_t getWorkDataStream1() const { return workDataStream1; }
+
 
 private:
 
     int gpuBlocks;
     int gpuThreads;
 
+    cudaStream_t        paramsStream;
+    cudaStream_t        workDataStream0;
+    cudaStream_t        workDataStream1;
+
     // private constructor to prevent instantatiation from outside
     cudaDataUtils() {
         gpuBlocks = 0;
         gpuThreads = 0;
+
+        createCUDAStreams();
     }
 
+    /**
+     * @brief Destructor to ensure proper cleanup of CUDA resources.
+     *
+     * This destructor is responsible for destroying the CUDA streams when the singleton
+     * instance is destroyed, preventing resource leaks.
+     */
+    ~cudaDataUtils() {
+        destroyCUDAStreams();
+    }
+
+    void createCUDAStreams() {
+        cudaError_t err;
+        err = cudaStreamCreate(&paramsStream);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("CUDA error during paramsStream creation: " + std::string(cudaGetErrorString(err)));
+        }
+        err = cudaStreamCreate(&workDataStream0);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("CUDA error during workDataStream0 creation: " + std::string(cudaGetErrorString(err)));
+        }
+        err = cudaStreamCreate(&workDataStream1);
+        if (err != cudaSuccess) {
+            throw std::runtime_error("CUDA error during workDataStream1 creation: " + std::string(cudaGetErrorString(err)));
+        }
+    }
+
+    void destroyCUDAStreams() {
+        cudaError_t err;
+        if (paramsStream) {
+            err = cudaStreamDestroy(paramsStream);
+            if (err != cudaSuccess) {
+                std::cerr << "CUDA error during paramsStream destruction: "
+                          << cudaGetErrorString(err) << std::endl;
+            }
+        }
+
+        if (workDataStream0) {
+            err = cudaStreamDestroy(workDataStream0);
+            if (err != cudaSuccess) {
+                std::cerr << "CUDA error during workDataStream0 destruction: "
+                          << cudaGetErrorString(err) << std::endl;
+            }
+        }
+
+        if (workDataStream1) {
+            err = cudaStreamDestroy(workDataStream1);
+            if (err != cudaSuccess) {
+                std::cerr << "CUDA error during workDataStream1 destruction: "
+                          << cudaGetErrorString(err) << std::endl;
+            }
+        }
+    }
 
     // Delete copy constructor and assignment operator to prevent copying of the singleton instance
     cudaDataUtils(const cudaDataUtils&) = delete;

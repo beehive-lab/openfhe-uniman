@@ -41,7 +41,7 @@ private:
 public:
 
     // Constructor
-    cudaPortalForApproxSwitchCRTBasis(std::shared_ptr<cudaPortalForParamsData> params_data);
+    cudaPortalForApproxSwitchCRTBasis(std::shared_ptr<cudaPortalForParamsData> params_data, cudaStream_t workDataStream);
 
     // Destructor
     ~cudaPortalForApproxSwitchCRTBasis();
@@ -76,8 +76,6 @@ private:
     void allocateHostData();
     static void handleFreeError(const std::string& operation, void* ptr);
     static void handleCUDAError(const std::string& operation, cudaError_t err);
-    void createCUDAStream();
-    void destroyCUDAStream();
     void freeHostMemory();
     void freeDeviceMemory();
 

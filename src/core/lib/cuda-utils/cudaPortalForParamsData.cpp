@@ -4,18 +4,17 @@ namespace lbcrypto {
 
 using uint128_t = unsigned __int128;
 
-cudaPortalForParamsData::cudaPortalForParamsData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ)
+cudaPortalForParamsData::cudaPortalForParamsData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ, cudaStream_t stream)
     : ringDim(ringDim), sizeP(sizeP), sizeQ(sizeQ) // Initializer list
 {
     //std::cout << "[CONSTRUCTOR] Call constructor for " << this << "(cudaPortalForParamsData)" << std::endl;
-    createCUDAStream();
+    this->paramsStream = stream;
     allocateHostParams();
 }
 
 cudaPortalForParamsData::~cudaPortalForParamsData() {
     //std::cout << "[DESTRUCTOR] Call destructor for " << this << "(cudaPortalForParamsData)" << std::endl;
 
-    destroyCUDAStream();
     freeHostMemory();
     freeDeviceMemory();
 
@@ -143,13 +142,6 @@ void cudaPortalForParamsData::handleCUDAError(const std::string& operation, cuda
     }
 }
 
-void cudaPortalForParamsData::createCUDAStream() {
-    cudaError_t err = cudaStreamCreate(&paramsStream);
-    if (err != cudaSuccess) {
-        handleCUDAError("stream creation", err);
-    }
-}
-
 void cudaPortalForParamsData::allocateHostParams() {
     host_qhatinvmodq        = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
     handleMallocError("host_qhatinvmodq", host_qhatinvmodq);
@@ -159,16 +151,6 @@ void cudaPortalForParamsData::allocateHostParams() {
     handleMallocError("host_qhatmodp", host_qhatmodp);
     host_modpBarrettMu      = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
     handleMallocError("host_modpBarrettMu", host_modpBarrettMu);
-}
-
-void cudaPortalForParamsData::destroyCUDAStream() {
-    if (paramsStream) {
-        cudaError_t err = cudaStreamDestroy(paramsStream);
-        if (err != cudaSuccess) {
-            handleCUDAError("stream destruction", err);
-        }
-        paramsStream = nullptr; // Set pointer to nullptr after destroying
-    }
 }
 
 void cudaPortalForParamsData::freeHostMemory() const {

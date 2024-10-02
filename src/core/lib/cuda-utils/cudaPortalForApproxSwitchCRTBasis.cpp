@@ -5,7 +5,7 @@ namespace lbcrypto {
 using PolyType = PolyImpl<NativeVector>;
 
 //constructor impl
-cudaPortalForApproxSwitchCRTBasis::cudaPortalForApproxSwitchCRTBasis(const std::shared_ptr<cudaPortalForParamsData> params_data) {
+cudaPortalForApproxSwitchCRTBasis::cudaPortalForApproxSwitchCRTBasis(const std::shared_ptr<cudaPortalForParamsData> params_data, cudaStream_t workDataStream) {
     //std::cout << "[CONSTRUCTOR] Call constructor for " << this << "(cudaPortalForApproxModDown)" << std::endl;
 
     this->paramsData = params_data;
@@ -14,7 +14,7 @@ cudaPortalForApproxSwitchCRTBasis::cudaPortalForApproxSwitchCRTBasis(const std::
     this->sizeP = params_data->getSizeP();
     this->sizeQ = params_data->getSizeQ();
 
-    createCUDAStream();
+    this->stream = workDataStream;
 
     allocateHostData();
 }
@@ -22,7 +22,6 @@ cudaPortalForApproxSwitchCRTBasis::cudaPortalForApproxSwitchCRTBasis(const std::
 cudaPortalForApproxSwitchCRTBasis::~cudaPortalForApproxSwitchCRTBasis() {
     //std::cout << "[DESTRUCTOR] Call destructor for " << this << "(cudaPortalForApproxModDown)" << std::endl;
 
-    destroyCUDAStream();
     freeHostMemory();
     freeDeviceMemory();
 }
@@ -213,24 +212,6 @@ void cudaPortalForApproxSwitchCRTBasis::handleFreeError(const std::string& opera
 void cudaPortalForApproxSwitchCRTBasis::handleCUDAError(const std::string& operation, cudaError_t err) {
     if (err != cudaSuccess) {
         throw std::runtime_error("CUDA error during " + operation + ": " + std::string(cudaGetErrorString(err)));
-    }
-}
-
-void cudaPortalForApproxSwitchCRTBasis::createCUDAStream() {
-    cudaError_t err = cudaStreamCreate(&stream);
-    if (err != cudaSuccess) {
-        handleCUDAError("stream creation", err);
-    }
-
-}
-
-void cudaPortalForApproxSwitchCRTBasis::destroyCUDAStream() {
-    if (stream) {
-        cudaError_t err = cudaStreamDestroy(stream);
-        if (err != cudaSuccess) {
-            handleCUDAError("stream destruction", err);
-        }
-        stream = nullptr; // Set pointer to nullptr after destroying
     }
 }
 

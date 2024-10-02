@@ -569,11 +569,13 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
     //std::cout << "[EvalFastKeySwitchCore - opt implementation]: sizeP = " << sizeP << ", sizeQ = " << sizeQ << std::endl;
 
+    cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
+
     // create portal obj for parameters
-    std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ);
+    std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ, cudaUtils.getParamsStream());
     // create portal objs for work data
-    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal0 = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal);
-    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal1 = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal);
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal0 = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal, cudaUtils.getWorkDataStream0());
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal1 = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal, cudaUtils.getWorkDataStream1());
 
     // marshal params
     paramsDataPortal->marshalParams(cryptoParams->GetPHatInvModp(),

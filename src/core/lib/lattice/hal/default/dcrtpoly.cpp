@@ -1634,10 +1634,12 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasisCUDA(
     usint sizeQ   = (m_vectors.size() > paramsQ->GetParams().size()) ? paramsQ->GetParams().size() : m_vectors.size();
     usint sizeP   = ans.m_vectors.size();
 
+    cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
+
     // create portal obj for parameters
-    std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ);
+    std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ, cudaUtils.getParamsStream());
     // create portal obj for work data
-    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal);
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal, cudaUtils.getWorkDataStream0());
 
     // marshal params
     paramsDataPortal->marshalParams(QHatInvModq,
@@ -1655,7 +1657,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasisCUDA(
     workDataPortal->copyInWorkData();
 
     // invoke approxSwitchCRTBasis kernel
-    cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
     const int gpuBlocks = cudaUtils.getGpuBlocks();
     const int gpuThreads = cudaUtils.getGpuThreads();
     workDataPortal->invokeKernelOfApproxSwitchCRTBasis(gpuBlocks, gpuThreads);
