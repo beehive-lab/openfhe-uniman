@@ -23,9 +23,11 @@ int main() {
     parameters.SetPlaintextModulus(65537);
 
     #if defined(WITH_CUDA)
+    // Access the singleton instance of cudaDataUtils
+    cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
     // Set GPU configuration - Note: suitable for RTX 3050
-    lbcrypto::cudaDataUtils::setGpuBlocks(16);
-    lbcrypto::cudaDataUtils::setGpuThreads(512);
+    cudaUtils.setGpuBlocks(16);
+    cudaUtils.setGpuThreads(512);
     #endif
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);

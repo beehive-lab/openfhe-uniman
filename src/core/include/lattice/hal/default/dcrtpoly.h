@@ -68,9 +68,6 @@ namespace lbcrypto {
 template <typename VecType>
 class DCRTPolyImpl : public DCRTPolyInterface<DCRTPolyImpl<VecType>, VecType, NativeVector, PolyImpl> {
 public:
- #if defined(WITH_CUDA)
-    cudaDataUtils cudaUtils;
- #endif
     using Integer = typename VecType::Integer;
     using Params  = ILDCRTParams<Integer>;
 

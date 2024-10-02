@@ -11,22 +11,52 @@ namespace lbcrypto {
 
 using PolyType = PolyImpl<NativeVector>;
 
+/**
+ * @class cudaDataUtils
+ * @brief Singleton class for centralized management of CUDA configurations.
+ */
 class cudaDataUtils {
 
+public:
+    /**
+     * @brief Returns the singleton instance of cudaDataUtils.
+     *
+     * This function provides access to the single instance of the class.
+     * The instance is created when first called and reused afterward.
+     * Currently is instatiated it in the application.
+     *
+     * @return cudaDataUtils& The singleton instance.
+     */
+
+    static cudaDataUtils& getInstance() {
+        static cudaDataUtils instance; // Guaranteed to be destroyed and instantiated on first use
+        return instance;
+    }
+
+    void setGpuBlocks(const int blocks) { gpuBlocks = blocks; }
+    void setGpuThreads(const int threads) { gpuThreads = threads; }
+
+    int getGpuBlocks() const { return gpuBlocks; }
+    int getGpuThreads() const { return gpuThreads; }
+
+
 private:
-    static int gpuBlocks;
-    static int gpuThreads;
+
+    int gpuBlocks;
+    int gpuThreads;
+
+    // private constructor to prevent instantatiation from outside
+    cudaDataUtils() {
+        gpuBlocks = 0;
+        gpuThreads = 0;
+    }
+
+
+    // Delete copy constructor and assignment operator to prevent copying of the singleton instance
+    cudaDataUtils(const cudaDataUtils&) = delete;
+    cudaDataUtils& operator=(const cudaDataUtils&) = delete;
 
 public:
-
-    // constructor
-    cudaDataUtils();
-
-    static void setGpuBlocks(int blocks);
-    static void setGpuThreads(int threads);
-
-    static int getGpuBlocks();
-    static int getGpuThreads();
 
     // data marshaling methods
     static void marshalDataForApproxSwitchCRTBasisKernel(uint32_t ringDim, uint32_t sizeQ, uint32_t sizeP,

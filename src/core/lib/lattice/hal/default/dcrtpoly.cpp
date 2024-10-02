@@ -1569,6 +1569,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
 
 
     // get gpu configuration
+    cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
     const int gpuBlocks = cudaUtils.getGpuBlocks();
     const int gpuThreads = cudaUtils.getGpuThreads();
 
@@ -1654,6 +1655,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasisCUDA(
     workDataPortal->copyInWorkData();
 
     // invoke approxSwitchCRTBasis kernel
+    cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
     const int gpuBlocks = cudaUtils.getGpuBlocks();
     const int gpuThreads = cudaUtils.getGpuThreads();
     workDataPortal->invokeKernelOfApproxSwitchCRTBasis(gpuBlocks, gpuThreads);
