@@ -159,24 +159,6 @@ void approxSwitchCRTBasisKernelWrapper(dim3 blocks, dim3 threads, void** args, c
     //std::cout << "New approxSwitchCRTBasisKernelWrapper" << std::endl;
     cudaError_t         cudaStatus;
 
-    // Calculate resources needed
-    int smCount;
-    cudaDeviceGetAttribute(&smCount, cudaDevAttrMultiProcessorCount, 0);
-
-    cudaFuncAttributes attr;
-    cudaFuncGetAttributes(&attr, approxSwitchCRTBasis);
-
-    // Calculate the total number of registers and shared memory usage
-    int totalThreadsPerBlock = threads.x;
-    int sharedMemPerBlock = attr.sharedSizeBytes;
-    int numRegsPerThread = attr.numRegs;
-
-    //std::cout << "Total threads per block: " << totalThreadsPerBlock << std::endl;
-    //std::cout << "Total shared memory per block: " << sharedMemPerBlock << " bytes" << std::endl;
-    //std::cout << "Number of registers per thread: " << numRegsPerThread << std::endl;
-    //std::cout << "Max threads per multiprocessor: " << attr.maxThreadsPerBlock << std::endl;
-    //std::cout << "Number of multiprocessors: " << smCount << std::endl;
-
     //cudaDeviceSynchronize();
     cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, 0U, stream);
     if (cudaStatus != cudaSuccess) {
