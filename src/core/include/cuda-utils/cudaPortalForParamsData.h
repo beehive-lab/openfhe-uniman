@@ -39,7 +39,7 @@ private:
 
     static void handleMallocError(const std::string& allocationName, void* ptr);
     static void freePtrAndHandleError(const std::string& operation, void* ptr);
-    static void freeCUDAPtrAndHandleError(void* device_ptr);
+    void freeCUDAPtrAndHandleError(void* device_ptr) const;
     static void handleCUDAError(const std::string& operation, cudaError_t err);
 
     void freeHostMemory() const;

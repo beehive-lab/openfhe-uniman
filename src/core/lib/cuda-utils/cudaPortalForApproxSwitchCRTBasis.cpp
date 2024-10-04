@@ -30,13 +30,10 @@ cudaPortalForApproxSwitchCRTBasis::~cudaPortalForApproxSwitchCRTBasis() {
 // Getter Functions
 cudaStream_t                                cudaPortalForApproxSwitchCRTBasis::getStream() const { return stream; }
 std::shared_ptr<cudaPortalForParamsData>    cudaPortalForApproxSwitchCRTBasis::getParamsData() const { return paramsData; }
-unsigned long*                              cudaPortalForApproxSwitchCRTBasis::getHost_ans_m_vectors_data() const {return host_ans_m_vectors_data;}
-unsigned long*                              cudaPortalForApproxSwitchCRTBasis::getHost_ans_m_vectors_modulus() const {return host_ans_m_vectors_modulus;}
+m_vectors_struct*                           cudaPortalForApproxSwitchCRTBasis::getHost_ans_m_vectors() const {return host_ans_m_vectors;}
 uint128_t*                                  cudaPortalForApproxSwitchCRTBasis::getDevice_sum() const { return device_sum;}
-unsigned long*                              cudaPortalForApproxSwitchCRTBasis::getDevice_m_vectors_data() const { return device_m_vectors_data;}
-unsigned long*                              cudaPortalForApproxSwitchCRTBasis::getDevice_m_vectors_modulus() const { return device_m_vectors_modulus;}
-unsigned long*                              cudaPortalForApproxSwitchCRTBasis::getDevice_ans_m_vectors_data() const { return device_ans_m_vectors_data;}
-unsigned long*                              cudaPortalForApproxSwitchCRTBasis::getDevice_ans_m_vectors_modulus() const { return device_ans_m_vectors_modulus;}
+m_vectors_struct*                           cudaPortalForApproxSwitchCRTBasis::getDevice_m_vectors() const { return device_m_vectors;}
+m_vectors_struct*                           cudaPortalForApproxSwitchCRTBasis::getDevice_ans_m_vectors() const { return device_ans_m_vectors;}
 
 // marshal
 
@@ -44,12 +41,12 @@ void cudaPortalForApproxSwitchCRTBasis::marshalWorkData(const std::vector<PolyIm
                                                  const std::vector<PolyImpl<NativeVector>>& ans_m_vectors) {
     for (uint32_t q = 0; q < sizeQ; ++q) {
         for (uint32_t rd = 0; rd < ringDim; ++rd) {
-            host_m_vectors_data[(q * ringDim) + rd] = m_vectors[q][rd].template ConvertToInt<>();
+            host_m_vectors[q].data[rd] = m_vectors[q][rd].template ConvertToInt<>();
         }
-        host_m_vectors_modulus[q] = m_vectors[q].GetModulus().ConvertToInt();
+        host_m_vectors[q].modulus = m_vectors[q].GetModulus().ConvertToInt();
     }
     for (uint32_t sp = 0; sp < sizeP; sp++) {
-        host_ans_m_vectors_modulus[sp] = ans_m_vectors[sp].GetModulus().ConvertToInt();
+        host_ans_m_vectors[sp].modulus = ans_m_vectors[sp].GetModulus().ConvertToInt();
     }
 
     // print for debugging
@@ -72,7 +69,7 @@ void cudaPortalForApproxSwitchCRTBasis::unmarshalWorkData(std::vector<PolyImpl<N
 
     for (usint j = 0; j < sizeP; j++) {
         for(usint ri = 0; ri < ringDim; ri++) {
-            ans_m_vectors[j][ri] = NativeInteger(host_ans_m_vectors_data[(j * ringDim) + ri]);
+            ans_m_vectors[j][ri] = NativeInteger(host_ans_m_vectors[j].data[ri]);
         }
     }
 }
@@ -80,86 +77,92 @@ void cudaPortalForApproxSwitchCRTBasis::unmarshalWorkData(std::vector<PolyImpl<N
 // Data Transfer Functions
 
 void cudaPortalForApproxSwitchCRTBasis::copyInWorkData() {
-    cudaError_t err;
 
-    size_t m_vectors_data_size = sizeQ * ringDim * sizeof(unsigned long);
-    size_t m_vectors_modulus_size = sizeQ * sizeof(unsigned long);
-
-    err = cudaMallocAsync((void**)&device_m_vectors_data, m_vectors_data_size, stream);
+    cudaError_t err = cudaMallocAsync((void**)&device_m_vectors, sizeQ * sizeof(m_vectors_struct), stream);
     if (err != cudaSuccess) {
-        printf("Error allocating device_m_vectors_data: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
-    }
-    err = cudaMallocAsync((void**)&device_m_vectors_modulus, m_vectors_modulus_size, stream);
-    if (err != cudaSuccess) {
-        printf("Error allocating device_m_vectors_modulus: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
+        printf("Error allocating device_m_vectors: %s (%d)\n", cudaGetErrorString(err), err);
+        exit(-1); // or handle error appropriately
     }
 
-    err = cudaMemcpyAsync(device_m_vectors_data, host_m_vectors_data, m_vectors_data_size, cudaMemcpyHostToDevice, stream);
+    err = cudaMemcpyAsync(device_m_vectors, host_m_vectors, sizeQ * sizeof(m_vectors_struct), cudaMemcpyHostToDevice, stream);
     if (err != cudaSuccess) {
-        printf("Error copying to device_m_vectors_data: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
+        printf("Error copying to device_m_vectors: %s (%d)\n", cudaGetErrorString(err), err);
+        return; // or handle error appropriately
     }
-    err = cudaMemcpyAsync(device_m_vectors_modulus, host_m_vectors_modulus, m_vectors_modulus_size, cudaMemcpyHostToDevice, stream);
-    if (err != cudaSuccess) {
-        printf("Error copying to device_m_vectors_modulus: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
+
+    this->device_m_vectors_data_ptr = (unsigned long**)malloc(sizeQ * sizeof(unsigned long*));
+    if (!device_m_vectors_data_ptr) {
+        printf("Error allocating device_m_vectors_data_ptr\n");
+        return; // or handle error appropriately
+    }
+
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        err = cudaMallocAsync((void**)&(device_m_vectors_data_ptr[q]), ringDim * sizeof(unsigned long), stream);
+        if (err != cudaSuccess) {
+            printf("Error allocating device_m_vectors_data_ptr[%d]: %s (%d)\n", q, cudaGetErrorString(err), err);
+            return; // or handle error appropriately
+        }
+
+        err = cudaMemcpyAsync(&(device_m_vectors[q].data), &(device_m_vectors_data_ptr[q]), sizeof(unsigned long*), cudaMemcpyHostToDevice, stream);
+        if (err != cudaSuccess) {
+            printf("Error copying to device_m_vectors[%d].data: %s (%d)\n", q, cudaGetErrorString(err), err);
+            return; // or handle error appropriately
+        }
+
+        err = cudaMemcpyAsync(device_m_vectors_data_ptr[q], host_m_vectors[q].data, ringDim * sizeof(unsigned long), cudaMemcpyHostToDevice, stream);
+        if (err != cudaSuccess) {
+            printf("Error copying to device_m_vectors_data_ptr[%d]: %s (%d)\n", q, cudaGetErrorString(err), err);
+            return; // or handle error appropriately
+        }
     }
 
     // sum
     err = cudaMallocAsync((void**)&device_sum, sizeP * ringDim * sizeof(uint128_t), stream);
     if (err != cudaSuccess) {
         printf("Error allocating device_sum: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
+        return; // or handle error appropriately
     }
 
     err = cudaMemsetAsync(device_sum, 0, sizeP * ringDim * sizeof(uint128_t), stream);
     if (err != cudaSuccess) {
         printf("Error setting device_sum to zero: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
+        return; // or handle error appropriately
     }
 
-    // ans
-    size_t ans_m_vectors_data_size = sizeP * ringDim * sizeof(unsigned long);
-    size_t ans_m_vectors_modulus_size = sizeP * sizeof(unsigned long);
-    err = cudaMallocAsync((void**)&device_ans_m_vectors_data, ans_m_vectors_data_size, stream);
+    // ans_m_vectors
+    err = cudaMallocAsync((void**)&device_ans_m_vectors, sizeP * sizeof(m_vectors_struct), stream);
     if (err != cudaSuccess) {
-        printf("Error allocating device_ans_m_vectors_data: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
-    }
-    err = cudaMallocAsync((void**)&device_ans_m_vectors_modulus, ans_m_vectors_modulus_size, stream);
-    if (err != cudaSuccess) {
-        printf("Error allocating device_ans_m_vectors_modulus: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
+        printf("Error allocating device_ans_m_vectors: %s (%d)\n", cudaGetErrorString(err), err);
+        return; // or handle error appropriately
     }
 
-    err = cudaMemcpyAsync(device_ans_m_vectors_data, host_ans_m_vectors_data, ans_m_vectors_data_size, cudaMemcpyHostToDevice, stream);
+    err = cudaMemcpyAsync(device_ans_m_vectors, host_ans_m_vectors, sizeP * sizeof(m_vectors_struct), cudaMemcpyHostToDevice, stream);
     if (err != cudaSuccess) {
-        printf("Error copying to device_ans_m_vectors_data: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
+        printf("Error copying to device_ans_m_vectors: %s (%d)\n", cudaGetErrorString(err), err);
+        return; // or handle error appropriately
     }
-    err = cudaMemcpyAsync(device_ans_m_vectors_modulus, host_ans_m_vectors_modulus, ans_m_vectors_modulus_size, cudaMemcpyHostToDevice, stream);
-    if (err != cudaSuccess) {
-        printf("Error copying to device_ans_m_vectors_modulus: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
+
+    this->device_ans_m_vectors_data_ptr = (unsigned long**)malloc(sizeP * sizeof(unsigned long*));
+
+    for (uint32_t p = 0; p < sizeP; ++p) {
+        err = cudaMallocAsync((void**)&(device_ans_m_vectors_data_ptr[p]), ringDim * sizeof(unsigned long), stream);
+        if (err != cudaSuccess) {
+            printf("Error allocating device_ans_m_vectors_data_ptr[%d]: %s (%d)\n", p, cudaGetErrorString(err), err);
+            return; // or handle error appropriately
+        }
+
+        err = cudaMemcpyAsync(&(device_ans_m_vectors[p].data), &(device_ans_m_vectors_data_ptr[p]), sizeof(unsigned long*), cudaMemcpyHostToDevice, stream);
+        if (err != cudaSuccess) {
+            printf("Error copying to device_ans_m_vectors[%d].data: %s (%d)\n", p, cudaGetErrorString(err), err);
+            return; // or handle error appropriately
+        }
     }
 }
 
 void cudaPortalForApproxSwitchCRTBasis::copyOutResult() {
-    cudaError_t prevErr = cudaGetLastError();
-    if (prevErr != cudaSuccess) {
-        printf("Previous CUDA error: %s (%d)\n", cudaGetErrorString(prevErr), prevErr);
-        throw std::runtime_error("");
-    }
-    if (host_ans_m_vectors_data == nullptr || device_ans_m_vectors_data == nullptr) {
-        printf("Memory for host/device answer vectors not allocated.\n");
-        throw std::runtime_error("");
-    }
-    cudaError_t err = cudaMemcpyAsync(host_ans_m_vectors_data, device_ans_m_vectors_data, sizeP * ringDim * sizeof(unsigned long), cudaMemcpyDeviceToHost, stream);
-    if (err != cudaSuccess) {
-        printf("Error copying from device_ans_m_vectors_data: %s (%d)\n", cudaGetErrorString(err), err);
-        throw std::runtime_error("");
+
+    for(uint32_t p = 0; p < sizeP; p++) {
+        cudaMemcpyAsync(host_ans_m_vectors[p].data, device_ans_m_vectors_data_ptr[p], ringDim * sizeof(unsigned long), cudaMemcpyDeviceToHost, stream);
     }
 
     //std::cout << "==> COPY OUT FINISHED" << std::endl;
@@ -177,7 +180,7 @@ void cudaPortalForApproxSwitchCRTBasis::invokeKernelOfApproxSwitchCRTBasis(int g
     uint128_t*          device_QHatModp             = paramsData->getDevice_QHatModp();
     uint128_t*          device_modpBarrettMu        = paramsData->getDevice_modpBarrettMu();
 
-    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors_data, &device_m_vectors_modulus, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, &device_sum, &device_modpBarrettMu, &device_ans_m_vectors_data, &device_ans_m_vectors_modulus};
+    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, &device_sum, &device_modpBarrettMu, &device_ans_m_vectors};
 
     approxSwitchCRTBasisKernelWrapper(blocks, threads, args, stream);
 }
@@ -185,41 +188,15 @@ void cudaPortalForApproxSwitchCRTBasis::invokeKernelOfApproxSwitchCRTBasis(int g
 // Resources Allocation/Deallocation - Error Handling - Misc Functions
 
 void cudaPortalForApproxSwitchCRTBasis::allocateHostData() {
-    size_t host_m_vectors_data_size = sizeQ * ringDim * sizeof(unsigned long);
-    size_t host_m_vectors_modulus_size = sizeQ * sizeof(unsigned long);
-    size_t host_ans_m_vectors_data_size = sizeP * ringDim * sizeof(unsigned long);
-    size_t host_ans_m_vectors_modulus_size = sizeP * sizeof(unsigned long);
-
-    host_m_vectors_data = (unsigned long*) malloc(host_m_vectors_data_size);
-    if (host_m_vectors_data == nullptr) {
-        fprintf(stderr, "Error: Failed to allocate memory for host_m_vectors_data\n");
-        throw std::runtime_error("Memory allocation failed");
+    host_m_vectors          = (m_vectors_struct*) malloc(sizeQ * sizeof(m_vectors_struct));
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        host_m_vectors[q].data                  = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
     }
 
-    host_m_vectors_modulus = (unsigned long*) malloc(host_m_vectors_modulus_size);
-    if (host_m_vectors_modulus == nullptr) {
-        fprintf(stderr, "Error: Failed to allocate memory for host_m_vectors_modulus\n");
-        free(host_m_vectors_data);  // Free previously allocated memory to avoid leaks
-        throw std::runtime_error("Memory allocation failed");
+    host_ans_m_vectors      = (m_vectors_struct*) malloc(sizeP * sizeof(m_vectors_struct));
+    for (uint32_t p = 0; p < sizeP; ++p) {
+        host_ans_m_vectors[p].data              = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
     }
-
-    host_ans_m_vectors_data = (unsigned long*) malloc(host_ans_m_vectors_data_size);
-    if (host_ans_m_vectors_data == nullptr) {
-        fprintf(stderr, "Error: Failed to allocate memory for host_ans_m_vectors_data\n");
-        free(host_m_vectors_data);   // Clean up previous allocations
-        free(host_m_vectors_modulus);
-        throw std::runtime_error("Memory allocation failed");
-    }
-
-    host_ans_m_vectors_modulus = (unsigned long*) malloc(host_ans_m_vectors_modulus_size);
-    if (host_ans_m_vectors_modulus == nullptr) {
-        fprintf(stderr, "Error: Failed to allocate memory for host_ans_m_vectors_modulus\n");
-        free(host_m_vectors_data);   // Clean up previous allocations
-        free(host_m_vectors_modulus);
-        free(host_ans_m_vectors_data);
-        throw std::runtime_error("Memory allocation failed");
-    }
-
 }
 
 void cudaPortalForApproxSwitchCRTBasis::handleFreeError(const std::string& operation, void* ptr) {
@@ -239,25 +216,40 @@ void cudaPortalForApproxSwitchCRTBasis::handleCUDAError(const std::string& opera
 }
 
 void cudaPortalForApproxSwitchCRTBasis::freeHostMemory() {
-    free(host_m_vectors_data);
-    free(host_m_vectors_modulus);
-    free(host_ans_m_vectors_data);
-    free(host_ans_m_vectors_modulus);
+    // Free host_m_vectors[q].data memory
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        handleFreeError("host_m_vectors[" + std::to_string(q) + "].data", host_m_vectors[q].data);
+    }
+
+    // Free host_m_vectors structure
+    handleFreeError("host_m_vectors", host_m_vectors);
+
+    // Free host_ans_m_vectors[p].data memory
+    for (uint32_t p = 0; p < sizeP; ++p) {
+        handleFreeError("host_ans_m_vectors[" + std::to_string(p) + "].data", host_ans_m_vectors[p].data);
+    }
+
+    // Free host_ans_m_vectors structure
+    handleFreeError("host_ans_m_vectors", host_ans_m_vectors);
 }
 
 void cudaPortalForApproxSwitchCRTBasis::freeDeviceMemory() {
     cudaError_t err;
 
-    // Free device_m_vectors_data and modulus
-    if (device_m_vectors_data) {
-        err = cudaFreeAsync(device_m_vectors_data, stream);
-        handleCUDAError("freeing device_m_vectors_data", err);
-        device_m_vectors_data = nullptr;
+    // Free device_m_vectors_data_ptr memory
+    for (uint32_t q = 0; q < sizeQ; ++q) {
+        if (device_m_vectors_data_ptr[q]) {
+            err = cudaFreeAsync(device_m_vectors_data_ptr[q], stream);
+            handleCUDAError("freeing device_m_vectors_data_ptr[" + std::to_string(q) + "]", err);
+        }
     }
-    if (device_m_vectors_modulus) {
-        err = cudaFreeAsync(device_m_vectors_modulus, stream);
-        handleCUDAError("freeing device_m_vectors_modulus", err);
-        device_m_vectors_modulus = nullptr;
+    handleFreeError("device_m_vectors_data_ptr", device_m_vectors_data_ptr);
+
+    // Free device_m_vectors memory
+    if (device_m_vectors) {
+        err = cudaFreeAsync(device_m_vectors, stream);
+        handleCUDAError("freeing device_m_vectors", err);
+        device_m_vectors = nullptr;
     }
 
     // Free device_sum memory
@@ -267,16 +259,20 @@ void cudaPortalForApproxSwitchCRTBasis::freeDeviceMemory() {
         device_sum = nullptr;
     }
 
-    // Free device_ans_m_vectors_data and modulus
-    if (device_ans_m_vectors_data) {
-        err = cudaFreeAsync(device_ans_m_vectors_data, stream);
-        handleCUDAError("freeing device_ans_m_vectors_data", err);
-        device_ans_m_vectors_data = nullptr;
+    // Free device_ans_m_vectors_data_ptr memory
+    for (uint32_t p = 0; p < sizeP; ++p) {
+        if (device_ans_m_vectors_data_ptr[p]) {
+            err = cudaFreeAsync(device_ans_m_vectors_data_ptr[p], stream);
+            handleCUDAError("freeing device_ans_m_vectors_data_ptr[" + std::to_string(p) + "]", err);
+        }
     }
-    if (device_ans_m_vectors_modulus) {
-        err = cudaFreeAsync(device_ans_m_vectors_modulus, stream);
-        handleCUDAError("freeing device_ans_m_vectors_modulus", err);
-        device_ans_m_vectors_modulus = nullptr;
+    handleFreeError("device_ans_m_vectors_data_ptr", device_ans_m_vectors_data_ptr);
+
+    // Free device_ans_m_vectors memory
+    if (device_ans_m_vectors) {
+        err = cudaFreeAsync(device_ans_m_vectors, stream);
+        handleCUDAError("freeing device_ans_m_vectors", err);
+        device_ans_m_vectors = nullptr;
     }
 }
 
@@ -287,7 +283,7 @@ void cudaPortalForApproxSwitchCRTBasis::print_host_m_vectors() {
     for (uint32_t q = 0; q < sizeQ; ++q) {
         std::cout << "host_m_vectors[" << q << "].data[0-3/ringDim]: ";
         for (uint32_t rd = 0; rd < 3; ++rd) {
-            std::cout << host_m_vectors_data[(q * ringDim) + rd] << " ";
+            std::cout << host_m_vectors[q].data[rd] << " ";
         }
         std::cout << std::endl;
     }

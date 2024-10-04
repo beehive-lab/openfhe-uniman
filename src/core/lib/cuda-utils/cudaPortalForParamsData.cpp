@@ -128,10 +128,10 @@ void cudaPortalForParamsData::freePtrAndHandleError(const std::string& operation
     }
 }
 
-void cudaPortalForParamsData::freeCUDAPtrAndHandleError(void* device_ptr) {
+void cudaPortalForParamsData::freeCUDAPtrAndHandleError(void* device_ptr) const {
     cudaError_t err;
     if (device_ptr) {
-        err = cudaFree(device_ptr);
+        err = cudaFreeAsync(device_ptr, paramsStream);
         handleCUDAError("cudaFree", err);
     }
 }
