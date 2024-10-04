@@ -55,7 +55,7 @@ void cudaPortalForParamsData::copyInParams() {
     cudaError_t err;
 
     // Allocate device_QHatInvModq
-    err = cudaMalloc((void**)&device_QHatInvModq, sizeQ * sizeof(unsigned long));
+    err = cudaMallocAsync((void**)&device_QHatInvModq, sizeQ * sizeof(unsigned long), paramsStream);
     if (err != cudaSuccess) {
         printf("Error allocating device_QHatInvModq: %s (%d)\n", cudaGetErrorString(err), err);
         return; // or handle error appropriately
@@ -69,7 +69,7 @@ void cudaPortalForParamsData::copyInParams() {
     }
 
     // Allocate device_QHatInvModqPrecon
-    err = cudaMalloc((void**)&device_QHatInvModqPrecon, sizeQ * sizeof(unsigned long));
+    err = cudaMallocAsync((void**)&device_QHatInvModqPrecon, sizeQ * sizeof(unsigned long), paramsStream);
     if (err != cudaSuccess) {
         printf("Error allocating device_QHatInvModqPrecon: %s (%d)\n", cudaGetErrorString(err), err);
         return; // or handle error appropriately
@@ -83,7 +83,7 @@ void cudaPortalForParamsData::copyInParams() {
     }
 
     // Allocate device_QHatModp
-    err = cudaMalloc((void**)&device_QHatModp, sizeQ * sizeP * sizeof(uint128_t));
+    err = cudaMallocAsync((void**)&device_QHatModp, sizeQ * sizeP * sizeof(uint128_t), paramsStream);
     if (err != cudaSuccess) {
         printf("Error allocating device_QHatModp: %s (%d)\n", cudaGetErrorString(err), err);
         return; // or handle error appropriately
@@ -97,7 +97,7 @@ void cudaPortalForParamsData::copyInParams() {
     }
 
     // Allocate device_modpBarrettMu
-    err = cudaMalloc((void**)&device_modpBarrettMu, sizeP * sizeof(uint128_t));
+    err = cudaMallocAsync((void**)&device_modpBarrettMu, sizeP * sizeof(uint128_t), paramsStream);
     if (err != cudaSuccess) {
         printf("Error allocating device_modpBarrettMu: %s (%d)\n", cudaGetErrorString(err), err);
         return; // or handle error appropriately

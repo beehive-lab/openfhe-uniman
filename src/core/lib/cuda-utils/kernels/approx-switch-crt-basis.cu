@@ -178,7 +178,7 @@ void approxSwitchCRTBasisKernelWrapper(dim3 blocks, dim3 threads, void** args, c
     //std::cout << "Number of multiprocessors: " << smCount << std::endl;
 
     //cudaDeviceSynchronize();
-    cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, 0U, nullptr);
+    cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, 0U, stream);
     if (cudaStatus != cudaSuccess) {
         printf("approxSwitchCRTBasis kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
         //return;

@@ -85,12 +85,12 @@ void cudaPortalForApproxSwitchCRTBasis::copyInWorkData() {
     size_t m_vectors_data_size = sizeQ * ringDim * sizeof(unsigned long);
     size_t m_vectors_modulus_size = sizeQ * sizeof(unsigned long);
 
-    err = cudaMalloc((void**)&device_m_vectors_data, m_vectors_data_size);
+    err = cudaMallocAsync((void**)&device_m_vectors_data, m_vectors_data_size, stream);
     if (err != cudaSuccess) {
         printf("Error allocating device_m_vectors_data: %s (%d)\n", cudaGetErrorString(err), err);
         throw std::runtime_error("");
     }
-    err = cudaMalloc((void**)&device_m_vectors_modulus, m_vectors_modulus_size);
+    err = cudaMallocAsync((void**)&device_m_vectors_modulus, m_vectors_modulus_size, stream);
     if (err != cudaSuccess) {
         printf("Error allocating device_m_vectors_modulus: %s (%d)\n", cudaGetErrorString(err), err);
         throw std::runtime_error("");
@@ -108,13 +108,13 @@ void cudaPortalForApproxSwitchCRTBasis::copyInWorkData() {
     }
 
     // sum
-    err = cudaMalloc((void**)&device_sum, sizeP * ringDim * sizeof(uint128_t));
+    err = cudaMallocAsync((void**)&device_sum, sizeP * ringDim * sizeof(uint128_t), stream);
     if (err != cudaSuccess) {
         printf("Error allocating device_sum: %s (%d)\n", cudaGetErrorString(err), err);
         throw std::runtime_error("");
     }
 
-    err = cudaMemset(device_sum, 0, sizeP * ringDim * sizeof(uint128_t));
+    err = cudaMemsetAsync(device_sum, 0, sizeP * ringDim * sizeof(uint128_t), stream);
     if (err != cudaSuccess) {
         printf("Error setting device_sum to zero: %s (%d)\n", cudaGetErrorString(err), err);
         throw std::runtime_error("");
@@ -123,12 +123,12 @@ void cudaPortalForApproxSwitchCRTBasis::copyInWorkData() {
     // ans
     size_t ans_m_vectors_data_size = sizeP * ringDim * sizeof(unsigned long);
     size_t ans_m_vectors_modulus_size = sizeP * sizeof(unsigned long);
-    err = cudaMalloc((void**)&device_ans_m_vectors_data, ans_m_vectors_data_size);
+    err = cudaMallocAsync((void**)&device_ans_m_vectors_data, ans_m_vectors_data_size, stream);
     if (err != cudaSuccess) {
         printf("Error allocating device_ans_m_vectors_data: %s (%d)\n", cudaGetErrorString(err), err);
         throw std::runtime_error("");
     }
-    err = cudaMalloc((void**)&device_ans_m_vectors_modulus, ans_m_vectors_modulus_size);
+    err = cudaMallocAsync((void**)&device_ans_m_vectors_modulus, ans_m_vectors_modulus_size, stream);
     if (err != cudaSuccess) {
         printf("Error allocating device_ans_m_vectors_modulus: %s (%d)\n", cudaGetErrorString(err), err);
         throw std::runtime_error("");
@@ -250,31 +250,31 @@ void cudaPortalForApproxSwitchCRTBasis::freeDeviceMemory() {
 
     // Free device_m_vectors_data and modulus
     if (device_m_vectors_data) {
-        err = cudaFree(device_m_vectors_data);
+        err = cudaFreeAsync(device_m_vectors_data, stream);
         handleCUDAError("freeing device_m_vectors_data", err);
         device_m_vectors_data = nullptr;
     }
     if (device_m_vectors_modulus) {
-        err = cudaFree(device_m_vectors_modulus);
+        err = cudaFreeAsync(device_m_vectors_modulus, stream);
         handleCUDAError("freeing device_m_vectors_modulus", err);
         device_m_vectors_modulus = nullptr;
     }
 
     // Free device_sum memory
     if (device_sum) {
-        err = cudaFree(device_sum);
+        err = cudaFreeAsync(device_sum, stream);
         handleCUDAError("freeing device_sum", err);
         device_sum = nullptr;
     }
 
     // Free device_ans_m_vectors_data and modulus
     if (device_ans_m_vectors_data) {
-        err = cudaFree(device_ans_m_vectors_data);
+        err = cudaFreeAsync(device_ans_m_vectors_data, stream);
         handleCUDAError("freeing device_ans_m_vectors_data", err);
         device_ans_m_vectors_data = nullptr;
     }
     if (device_ans_m_vectors_modulus) {
-        err = cudaFree(device_ans_m_vectors_modulus);
+        err = cudaFreeAsync(device_ans_m_vectors_modulus, stream);
         handleCUDAError("freeing device_ans_m_vectors_modulus", err);
         device_ans_m_vectors_modulus = nullptr;
     }

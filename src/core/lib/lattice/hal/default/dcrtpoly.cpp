@@ -1639,7 +1639,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasisCUDA(
     // create portal obj for parameters
     std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ, cudaUtils.getParamsStream());
     // create portal obj for work data
-    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal, cudaUtils.getWorkDataStream0());
+    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal, cudaUtils.getParamsStream());
 
     // marshal params
     paramsDataPortal->marshalParams(QHatInvModq,
