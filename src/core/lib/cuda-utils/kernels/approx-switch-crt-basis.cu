@@ -113,13 +113,15 @@ __device__ ulong BarrettUint128ModUint64(uint128_t a, ulong modulus, uint128_t m
 }
 
 __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
-                                     m_vectors_struct*  m_vectors,
+                                     ulong*             m_vectors_data,
+                                     ulong*             m_vectors_modulus,
                                      ulong*             QHatInvModq,
                                      ulong*             QHatInvModqPrecon,
                                      uint128_t*         QHatModp,
                                      uint128_t*         sum,
                                      uint128_t*         modpBarrettMu,
-                                     m_vectors_struct*  ans_m_vectors) {
+                                     ulong*             ans_m_vectors_data,
+                                     ulong*             ans_m_vectors_modulus) {
 
     int ri = blockIdx.x * blockDim.x + threadIdx.x;
     //for(int ri = 0; ri < ringDim; ri++) {
@@ -128,9 +130,9 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
         //initSumArray(sum, sizeP);
         for(int i = 0; i < sizeQ; i++) {
             //const NativeInteger& xi     = m_vectors[i][ri];
-            ulong xi = m_vectors[i].data[ri];
+            ulong xi = m_vectors_data[(i * ringDim) + ri];
             //const NativeInteger& qi     = m_vectors[i].GetModulus();
-            ulong qi = m_vectors[i].modulus;
+            ulong qi = m_vectors_modulus[i];
             //NativeInteger xQHatInvModqi = xi.ModMulFastConst(QHatInvModq[i], qi, QHatInvModqPrecon[i]);
             ulong xQHatInvModqi = ModMulFastConst(xi, QHatInvModq[i], qi, QHatInvModqPrecon[i]);
             // debugging: check ModMulFastConst - ok
@@ -145,9 +147,9 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
 
         for(int j = 0; j < sizeP; j++) {
             //const NativeInteger& pj = ans.m_vectors[j].GetModulus();
-            ulong pj = ans_m_vectors[j].modulus;
+            ulong pj = ans_m_vectors_modulus[j];
             //ans.m_vectors[j][ri]    = BarrettUint128ModUint64(sum[j], pj.ConvertToInt(), modpBarrettMu[j]);
-            ans_m_vectors[j].data[ri] = BarrettUint128ModUint64(sum[ri * sizeP + j], pj, modpBarrettMu[j]);
+            ans_m_vectors_data[(j * ringDim) + ri] = BarrettUint128ModUint64(sum[ri * sizeP + j], pj, modpBarrettMu[j]);
             //ans_m_vectors[j].data[ri] = ri;
         }
     }

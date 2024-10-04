@@ -27,16 +27,17 @@ private:
     uint32_t sizeP;
     uint32_t sizeQ;
 
-    m_vectors_struct*   host_m_vectors;
-    m_vectors_struct*   host_ans_m_vectors;
+    unsigned long*      host_m_vectors_data;
+    unsigned long*      host_m_vectors_modulus;
+    unsigned long*      host_ans_m_vectors_data;
+    unsigned long*      host_ans_m_vectors_modulus;
 
     uint128_t*          device_sum;
 
-    m_vectors_struct*   device_m_vectors;
-    unsigned long**     device_m_vectors_data_ptr;
-
-    m_vectors_struct*   device_ans_m_vectors;
-    unsigned long**     device_ans_m_vectors_data_ptr;
+    unsigned long*      device_m_vectors_data;
+    unsigned long*      device_m_vectors_modulus;
+    unsigned long*      device_ans_m_vectors_data;
+    unsigned long*      device_ans_m_vectors_modulus;
 
 public:
 
@@ -49,10 +50,13 @@ public:
     // Getter Functions
     cudaStream_t                                getStream() const;
     std::shared_ptr<cudaPortalForParamsData>    getParamsData() const;
-    m_vectors_struct*                           getHost_ans_m_vectors() const;
+    unsigned long*                              getHost_ans_m_vectors_data() const;
+    unsigned long*                              getHost_ans_m_vectors_modulus() const;
     uint128_t*                                  getDevice_sum() const;
-    m_vectors_struct*                           getDevice_m_vectors() const;
-    m_vectors_struct*                           getDevice_ans_m_vectors() const;
+    unsigned long*                              getDevice_m_vectors_data() const;
+    unsigned long*                              getDevice_m_vectors_modulus() const;
+    unsigned long*                              getDevice_ans_m_vectors_data() const;
+    unsigned long*                              getDevice_ans_m_vectors_modulus() const;
 
     // Data Marshalling Functions
     void marshalWorkData(const std::vector<PolyImpl<NativeVector>>& m_vectors,
