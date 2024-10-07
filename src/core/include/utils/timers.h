@@ -12,6 +12,9 @@ extern double evalKeySwitchPrecomputeCoreTimer_GPU;
 extern double evalFastKeySwitchCoreTimer_CPU;
 extern double evalFastKeySwitchCoreTimer_GPU;
 
+extern double approxModDownCUDA_pre;
+extern double approxModDownCUDA_post;
+
 /*extern int    evalKeySwitchPrecomputeCoreCounter_CPU;
 extern int    evalKeySwitchPrecomputeCoreCounter_GPU;
 extern int    evalFastKeySwitchCoreCounter_CPU;

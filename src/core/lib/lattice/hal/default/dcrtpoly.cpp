@@ -1531,6 +1531,8 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
     std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> portal) const {
     //std::cout << "[START] ApproxModDownCUDA" << std::endl;
+    TimeVar timer;
+    TIC(timer);
 
     usint sizeQP = m_vectors.size();
     usint sizeP  = paramsP->GetParams().size();
@@ -1558,6 +1560,8 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     // replace approxSwitchCRTBasis call with:
     //DCRTPolyType partPSwitchedToQ(paramsQ, partP->GetFormat(), true);
     DCRTPolyType partPSwitchedToQ(paramsQ, partP.GetFormat(), true);
+
+    accumulateTimer(approxModDownCUDA_pre, TOC_MS(timer));
 
     //usint ringDim_approx = partP.GetRingDimension();
     //usint sizeQ_approx   = (partP.m_vectors.size() > paramsP->GetParams().size()) ? paramsP->GetParams().size() : partP.m_vectors.size();
@@ -1593,6 +1597,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
         std::cout << "partPSwitchedToQ.m_vectors[" << p << "][1]= " << partPSwitchedToQ.m_vectors[p][1] << std::endl;
         std::cout << "partPSwitchedToQ.m_vectors[" << p << "][2]= " << partPSwitchedToQ.m_vectors[p][2] << std::endl;
     }*/
+    TIC(timer);
 
     // Combine the switched DCRTPoly with the Q part of this to get the result
     DCRTPolyType ans(paramsQ, EVALUATION, true);
@@ -1616,6 +1621,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
         ans.m_vectors[i] = diff * PInvModq[i];
     }
     //std::cout << "[END] ApproxModDownCUDA" << std::endl;
+    accumulateTimer(approxModDownCUDA_post, TOC_MS(timer));
 
     return ans;
 }

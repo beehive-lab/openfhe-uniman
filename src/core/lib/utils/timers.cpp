@@ -16,6 +16,9 @@ double evalKeySwitchPrecomputeCoreTimer_GPU = 0;
 double evalFastKeySwitchCoreTimer_CPU = 0;
 double evalFastKeySwitchCoreTimer_GPU = 0;
 
+double approxModDownCUDA_pre = 0;
+double approxModDownCUDA_post = 0;
+
 int    evalKeySwitchPrecomputeCoreCounter_CPU = 0;
 int    evalKeySwitchPrecomputeCoreCounter_GPU = 0;
 int    evalFastKeySwitchCoreCounter_CPU = 0;
@@ -51,10 +54,12 @@ int getApproxModDownCounter_CPU() { return approxModDownCounter_CPU; }
 int getApproxModDownCounter_GPU() { return approxModDownCounter_GPU; }*/
 
 void printTimers() {
-    std::cout << "Total time in EvalKeySwitchPrecomputeCore_CPU = " << getEvalKeySwitchPrecomputeCoreTimer_CPU() << "ms " << std::endl;
-    std::cout << "Total time in EvalKeySwitchPrecomputeCore_GPU = " << getEvalKeySwitchPrecomputeCoreTimer_GPU() << "ms " << std::endl;
-    std::cout << "Total time in EvalFastKeySwitchCore_CPU = " << getEvalFastKeySwitchCoreTimer_CPU() << "ms ( " << std::endl;
-    std::cout << "Total time in EvalFastKeySwitchCore_GPU = " << getEvalFastKeySwitchCoreTimer_GPU() << "ms ( " << std::endl;
+    std::cout << "Total time in EvalKeySwitchPrecomputeCore_CPU = " << getEvalKeySwitchPrecomputeCoreTimer_CPU() << " ms" << std::endl;
+    std::cout << "Total time in EvalKeySwitchPrecomputeCore_GPU = " << getEvalKeySwitchPrecomputeCoreTimer_GPU() << " ms" << std::endl;
+    std::cout << "Total time in EvalFastKeySwitchCore_CPU = " << getEvalFastKeySwitchCoreTimer_CPU() << " ms" << std::endl;
+    std::cout << "Total time in EvalFastKeySwitchCore_GPU = " << getEvalFastKeySwitchCoreTimer_GPU() << " ms" << std::endl;
+    std::cout << "Time in approxModDownCUDA pre-processing = " << approxModDownCUDA_pre << " ms" << std::endl;
+    std::cout << "Time in approxModDownCUDA post-processing = " << approxModDownCUDA_post << " ms" << std::endl;
 }
 
 };
