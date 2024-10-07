@@ -7,13 +7,18 @@
 
 namespace lbcrypto {
 
+extern double application;
+
 extern double evalKeySwitchPrecomputeCoreTimer_CPU;
 extern double evalKeySwitchPrecomputeCoreTimer_GPU;
 extern double evalFastKeySwitchCoreTimer_CPU;
 extern double evalFastKeySwitchCoreTimer_GPU;
 
-extern double approxModDownCUDA_pre;
-extern double approxModDownCUDA_post;
+extern double approxModDown_total;
+extern double approxModDown_pre;
+extern double approxModDown_post;
+
+extern int approxModDown_invocations;
 
 /*extern int    evalKeySwitchPrecomputeCoreCounter_CPU;
 extern int    evalKeySwitchPrecomputeCoreCounter_GPU;

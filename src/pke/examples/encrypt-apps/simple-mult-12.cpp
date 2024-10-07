@@ -17,6 +17,9 @@ using namespace lbcrypto;
 
 int main() {
 
+    TimeVar timer;
+    TIC(timer);
+
     // Sample Program: Step 1 - Set CryptoContext
     CCParams<CryptoContextBGVRNS> parameters;
     parameters.SetMultiplicativeDepth(12);
@@ -91,6 +94,8 @@ int main() {
     // Output results
     std::cout << "\nResults of homomorphic computations" << std::endl;
     std::cout << "#1 * #2 * #2 * #2 * #2 * #2 * #2 * #2 * #2 * #2 * #2 * #2 * #2: " << plaintextMultResult << std::endl;
+
+    accumulateTimer(application, TOC_MS(timer));
 
     printTimers();
 

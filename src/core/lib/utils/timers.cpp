@@ -11,13 +11,18 @@
 
 namespace lbcrypto {
 
+double application = 0;
+
 double evalKeySwitchPrecomputeCoreTimer_CPU = 0;
 double evalKeySwitchPrecomputeCoreTimer_GPU = 0;
 double evalFastKeySwitchCoreTimer_CPU = 0;
 double evalFastKeySwitchCoreTimer_GPU = 0;
 
-double approxModDownCUDA_pre = 0;
-double approxModDownCUDA_post = 0;
+double approxModDown_total = 0;
+double approxModDown_pre = 0;
+double approxModDown_post = 0;
+
+int approxModDown_invocations = 0;
 
 int    evalKeySwitchPrecomputeCoreCounter_CPU = 0;
 int    evalKeySwitchPrecomputeCoreCounter_GPU = 0;
@@ -54,12 +59,12 @@ int getApproxModDownCounter_CPU() { return approxModDownCounter_CPU; }
 int getApproxModDownCounter_GPU() { return approxModDownCounter_GPU; }*/
 
 void printTimers() {
+    std::cout << "Total execution time = " << application << " ms" << std::endl;
     std::cout << "Total time in EvalKeySwitchPrecomputeCore_CPU = " << getEvalKeySwitchPrecomputeCoreTimer_CPU() << " ms" << std::endl;
     std::cout << "Total time in EvalKeySwitchPrecomputeCore_GPU = " << getEvalKeySwitchPrecomputeCoreTimer_GPU() << " ms" << std::endl;
     std::cout << "Total time in EvalFastKeySwitchCore_CPU = " << getEvalFastKeySwitchCoreTimer_CPU() << " ms" << std::endl;
     std::cout << "Total time in EvalFastKeySwitchCore_GPU = " << getEvalFastKeySwitchCoreTimer_GPU() << " ms" << std::endl;
-    std::cout << "Time in approxModDownCUDA pre-processing = " << approxModDownCUDA_pre << " ms" << std::endl;
-    std::cout << "Time in approxModDownCUDA post-processing = " << approxModDownCUDA_post << " ms" << std::endl;
+    std::cout << "ApproxModDown: Total = " << approxModDown_total << " ms\n\tApproxModDown pre-proc = " << approxModDown_pre << " ms\n\tApproxModDown post-proc = " << approxModDown_post << " ms\n\tApproxModDown invocations = " << approxModDown_invocations << std::endl;
 }
 
 };
