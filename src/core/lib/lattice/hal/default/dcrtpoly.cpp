@@ -1549,11 +1549,12 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
 
     // Multiply everything by -t^(-1) mod P (BGVrns only)
     if (t > 0) {
-        #pragma omp parallel for
+#pragma omp parallel for
         for (usint j = 0; j < sizeP; j++) {
             partP.m_vectors[j] *= tInvModp[j];
         }
     }
+    accumulateTimer(approxModDown_pre, TOC_MS(timer));
 
     /*DCRTPolyType partPSwitchedToQ =
         partP.ApproxSwitchCRTBasis(paramsP, paramsQ, PHatInvModp, PHatInvModpPrecon, PHatModq, modqBarrettMu);*/
@@ -1561,8 +1562,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     // replace approxSwitchCRTBasis call with:
     //DCRTPolyType partPSwitchedToQ(paramsQ, partP->GetFormat(), true);
     DCRTPolyType partPSwitchedToQ(paramsQ, partP.GetFormat(), true);
-
-    accumulateTimer(approxModDown_pre, TOC_MS(timer));
 
     //usint ringDim_approx = partP.GetRingDimension();
     //usint sizeQ_approx   = (partP.m_vectors.size() > paramsP->GetParams().size()) ? paramsP->GetParams().size() : partP.m_vectors.size();
@@ -1608,7 +1607,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
 
     // Multiply everything by t mod Q (BGVrns only)
     if (t > 0) {
-        #pragma omp parallel for
+#pragma omp parallel for
         for (usint i = 0; i < sizeQ; i++) {
             partPSwitchedToQ.m_vectors[i] *= t;
         }
@@ -1616,7 +1615,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
 
     partPSwitchedToQ.SetFormat(EVALUATION);
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (usint i = 0; i < sizeQ; i++) {
         auto diff        = m_vectors[i] - partPSwitchedToQ.m_vectors[i];
         ans.m_vectors[i] = diff * PInvModq[i];
