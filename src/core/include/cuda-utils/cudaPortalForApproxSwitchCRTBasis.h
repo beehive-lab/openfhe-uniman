@@ -1,13 +1,14 @@
-#ifndef CUDAPORTALFORAPPROXMODDOWN_H
-#define CUDAPORTALFORAPPROXMODDOWN_H
+#ifndef CUDAPORTALFORAPPROXSWITCHCRTBASIS_H
+#define CUDAPORTALFORAPPROXSWITCHCRTBASIS_H
 
 #include <cstdint> // for uint32_t type
-#include <iostream> // for printf
 
 #include "lattice/poly.h"
 #include <cuda_runtime.h>
 
+#include "cuda-utils/m_vectors.h"
 #include "cudaPortalForParamsData.h"
+//#include "cuda-utils/kernel-headers/shared_device_functions.cuh"
 #include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
 
 namespace lbcrypto {
@@ -83,4 +84,4 @@ private:
 
 }
 
-#endif //CUDAPORTALFORAPPROXMODDOWN_H
+#endif //CUDAPORTALFORAPPROXSWITCHCRTBASIS_H

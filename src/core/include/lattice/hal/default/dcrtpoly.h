@@ -929,7 +929,7 @@ public:
     const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
     const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
-    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> portal) const override;
+    std::shared_ptr<cudaPortalForApproxModDownData> portal) const override;
 
     DCRTPolyType ApproxSwitchCRTBasisCUDA(const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
                                           const std::vector<NativeInteger>& QHatInvModq,

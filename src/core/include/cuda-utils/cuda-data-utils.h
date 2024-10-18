@@ -4,10 +4,24 @@
 #include <cstdint> // for uint32_t type
 #include "lattice/poly.h"
 #include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
+#include "cuda-utils/m_vectors.h"
 
 
 // use this namespace in order to access openFHE internal data types
 namespace lbcrypto {
+
+/**
+ *  A macro that checks the return value of CUDA calls and reports errors.
+ * @param call
+ */
+#define CUDA_CHECK(call) do {                                    \
+    cudaError_t err = call;                                      \
+    if (err != cudaSuccess) {                                    \
+        fprintf(stderr, "CUDA Error at %s:%d - %s\n",            \
+                __FILE__, __LINE__, cudaGetErrorString(err));    \
+        exit(EXIT_FAILURE);                                      \
+    }                                                            \
+} while (0)
 
 using PolyType = PolyImpl<NativeVector>;
 

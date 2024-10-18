@@ -55,7 +55,10 @@
 #include "math/distrgen.h"
 
 #if defined(WITH_CUDA)
+#include <cuda-utils/approxModDown/cudaPortalForApproxModDownParams.h>
+#include <cuda-utils/cudaPortalForParamsData.h>
 #include <cuda-utils/cudaPortalForApproxSwitchCRTBasis.h>
+#include <cuda-utils/approxModDown/cudaPortalForApproxModDownData.h>
 #include <cuda-utils/cuda-data-utils.h>
 #endif
 
@@ -1006,7 +1009,7 @@ public:
         const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
         const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
         const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
-        std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> portal) const = 0;
+        std::shared_ptr<cudaPortalForApproxModDownData> portal) const = 0;
 
     virtual DerivedType ApproxSwitchCRTBasisCUDA(const std::shared_ptr<Params> paramsQ,
                                                  const std::shared_ptr<Params> paramsP,

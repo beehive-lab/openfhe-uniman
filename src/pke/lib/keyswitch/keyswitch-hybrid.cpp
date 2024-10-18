@@ -536,7 +536,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     std::shared_ptr<std::vector<DCRTPoly>> cTilda = EvalFastKeySwitchCoreExt(digits, evalKey, paramsQl);
 
     // Deep copy
-    //std::shared_ptr<std::vector<DCRTPoly>> cTildaCopy = std::make_shared<std::vector<DCRTPoly>>(*cTilda);
+    std::shared_ptr<std::vector<DCRTPoly>> cTildaCopy = std::make_shared<std::vector<DCRTPoly>>(*cTilda);
 
     PlaintextModulus t = (cryptoParams->GetNoiseScale() == 1) ? 0 : cryptoParams->GetPlaintextModulus();
 
@@ -563,30 +563,45 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     ///
     uint32_t ringDim = (*cTilda)[0].GetRingDimension();
     uint32_t m_vectors_size = (*digits)[0].GetParams()->GetParams().size();
-    // Note: sizeP and sizeQ are swaped later so we asssign the swapped values to prepare them for transfer
-    uint32_t sizeQ = cryptoParams->GetParamsP()->GetParams().size();
-    uint32_t sizeP = (m_vectors_size > paramsQl->GetParams().size()) ? paramsQl->GetParams().size() : m_vectors_size;
+    uint32_t sizeQ = (m_vectors_size > paramsQl->GetParams().size()) ? paramsQl->GetParams().size() : m_vectors_size;
+    uint32_t sizeP = cryptoParams->GetParamsP()->GetParams().size();
+    uint32_t sizeQP = sizeQ + sizeP;
+
+    uint32_t PInvModq_size          = cryptoParams->GetPInvModq().size();
+    uint32_t PInvModqPrecon_size    = cryptoParams->GetPInvModqPrecon().size();
+    uint32_t PHatInvModp_size       = cryptoParams->GetPHatInvModp().size();
+    uint32_t PHatInvModpPrecon_size = cryptoParams->GetPHatInvModpPrecon().size();
+    uint32_t PHatModq_size_x        = cryptoParams->GetPHatModq().size();
+    uint32_t PHatModq_size_y        = cryptoParams->GetPHatModq()[0].size();
+    uint32_t modqBarrettMu_size     = cryptoParams->GetModqBarrettMu().size();
+    uint32_t tInvModp_size          = cryptoParams->GettInvModp().size();
+    uint32_t tInvModpPrecon_size    = cryptoParams->GettInvModpPrecon().size();
+    uint32_t tModqPrecon_size       = cryptoParams->GettModqPrecon().size();
 
     //std::cout << "[EvalFastKeySwitchCore - opt implementation]: sizeP = " << sizeP << ", sizeQ = " << sizeQ << std::endl;
 
     cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
 
     // create portal obj for parameters
-    std::shared_ptr<cudaPortalForParamsData> paramsDataPortal = std::make_shared<cudaPortalForParamsData>(ringDim, sizeP, sizeQ, cudaUtils.getParamsStream());
+    std::shared_ptr<cudaPortalForApproxModDownParams> paramsDataPortal
+            = std::make_shared<cudaPortalForApproxModDownParams>(
+                ringDim, sizeQP, sizeQ, sizeP, cudaUtils.getParamsStream(),
+                PInvModq_size, PInvModqPrecon_size, PHatInvModp_size,
+                PHatInvModpPrecon_size, PHatModq_size_x, PHatModq_size_y,
+                modqBarrettMu_size, tInvModp_size, tInvModpPrecon_size, tModqPrecon_size);
     // create portal objs for work data
-    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal0 = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal, cudaUtils.getWorkDataStream0());
-    std::shared_ptr<cudaPortalForApproxSwitchCRTBasis> workDataPortal1 = std::make_shared<cudaPortalForApproxSwitchCRTBasis>(paramsDataPortal, cudaUtils.getWorkDataStream1());
+    std::shared_ptr<cudaPortalForApproxModDownData> workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream0(), 0);
+    //std::shared_ptr<cudaPortalForApproxModDownData> workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream1(), 1);
 
     // marshal params
-    paramsDataPortal->marshalParams(cryptoParams->GetPHatInvModp(),
-                                    cryptoParams->GetPHatInvModpPrecon(),
-                                    cryptoParams->GetPHatModq(),
-                                    cryptoParams->GetModqBarrettMu());
+    paramsDataPortal->marshalParams(cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
+                                    cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),
+                                    cryptoParams->GettInvModp(), cryptoParams->GettInvModpPrecon(), cryptoParams->GettModqPrecon());
 
     // transfer params -once for both kernel invocations-
     paramsDataPortal->copyInParams();
 
-    /*DCRTPoly ct0_copy = (*cTildaCopy)[0].ApproxModDown(paramsQl, cryptoParams->GetParamsP(), cryptoParams->GetPInvModq(),
+    DCRTPoly ct0_copy = (*cTildaCopy)[0].ApproxModDown(paramsQl, cryptoParams->GetParamsP(), cryptoParams->GetPInvModq(),
                                               cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
                                               cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(),
                                               cryptoParams->GetModqBarrettMu(), cryptoParams->GettInvModp(),
@@ -596,7 +611,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                                               cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
                                               cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(),
                                               cryptoParams->GetModqBarrettMu(), cryptoParams->GettInvModp(),
-                                              cryptoParams->GettInvModpPrecon(), t, cryptoParams->GettModqPrecon());*/
+                                              cryptoParams->GettInvModpPrecon(), t, cryptoParams->GettModqPrecon());
 
     std::future<DCRTPoly> resultCt0 = std::async(std::launch::async,[cTilda, paramsQl, cryptoParams, t, workDataPortal0]() {
             return (*cTilda)[0].ApproxModDownCUDA(paramsQl, cryptoParams->GetParamsP(),
@@ -609,7 +624,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                                               //workDataPortal0);
                                               workDataPortal0);});
 
-    std::future<DCRTPoly> resultCt1 = std::async(std::launch::async,[cTilda, paramsQl, cryptoParams, t, workDataPortal1]() {
+    /*std::future<DCRTPoly> resultCt1 = std::async(std::launch::async,[cTilda, paramsQl, cryptoParams, t, workDataPortal1]() {
             return (*cTilda)[1].ApproxModDownCUDA(paramsQl, cryptoParams->GetParamsP(),
     //DCRTPoly ct1 = (*cTilda)[1].ApproxModDownCUDA(paramsQl, cryptoParams->GetParamsP(),
                                               cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
@@ -618,16 +633,16 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                                               cryptoParams->GettInvModp(), cryptoParams->GettInvModpPrecon(),
                                               t, cryptoParams->GettModqPrecon(),
     //                                          workDataPortal1);
-                                              workDataPortal1);});
+                                              workDataPortal1);});*/
 
     DCRTPoly ct0 = resultCt0.get();
-    DCRTPoly ct1 = resultCt1.get();
+    //DCRTPoly ct1 = resultCt1.get();
     accumulateTimer(evalFastKeySwitchCoreTimer_GPU, TOC_MS(timer));
     //incrementInvocationCounter(approxModDownCounter_GPU);
     #endif
 
     //std::cout << "   [END] EvalFastKeySwitchCore" << std::endl;
-    return std::make_shared<std::vector<DCRTPoly>>(std::initializer_list<DCRTPoly>{std::move(ct0), std::move(ct1)});
+    return std::make_shared<std::vector<DCRTPoly>>(std::initializer_list<DCRTPoly>{std::move(ct0), std::move(ct1_copy)});
 }
 
 std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCoreExt(
