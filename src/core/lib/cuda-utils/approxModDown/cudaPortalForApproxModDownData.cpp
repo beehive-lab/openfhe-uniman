@@ -26,6 +26,22 @@ cudaPortalForApproxModDownData::~cudaPortalForApproxModDownData() {
     freeDeviceMemory();
 }
 
+void cudaPortalForApproxModDownData::allocateHostCTilda(uint32_t cTilda_size_x, uint32_t cTilda_size_y) {
+    // cTilda
+    this->cTilda_m_vectors_size_x = cTilda_size_x;
+    this->cTilda_m_vectors_size_y = cTilda_size_y;
+
+    size_t cTilda_data_size     = cTilda_m_vectors_size_x * cTilda_m_vectors_size_y * sizeof(unsigned long);
+    size_t cTilda_modulus_size  = cTilda_m_vectors_size_x * sizeof(unsigned long);
+    size_t cTilda_total_size    = cTilda_data_size + cTilda_modulus_size;
+    host_cTilda_m_vectors       = (unsigned long*) malloc (cTilda_total_size);
+
+    // partP_empty
+    this->partP_empty_m_vectors_size_x = sizeP;
+    this->partP_empty_m_vectors_size_y = ringDim;
+}
+
+
 void cudaPortalForApproxModDownData::allocateHostData() {
     // partP
     this->partP_m_vectors_size_x = sizeP;//partP_m_vectors.size();
@@ -65,8 +81,19 @@ void cudaPortalForApproxModDownData::allocateHostData() {
 
 // Data Marshaling Functions
 
+void cudaPortalForApproxModDownData::marshalCTilda(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors) {
+    size_t cTilda_modulus_offset = cTilda_m_vectors_size_x * cTilda_m_vectors_size_y;
+    for (uint32_t p = 0; p < cTilda_m_vectors_size_x; ++p) {
+        for (uint32_t rd = 0; rd < cTilda_m_vectors_size_y; ++rd) {
+            host_cTilda_m_vectors[p * cTilda_m_vectors_size_y + rd] = cTilda_m_vectors[p][rd].ConvertToInt<>();
+        }
+        host_cTilda_m_vectors[cTilda_modulus_offset + p] = cTilda_m_vectors[p].GetModulus().ConvertToInt<>();
+    }
+}
+
+
 void cudaPortalForApproxModDownData::marshalWorkData(const std::vector<PolyImpl<NativeVector>>& partP_m_vectors,
-                                                                 const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors) {
+                                                     const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors) {
     // partP
     //this->partP_m_vectors_size_x = sizeP;//partP_m_vectors.size();
     //this->partP_m_vectors_size_y = ringDim;//partP_m_vectors[0].GetLength();
@@ -119,6 +146,22 @@ void cudaPortalForApproxModDownData::unmarshalWorkData(std::vector<PolyImpl<Nati
 
 // Data Transfer Functions
 
+void cudaPortalForApproxModDownData::copyInCTilda() {
+    // cTilda
+    size_t cTilda_data_size = cTilda_m_vectors_size_x * cTilda_m_vectors_size_y * sizeof(unsigned long);
+    size_t cTilda_modulus_size = cTilda_m_vectors_size_x * sizeof(unsigned long);
+    CUDA_CHECK(cudaMallocAsync((void**)&device_cTilda_m_vectors, cTilda_data_size + cTilda_modulus_size, stream));
+    CUDA_CHECK(cudaMemcpyAsync(device_cTilda_m_vectors, host_cTilda_m_vectors, cTilda_data_size + cTilda_modulus_size, cudaMemcpyHostToDevice, stream));
+}
+
+void cudaPortalForApproxModDownData::copyInPartP_Empty() {
+    // partP_empty
+    // allocation only
+    size_t partP_empty_data_size = partP_empty_m_vectors_size_x * partP_empty_m_vectors_size_y * sizeof(unsigned long);
+    size_t partP_empty_modulus_size = partP_empty_m_vectors_size_x * sizeof(unsigned long);
+    CUDA_CHECK(cudaMallocAsync((void**)&device_partP_empty_m_vectors, partP_empty_data_size + partP_empty_modulus_size, stream));
+}
+
 void cudaPortalForApproxModDownData::copyInWorkData() {
 
     // partP
@@ -169,6 +212,21 @@ void cudaPortalForApproxModDownData::copyOutResult() {
 
 // Kernel Invocation Function
 
+void cudaPortalForApproxModDownData::invokePartPFillKernel(int gpuBlocks, int gpuThreads) {
+    dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
+    dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
+
+    void *args[] = {
+        // scalar values
+        &sizeQP, &sizeQ,
+        // work data along with their column size
+        &device_cTilda_m_vectors, &cTilda_m_vectors_size_x, &cTilda_m_vectors_size_y,
+        &device_partP_empty_m_vectors, &partP_empty_m_vectors_size_x, &partP_empty_m_vectors_size_y
+        };
+
+    fillPartPKernelWrapper(blocks, threads, args, stream);
+}
+
 void cudaPortalForApproxModDownData::invokeKernelOfApproxModDown(int gpuBlocks, int gpuThreads) {
 
     dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
@@ -180,7 +238,20 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxModDown(int gpuBlocks, 
     uint32_t            QHatModP_sizeY              = paramsData->get_PHatModq_sizeY();
     uint128_t*          device_modpBarrettMu        = paramsData->get_device_modqBarrettMu();
 
-    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_partP_m_vectors, &partP_m_vectors_size_y, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, &QHatModP_sizeY, &device_sum, &device_modpBarrettMu, &device_partPSwitchedToQ_m_vectors, &partPSwitchedToQ_m_vectors_size_y};
+
+    void *args[] = {
+        // scalar values
+        &ringDim, &sizeQP, &sizeP, &sizeQ,
+        // work data along with their column size
+        &device_partP_m_vectors, &partP_m_vectors_size_y,
+        &device_sum,
+        &device_partPSwitchedToQ_m_vectors, &partPSwitchedToQ_m_vectors_size_y,
+        // params data along with their column size (where applicable)
+        &device_QHatInvModq,
+        &device_QHatInvModqPrecon,
+        &device_QHatModp, &QHatModP_sizeY,
+        &device_modpBarrettMu,
+    };
 
     approxModDownKernelWrapper(blocks, threads, args, stream);
 }

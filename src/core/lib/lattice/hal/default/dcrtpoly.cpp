@@ -1567,6 +1567,20 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
 
     DCRTPolyType partP(paramsP, this->GetFormat(), true);
 
+    portal->set_SizeQP(sizeQP);
+    portal->allocateHostCTilda(m_vectors.size(), m_vectors[0].GetLength());
+    portal->marshalCTilda(m_vectors);
+
+    portal->copyInCTilda();
+    portal->copyInPartP_Empty();
+
+    // get gpu configuration
+    cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
+    const int gpuBlocks = cudaUtils.getGpuBlocks();
+    const int gpuThreads = cudaUtils.getGpuThreads();
+
+    portal->invokePartPFillKernel(gpuBlocks, gpuThreads);
+
     for (usint i = sizeQ, j = 0; i < sizeQP; i++, j++) {
         partP.m_vectors[j] = m_vectors[i];
     }
@@ -1601,11 +1615,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
         std::cout << "partP.m_vectors[" << p << "][1]= " << partP.m_vectors[p][1] << std::endl;
         std::cout << "partP.m_vectors[" << p << "][2]= " << partP.m_vectors[p][2] << std::endl;
     }
-
-    // get gpu configuration
-    cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
-    const int gpuBlocks = cudaUtils.getGpuBlocks();
-    const int gpuThreads = cudaUtils.getGpuThreads();
 
     // marshal work data
     std::cout << "(ApproxModDownCUDA) marshalWorkData" << std::endl;

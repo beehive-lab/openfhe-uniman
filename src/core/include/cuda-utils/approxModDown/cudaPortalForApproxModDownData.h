@@ -10,6 +10,7 @@
 #include "cudaPortalForApproxModDownParams.h"
 //#include "cuda-utils/kernel-headers/shared_device_functions.cuh"
 #include "cuda-utils/kernel-headers/approx-mod-down.cuh"
+#include "cuda-utils/kernel-headers/fill-partP.cuh"
 
 namespace lbcrypto {
     class Params;
@@ -27,8 +28,20 @@ private:
     cudaStream_t stream;
 
     uint32_t ringDim;
+    uint32_t sizeQP;
     uint32_t sizeP;
     uint32_t sizeQ;
+
+    // cTilda
+    uint32_t            cTilda_m_vectors_size_x;
+    uint32_t            cTilda_m_vectors_size_y; // values size
+    unsigned long*      host_cTilda_m_vectors; // flat
+    unsigned long*      device_cTilda_m_vectors; // flat
+
+    // partP_empty
+    uint32_t            partP_empty_m_vectors_size_x;
+    uint32_t            partP_empty_m_vectors_size_y; // values size
+    unsigned long*      device_partP_empty_m_vectors; // flat
 
     // partP
     uint32_t            partP_m_vectors_size_x;
@@ -59,32 +72,40 @@ public:
     // Destructor
     ~cudaPortalForApproxModDownData();
 
+    // Setter Functions
+    void                                                set_SizeQP(uint32_t size) { sizeQP = size; }
+
     // Getter Functions
     cudaStream_t                                        getStream() const { return stream; }
     std::shared_ptr<cudaPortalForApproxModDownParams>   getParamsData() const { return paramsData; }
     uint32_t                                            get_partP_size_x() const { return partP_m_vectors_size_x; }
     uint32_t                                            get_partP_size_y() const { return partP_m_vectors_size_y; }
-    ulong*                                   getHost_partP_m_vectors() const { return host_partP_m_vectors; }
-    ulong*                                   getHost_partPSwitchedToQ_m_vectors() const { return host_partPSwitchedToQ_m_vectors; }
+    ulong*                                              getHost_partP_m_vectors() const { return host_partP_m_vectors; }
+    ulong*                                              getHost_partPSwitchedToQ_m_vectors() const { return host_partPSwitchedToQ_m_vectors; }
     uint128_t*                                          getDevice_sum() const { return device_sum; }
-    ulong*                                   getDevice_partP_m_vectors() const { return device_partP_m_vectors; }
-    ulong*                                   getDevice_partPSwitchedToQ_m_vectors() const { return device_partPSwitchedToQ_m_vectors; }
+    ulong*                                              getDevice_partP_m_vectors() const { return device_partP_m_vectors; }
+    ulong*                                              getDevice_partPSwitchedToQ_m_vectors() const { return device_partPSwitchedToQ_m_vectors; }
 
-    void allocAndMarshalHostWorkData(const std::vector<PolyImpl<NativeVector>>& partP_m_vectors,
-                                     const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors);
+    // Host allocations
+    void allocateHostCTilda(uint32_t cTilda_size_x, uint32_t cTilda_size_y);
 
     // Data Marshalling Functions
+    void marshalCTilda(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors);
+
     void marshalWorkData(const std::vector<PolyImpl<NativeVector>>& partP_vectors,
                          const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors);
 
     void unmarshalWorkData(std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors);
 
     // Data Transfer Functions
+    void copyInCTilda();
+    void copyInPartP_Empty();
     void copyInWorkData();
 
     void copyOutResult();
 
     // Kernel Invocation Function
+    void invokePartPFillKernel(int gpuBlocks, int gpuThreads);
     void invokeKernelOfApproxModDown(int gpuBlocks, int gpuThreads);
 
     // Resources Allocation/Deallocation - Error Handling - Misc Functions

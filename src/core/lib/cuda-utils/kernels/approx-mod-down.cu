@@ -62,14 +62,18 @@ __device__ inline void approxSwitchCRTBasisFunc(int ri, int ringDim, int sizeP, 
         }
 }
 
-__global__ void approxModDown(int ringDim, int sizeP, int sizeQ,
-                                     ulong*             partP_m_vectors, uint32_t partP_m_vectors_sizeY,
-                                     ulong*             QHatInvModq,
-                                     ulong*             QHatInvModqPrecon,
-                                     uint128_t*         QHatModp, uint32_t QHatModp_sizeY,
-                                     uint128_t*         sum,
-                                     uint128_t*         modpBarrettMu,
-                                     ulong*  partPSwitchedToQ_m_vectors, uint32_t partPSwitchedToQ_sizeY) {
+__global__ void approxModDown(
+    //scalar values
+    int ringDim, int sizeQP, int sizeP, int sizeQ,
+    // work data along with their column size
+    ulong*      partP_m_vectors,            uint32_t partP_m_vectors_sizeY,
+    uint128_t*  sum,
+    ulong*      partPSwitchedToQ_m_vectors, uint32_t partPSwitchedToQ_sizeY,
+    // params data along with their column size (where applicable)
+    ulong*      QHatInvModq,
+    ulong*      QHatInvModqPrecon,
+    uint128_t*  QHatModp,                   uint32_t QHatModp_sizeY,
+    uint128_t*  modpBarrettMu) {
 
     int ri = blockIdx.x * blockDim.x + threadIdx.x;
     if (ri < ringDim) {
