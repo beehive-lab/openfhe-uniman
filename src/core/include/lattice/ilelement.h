@@ -448,6 +448,31 @@ public:
             this->SwitchFormat();
         }
     }
+
+    virtual std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInverseReverseTableByModulus() = 0;
+    virtual std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInversePreconReverseTableByModulus() = 0;
+    virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus() = 0;
+    virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus() = 0;
+
+     /**
+    * Getters for the NTT twiddle factors in primitive map format.
+    * These functions are used for GPU Acceleration.
+    */
+    std::map<ulong, std::vector<ulong>> GetRootOfUnityInverseReverseTableByModulus() {
+       return this->ExtractRootOfUnityInverseReverseTableByModulus();
+    }
+
+    std::map<ulong, std::vector<ulong>> GetRootOfUnityInversePreconReverseTableByModulus() {
+       return this->ExtractRootOfUnityInversePreconReverseTableByModulus();
+    }
+
+    std::map<ulong, std::vector<ulong>> GetCycloOrderInverseTableByModulus() {
+       return this->ExtractCycloOrderInverseTableByModulus();
+    }
+
+    std::map<ulong, std::vector<ulong>> GetCycloOrderInversePreconTableByModulus() {
+       return this->ExtractCycloOrderInversePreconTableByModulus();
+    }
 };
 
 }  // namespace lbcrypto

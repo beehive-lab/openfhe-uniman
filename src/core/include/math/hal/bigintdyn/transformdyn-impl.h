@@ -451,6 +451,32 @@ void NumberTheoreticTransformDyn<VecType>::InverseTransformFromBitReverseInPlace
 }
 
 template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTDyn<VecType>::ConvertTable(const std::map<IntType, VecType>& table) {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ConvertTable is not implemented for ChineseRemainderTransformFTTDyn");
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTDyn<VecType>::ExtractRootOfUnityInverseReverseTableByModulus() {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractRootOfUnityInverseReverseTableByModulus is not implemented for ChineseRemainderTransformFTTDyn");
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTDyn<VecType>::ExtractRootOfUnityInversePreconReverseTableByModulus() {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractRootOfUnityInversePreconReverseTableByModulus is not implemented for ChineseRemainderTransformFTTDyn");
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTDyn<VecType>::ExtractCycloOrderInverseTableByModulus() {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractCycloOrderInverseTableByModulus is not implemented for ChineseRemainderTransformFTTDyn");
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTDyn<VecType>::ExtractCycloOrderInversePreconTableByModulus() {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractCycloOrderInversePreconTableByModulus is not implemented for ChineseRemainderTransformFTTDyn");
+}
+
+
+template <typename VecType>
 void NumberTheoreticTransformDyn<VecType>::InverseTransformFromBitReverse(const VecType& element,
                                                                           const VecType& rootOfUnityInverseTable,
                                                                           const IntType& cycloOrderInv,

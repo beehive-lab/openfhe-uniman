@@ -3387,6 +3387,30 @@ void DCRTPolyImpl<VecType>::SwitchFormat() {
     }
 }
 
+//
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> DCRTPolyImpl<VecType>::ExtractRootOfUnityInverseReverseTableByModulus() {
+    //std::cout << "dcrtpoly::ExtractRootOfUnityInverseReverseTableByModulus" << std::endl;
+    // note: is the same for all m_vectors[i]
+    return m_vectors[0].ExtractRootOfUnityInverseReverseTableByModulus();
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> DCRTPolyImpl<VecType>::ExtractRootOfUnityInversePreconReverseTableByModulus() {
+    return m_vectors[0].ExtractRootOfUnityInversePreconReverseTableByModulus();
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> DCRTPolyImpl<VecType>::ExtractCycloOrderInverseTableByModulus() {
+    return m_vectors[0].ExtractCycloOrderInverseTableByModulus();
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> DCRTPolyImpl<VecType>::ExtractCycloOrderInversePreconTableByModulus() {
+    return m_vectors[0].ExtractCycloOrderInversePreconTableByModulus();
+}
+
+
 #ifdef OUT
 template <typename VecType>
 void DCRTPolyImpl<VecType>::SwitchModulus(const Integer& modulus, const Integer& rootOfUnity) {

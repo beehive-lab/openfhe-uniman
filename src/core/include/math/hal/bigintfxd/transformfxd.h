@@ -353,6 +353,15 @@ public:
 
     /// map to store Shoup's precomputations of inverse rou for iNTT, with bits reversed, with modulus as a key
     static std::map<IntType, VecType> m_rootOfUnityInversePreconReverseTableByModulus;
+
+    /// Functions that extract the NTT twiddle factors in primitive map format. These functions are used for GPU Acceleration.
+    std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInverseReverseTableByModulus();
+    std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInversePreconReverseTableByModulus();
+    std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus();
+    std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus();
+
+private:
+    std::map<ulong, std::vector<ulong>> ConvertTable(const std::map<IntType, VecType>& table);
 };
 
 // struct used as a key in BlueStein transform

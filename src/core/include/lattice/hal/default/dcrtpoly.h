@@ -1317,6 +1317,15 @@ public:
    */
     void SwitchFormat() override;
 
+     /**
+    * The following functions extract the NTT twiddle factors in primitive map format.
+    * These functions are used for GPU Acceleration.
+    */
+    std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInverseReverseTableByModulus() override;
+    std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInversePreconReverseTableByModulus() override;
+    std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus() override;
+    std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus() override;
+
     /**
    * @brief Switch modulus and adjust the values
    *

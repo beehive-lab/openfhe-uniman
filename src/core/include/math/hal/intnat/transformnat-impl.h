@@ -642,6 +642,47 @@ void ChineseRemainderTransformFTTNat<VecType>::InverseTransformFromBitReverseInP
 }
 
 template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ConvertTable(const std::map<IntType, VecType>& table) {
+    std::map<ulong, std::vector<ulong>> newMap;
+
+    for (const auto& entry : table) {
+        ulong key = entry.first.ConvertToInt();
+        std::vector<ulong> valueVector;
+        size_t length = entry.second.GetLength();
+        valueVector.reserve(length);
+
+        for (size_t i = 0; i < length; ++i) {
+            valueVector.push_back(entry.second[i].ConvertToInt());
+        }
+        newMap[key] = std::move(valueVector);
+    }
+
+    return newMap;
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityInverseReverseTableByModulus() {
+    return ConvertTable(m_rootOfUnityInverseReverseTableByModulus);
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityInversePreconReverseTableByModulus() {
+
+    return ConvertTable(m_rootOfUnityInversePreconReverseTableByModulus);
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ExtractCycloOrderInverseTableByModulus() {
+    return ConvertTable(m_cycloOrderInverseTableByModulus);
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ExtractCycloOrderInversePreconTableByModulus() {
+    return ConvertTable(m_cycloOrderInversePreconTableByModulus);
+}
+
+
+template <typename VecType>
 void ChineseRemainderTransformFTTNat<VecType>::InverseTransformFromBitReverse(const VecType& element,
                                                                               const IntType& rootOfUnity,
                                                                               const usint CycloOrder, VecType* result) {

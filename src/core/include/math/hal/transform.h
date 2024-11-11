@@ -133,6 +133,15 @@ public:
                                                        VecType* element) = 0;
 
     /**
+     * The following functions extract the NTT twiddle factors in primitive map format.
+     * These functions are used for GPU Acceleration.
+     */
+    virtual std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInverseReverseTableByModulus() = 0;
+    virtual std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInversePreconReverseTableByModulus() = 0;
+    virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus() = 0;
+    virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus() = 0;
+
+    /**
    * Precomputation of root of unity tables for transforms in the ring
    * Z_q[X]/(X^n+1)
    *
@@ -161,6 +170,9 @@ public:
    * Reset cached values for the root of unity tables to empty.
    */
     virtual void Reset() = 0;
+
+private:
+    virtual std::map<ulong, std::vector<ulong>> ConvertTable(const std::map<IntType, VecType>& table) = 0;
 };
 
 /**
