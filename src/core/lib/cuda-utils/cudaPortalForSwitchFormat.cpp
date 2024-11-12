@@ -162,8 +162,8 @@ void cudaPortalForSwitchFormat::switchFormatToEvaluation() {
     throw std::runtime_error("switchFormatToEvaluation() unimplemented\n");
 }
 
-void cudaPortalForSwitchFormat::invokeSwitchFormatKernel(int toCoefficient) {
-    if (toCoefficient)
+void cudaPortalForSwitchFormat::invokeSwitchFormatKernel(Format format) {
+    if (format == COEFFICIENT)
         switchFormatToCoefficient();
     else
         switchFormatToEvaluation();

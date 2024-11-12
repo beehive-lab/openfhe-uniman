@@ -1598,7 +1598,30 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     //    }
     //}
 
-    partP.SetFormat(COEFFICIENT);
+    //partP.SetFormat(COEFFICIENT);
+    // cuda portal for switch format
+    std::shared_ptr<cudaPortalForSwitchFormat> switchFormatPortal = std::make_shared<cudaPortalForSwitchFormat>(portal);
+
+    // Get and marshal the twiddle factors for switch format
+    switchFormatPortal->marshalTwiddleFactors(partP.m_vectors,
+                                              partP.GetRootOfUnityInverseReverseTableByModulus(),
+                                              partP.GetRootOfUnityInversePreconReverseTableByModulus(),
+                                              partP.GetParams()->GetCyclotomicOrder(),
+                                              partP.GetCycloOrderInverseTableByModulus(),
+                                              partP.GetCycloOrderInversePreconTableByModulus());
+
+    // Copy in switch format params
+    switchFormatPortal->copyInTwiddleFactors();
+
+    // invoke switch format kernel
+    switchFormatPortal->invokeSwitchFormatKernel(COEFFICIENT);
+
+    //std::cout << "(ApproxModDownCUDA) partP.m_vectors (after COEFFICIENT) " << std::endl;
+    //for (usint i = 0; i < sizeP; i++) {
+    //    for (uint32_t j = 0; j < 5; j++) {
+    //        std::cout << "partP.m_vectors[" << i << "][" << j << "]= " << partP.m_vectors[i][j].ConvertToInt() << std::endl;
+    //    }
+    //}
 
     // Multiply everything by -t^(-1) mod P (BGVrns only)
     if (t > 0) {
@@ -1614,9 +1637,8 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     /*DCRTPolyType partPSwitchedToQ =
         partP.ApproxSwitchCRTBasis(paramsP, paramsQ, PHatInvModp, PHatInvModpPrecon, PHatModq, modqBarrettMu);*/
 
-    // replace approxSwitchCRTBasis call with:
-    //DCRTPolyType partPSwitchedToQ(paramsQ, partP->GetFormat(), true);
-    DCRTPolyType partPSwitchedToQ(paramsQ, partP.GetFormat(), true);
+    // Set format argument manually
+    DCRTPolyType partPSwitchedToQ(paramsQ, COEFFICIENT, true);
 
     //usint ringDim_approx = partP.GetRingDimension();
     //usint sizeQ_approx   = (partP.m_vectors.size() > paramsP->GetParams().size()) ? paramsP->GetParams().size() : partP.m_vectors.size();

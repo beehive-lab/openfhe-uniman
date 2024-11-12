@@ -71,7 +71,7 @@ public:
     void copyInTwiddleFactors();
 
     // Kernel Invocation Functions
-    void invokeSwitchFormatKernel(int toCoefficient);
+    void invokeSwitchFormatKernel(Format format);
 
 private:
 
