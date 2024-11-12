@@ -22,6 +22,9 @@ double approxModDown_total = 0;
 double approxModDown_pre = 0;
 double approxModDown_post = 0;
 
+double switchFormatTimerCPU = 0;
+double switchFormatTimerGPU = 0;
+
 int approxModDown_invocations = 0;
 
 int    evalKeySwitchPrecomputeCoreCounter_CPU = 0;
@@ -65,6 +68,8 @@ void printTimers() {
     std::cout << "Total time in EvalFastKeySwitchCore_CPU = " << getEvalFastKeySwitchCoreTimer_CPU() << " ms" << std::endl;
     std::cout << "Total time in EvalFastKeySwitchCore_GPU = " << getEvalFastKeySwitchCoreTimer_GPU() << " ms" << std::endl;
     std::cout << "ApproxModDown: Total = " << approxModDown_total << " ms\n\tApproxModDown pre-proc = " << approxModDown_pre << " ms\n\tApproxModDown post-proc = " << approxModDown_post << " ms\n\tApproxModDown invocations = " << approxModDown_invocations << std::endl;
+    std::cout << "Switch format CPU = " << switchFormatTimerCPU << std::endl;
+    std::cout << "Switch format GPU = " << switchFormatTimerGPU << std::endl;
 }
 
 };

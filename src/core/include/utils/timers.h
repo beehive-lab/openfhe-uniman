@@ -18,6 +18,9 @@ extern double approxModDown_total;
 extern double approxModDown_pre;
 extern double approxModDown_post;
 
+extern double switchFormatTimerCPU;
+extern double switchFormatTimerGPU;
+
 extern int approxModDown_invocations;
 
 /*extern int    evalKeySwitchPrecomputeCoreCounter_CPU;

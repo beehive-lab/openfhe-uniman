@@ -1534,7 +1534,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     std::cout << "(ApproxModDownCUDA) start" << std::endl;
     std::cout << "=========================="<< std::endl;
 
-    TimeVar timer, timer_total, switchFormat_CPU, switchFormat_GPU;
+    TimeVar timer, timer_total, switchFormatTimer;
     TIC(timer);
     TIC(timer_total);
 
@@ -1572,9 +1572,9 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     switchFormatPortal->copyInTwiddleFactors();
 
     // invoke switch format kernel
+    TIC(switchFormatTimer);
     switchFormatPortal->invokeSwitchFormatKernel(COEFFICIENT);
-
-    accumulateTimer(approxModDown_pre, TOC_MS(timer));
+    accumulateTimer(switchFormatTimerGPU, TOC_MS(switchFormatTimer));
 
     // Set format argument manually
     DCRTPolyType partPSwitchedToQ(paramsQ, COEFFICIENT, true);
@@ -1683,7 +1683,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon) const {
     //std::cout << "[START] ApproxModDown" << std::endl;
 
-    TimeVar timer, timer_total;
+    TimeVar timer, timer_total, switchFormatTimer;
     TIC(timer);
     TIC(timer_total);
 
@@ -1697,7 +1697,9 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
         partP.m_vectors[j] = m_vectors[i];
     }
 
+    TIC(switchFormatTimer);
     partP.SetFormat(COEFFICIENT);
+    accumulateTimer(switchFormatTimerCPU, TOC_MS(switchFormatTimer));
 
     // Multiply everything by -t^(-1) mod P (BGVrns only)
     if (t > 0) {
