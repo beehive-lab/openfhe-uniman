@@ -21,10 +21,10 @@ cudaPortalForSwitchFormat::~cudaPortalForSwitchFormat() {
     free(host_cycloOrderInverseTable);
     free(host_cycloOrderInversePreconTable);
 
-    cudaFree(device_rootOfUnityInverseReverseTable);
-    cudaFree(device_rootOfUnityInversePreconReverseTable);
-    cudaFree(device_cycloOrderInverseTable);
-    cudaFree(device_cycloOrderInversePreconTable);
+    CUDA_CHECK(cudaFreeAsync(device_rootOfUnityInverseReverseTable, stream));
+    CUDA_CHECK(cudaFreeAsync(device_rootOfUnityInversePreconReverseTable, stream));
+    CUDA_CHECK(cudaFreeAsync(device_cycloOrderInverseTable, stream));
+    CUDA_CHECK(cudaFreeAsync(device_cycloOrderInversePreconTable, stream));
 }
 
 // Getters
@@ -100,15 +100,15 @@ void cudaPortalForSwitchFormat::copyInTwiddleFactors() {
     size_t sizeRootOfUnityParams = sizeP * valuesLength * sizeof(ulong);
     size_t sizeCycloOrderParams = sizeP * sizeof(ulong);
 
-    cudaMalloc((void**)&device_rootOfUnityInverseReverseTable, sizeRootOfUnityParams);
-    cudaMalloc((void**)&device_rootOfUnityInversePreconReverseTable, sizeRootOfUnityParams);
-    cudaMalloc((void**)&device_cycloOrderInverseTable, sizeCycloOrderParams);
-    cudaMalloc((void**)&device_cycloOrderInversePreconTable, sizeCycloOrderParams);
+    cudaMallocAsync((void**)&device_rootOfUnityInverseReverseTable, sizeRootOfUnityParams, stream);
+    cudaMallocAsync((void**)&device_rootOfUnityInversePreconReverseTable, sizeRootOfUnityParams, stream);
+    cudaMallocAsync((void**)&device_cycloOrderInverseTable, sizeCycloOrderParams, stream);
+    cudaMallocAsync((void**)&device_cycloOrderInversePreconTable, sizeCycloOrderParams, stream);
 
-    cudaMemcpy(device_rootOfUnityInverseReverseTable, host_rootOfUnityInverseReverseTable, sizeRootOfUnityParams, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_rootOfUnityInversePreconReverseTable, host_rootOfUnityInversePreconReverseTable, sizeRootOfUnityParams, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_cycloOrderInverseTable, host_cycloOrderInverseTable, sizeCycloOrderParams, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_cycloOrderInversePreconTable, host_cycloOrderInversePreconTable, sizeCycloOrderParams, cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(device_rootOfUnityInverseReverseTable, host_rootOfUnityInverseReverseTable, sizeRootOfUnityParams, cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(device_rootOfUnityInversePreconReverseTable, host_rootOfUnityInversePreconReverseTable, sizeRootOfUnityParams, cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(device_cycloOrderInverseTable, host_cycloOrderInverseTable, sizeCycloOrderParams, cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(device_cycloOrderInversePreconTable, host_cycloOrderInversePreconTable, sizeCycloOrderParams, cudaMemcpyHostToDevice, stream);
 }
 
 void cudaPortalForSwitchFormat::switchFormatToCoefficient() {
