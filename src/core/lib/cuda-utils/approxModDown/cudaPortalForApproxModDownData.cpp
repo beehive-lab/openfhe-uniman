@@ -228,10 +228,14 @@ void cudaPortalForApproxModDownData::handleFreeError(const std::string& operatio
 
 void cudaPortalForApproxModDownData::freeHostMemory() {
 
+    safeFree(host_cTilda_m_vectors);
     safeFree(host_partPSwitchedToQ_m_vectors);
 }
 
 void cudaPortalForApproxModDownData::freeDeviceMemory() {
+
+    CUDA_CHECK(cudaFreeAsync(device_cTilda_m_vectors, stream));
+    CUDA_CHECK(cudaFreeAsync(device_partP_empty_m_vectors, stream));
 
     // Free sum device memory
     if (device_sum) {
