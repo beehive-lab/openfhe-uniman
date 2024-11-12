@@ -79,7 +79,6 @@ void cudaPortalForSwitchFormat::flattenCycloOrderInversePreconTableByModulus(con
         long key = partP_m_vectors[i].GetModulus().ConvertToInt<>();
         const auto& currentValues = inputMap_cycloOrderInversePreconMap.at(key);
         host_cycloOrderInversePreconTable[i] = currentValues.at(msb);
-        std::cout << "(portal-switch-format) cycloOrderInversePreconTable[" << i << "] = " << host_cycloOrderInversePreconTable[i] << std::endl;
     }
 }
 

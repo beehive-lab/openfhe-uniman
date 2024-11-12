@@ -87,9 +87,6 @@ void cudaPortalForApproxModDownData::marshalCTilda(const std::vector<PolyImpl<Na
 void cudaPortalForApproxModDownData::marshalWorkData(const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors) {
 
     // partPSwitchedToQ
-    //this->partPSwitchedToQ_m_vectors_size_x = sizeQ;//partPSwitchedToQ_m_vectors.size();
-    //this->partPSwitchedToQ_m_vectors_size_y = ringDim;//partPSwitchedToQ_m_vectors[0].GetLength();
-
     assert(partPSwitchedToQ_m_vectors_size_x == sizeQ && "Error: partPSwitchedToQ_m_vectors_size_x does not match sizeQ");
     assert(partPSwitchedToQ_m_vectors_size_y == ringDim && "Error: partPSwitchedToQ_m_vectors_size_y does not match ringDim");
     // only modulus for partPSwitchedToQ
@@ -102,7 +99,6 @@ void cudaPortalForApproxModDownData::marshalWorkData(const std::vector<PolyImpl<
     for (uint32_t p = 0; p < partPSwitchedToQ_m_vectors_size_x; ++p) {
         // Set the modulus value at the appropriate index
         host_partPSwitchedToQ_m_vectors[modulus_offset + p] = partPSwitchedToQ_m_vectors[p].GetModulus().ConvertToInt();
-        std::cout << "(marshalWorkData) host_partPSwitchedToQ_m_vectors[" << modulus_offset + p << "] = " << host_partPSwitchedToQ_m_vectors[modulus_offset + p] << std::endl;
     }
 
 }
@@ -232,41 +228,10 @@ void cudaPortalForApproxModDownData::handleFreeError(const std::string& operatio
 
 void cudaPortalForApproxModDownData::freeHostMemory() {
 
-    /*for (uint32_t q = 0; q < partP_m_vectors_size_x; ++q) {
-        //handleFreeError("host_partP_m_vectors[" + std::to_string(q) + "].data", host_partP_m_vectors[q].data);
-        safeFree(host_partP_m_vectors[q].data);
-    }*/
-    //handleFreeError("host_partP_m_vectors", host_partP_m_vectors);
-
-    /*for (uint32_t q = 0; q < partPSwitchedToQ_m_vectors_size_x; ++q) {
-        safeFree(host_partPSwitchedToQ_m_vectors[q].data);
-    }*/
     safeFree(host_partPSwitchedToQ_m_vectors);
 }
 
 void cudaPortalForApproxModDownData::freeDeviceMemory() {
-    printf("freeDeviceMemory\n");
-    /*// Free the 'data' array in each partP vector on the device
-    for (uint32_t i = 0; i < partP_m_vectors_size_x; ++i) {
-        if (device_partP_m_vectors[i].data != nullptr) {
-            // Synchronize the stream before freeing
-            CUDA_CHECK(cudaStreamSynchronize(stream));
-
-            // Free device memory using cudaFreeAsync
-            CUDA_CHECK(cudaFreeAsync(device_partP_m_vectors[i].data, stream));
-            device_partP_m_vectors[i].data = nullptr;
-        }
-    }
-
-    printf("3\n");
-    if (device_partP_m_vectors_data_ptr) {
-        free(device_partP_m_vectors_data_ptr);
-        device_partP_m_vectors_data_ptr = nullptr;
-    }
-    if (device_partP_m_vectors) {
-        CUDA_CHECK(cudaFreeAsync(device_partP_m_vectors, stream));
-        device_partP_m_vectors = nullptr;
-    }*/
 
     // Free sum device memory
     if (device_sum) {
@@ -276,25 +241,13 @@ void cudaPortalForApproxModDownData::freeDeviceMemory() {
 
     // Free partPSwitchedToQ device memory
     CUDA_CHECK(cudaFreeAsync(device_partPSwitchedToQ_m_vectors, stream));
-    /*for (uint32_t i = 0; i < partPSwitchedToQ_m_vectors_size_x; ++i) {
-        if (device_partPSwitchedToQ_m_vectors[i].data) {
-            CUDA_CHECK(cudaFreeAsync(device_partPSwitchedToQ_m_vectors[i].data, stream));
-            device_partPSwitchedToQ_m_vectors[i].data = nullptr;
-        }
-    }
-    safeFree(device_partPSwitchedToQ_m_vectors_data_ptr);
-    if (device_partPSwitchedToQ_m_vectors) {
-        CUDA_CHECK(cudaFreeAsync(device_partPSwitchedToQ_m_vectors, stream));
-        device_partPSwitchedToQ_m_vectors = nullptr;
-    }*/
-}
 
+}
 
 void cudaPortalForApproxModDownData::handleCUDAError(const std::string& operation, cudaError_t err) {
     if (err != cudaSuccess) {
         throw std::runtime_error("CUDA error during " + operation + ": " + std::string(cudaGetErrorString(err)));
     }
 }
-
 
 }

@@ -14,14 +14,6 @@ ulong*      partP_empty_m_vectors,      uint32_t partP_empty_m_vectors_sizeX, ui
         if (ri <= j)
             partP_empty_m_vectors[partP_empty_m_vectors_sizeX * partP_empty_m_vectors_sizeY + j] = cTilda_m_vectors[cTilda_m_vectors_sizeX * cTilda_m_vectors_sizeY + i];
     }
-
-    // check partP_empty_m_vectors
-    if (ri == 0) {
-        for(int i = 0; i<partP_empty_m_vectors_sizeX; i++) {
-            for(int j = 0; j<10; j++)
-                printf("(fill-partP kernel) partP_empty[%d] = %lu\n", i * partP_empty_m_vectors_sizeY + j, partP_empty_m_vectors[i * partP_empty_m_vectors_sizeY + j]);
-        }
-    }
 }
 
 void fillPartPKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {

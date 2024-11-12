@@ -14,8 +14,8 @@ __device__ inline void approxSwitchCRTBasisFunc(int ri, int ringDim, int sizeP, 
                                      uint128_t*         modpBarrettMu,
                                      ulong*             ans_m_vectors, uint32_t ans_sizeY) {
 
-        if (ri == 0)
-            printf("(kernel) m_vectors size = %d\n", sizeQ*ringDim);
+        //if (ri == 0)
+            //printf("(kernel) m_vectors size = %d\n", sizeQ*ringDim);
         for(int i = 0; i < sizeQ; i++) {
             // access the data part - index ok
             //ulong xi = m_vectors[i * ringDim + ri];
@@ -26,7 +26,7 @@ __device__ inline void approxSwitchCRTBasisFunc(int ri, int ringDim, int sizeP, 
             // ok
             ulong xQHatInvModqi = ModMulFastConst(xi, QHatInvModq[i], qi, QHatInvModqPrecon[i]);
             for(int j = 0; j < sizeP; j++) {
-                if(ri == 0) {
+                /*if(ri == 0) {
                     uint128_t value = (uint128_t)QHatModp[i * QHatModp_sizeY + j];
                     uint64_t lo = (uint64_t) value;
                     uint64_t hi = (uint64_t) (value >> 64);
@@ -34,29 +34,28 @@ __device__ inline void approxSwitchCRTBasisFunc(int ri, int ringDim, int sizeP, 
                     uint64_t lo2 = (uint64_t) value2;
                     uint64_t hi2 = (uint64_t) (value2 >> 64);
                     printf("cuda_ before xQHatInvModqi=%ld, QHatModp[%d]=0x%016llx%016llx, sum[%d]=0x%016llx%016llx \n", xQHatInvModqi, i * sizeP + j, (unsigned long long)hi, (unsigned long long)lo, ri * sizeP + j, (unsigned long long)hi2, (unsigned long long)lo2);
-                }
+                }*/
                 sum[ri * sizeP + j] += (uint128_t)xQHatInvModqi * QHatModp[i * QHatModp_sizeY + j];
-                if(ri == 0) {
+                /*if(ri == 0) {
                     uint128_t value = (uint128_t)sum[ri * sizeP + j];
                     uint64_t lo2 = (uint64_t) value;
                     uint64_t hi2 = (uint64_t) (value >> 64);
                     printf("cuda_ after  sum[%d]=0x%016llx%016llx \n", ri * sizeP + j, (unsigned long long)hi2, (unsigned long long)lo2);
-                }
+                }*/
             }
         }
-        if (ri==0) {
+        /*if (ri==0) {
             for (uint32_t p = 0; p < sizeP; p++) {
                 uint128_t value = (uint128_t)sum[p];
                 uint64_t lo = (uint64_t) value;
                 uint64_t hi = (uint64_t) (value >> 64);
                 printf("gpu_sum[%d] = 0x%016llx%016llx\n", p, (unsigned long long)hi, (unsigned long long)lo);
             }
-        }
+        }*/
         for(int j = 0; j < sizeP; j++) {
-            if (ri == 0)
-                printf("(kernel) modulus ans_m_vectors[%d] = %llu\n", sizeP * ringDim + j, ans_m_vectors[sizeP * ringDim + j]);
+            //if (ri == 0)
+            //    printf("(kernel) modulus ans_m_vectors[%d] = %llu\n", sizeP * ringDim + j, ans_m_vectors[sizeP * ringDim + j]);
             // get the modulus
-            //ulong pj = ans_m_vectors[sizeP * ringDim + j];
             ulong pj = ans_m_vectors[sizeP * ans_sizeY + j];
             ans_m_vectors[j * ringDim + ri] = BarrettUint128ModUint64(sum[ri * sizeP + j], pj, modpBarrettMu[j]);
         }
