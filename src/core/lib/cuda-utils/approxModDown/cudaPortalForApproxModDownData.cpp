@@ -43,14 +43,6 @@ void cudaPortalForApproxModDownData::allocateHostCTilda(uint32_t cTilda_size_x, 
 
 
 void cudaPortalForApproxModDownData::allocateHostData() {
-    // partP
-    this->partP_m_vectors_size_x = sizeP;//partP_m_vectors.size();
-    this->partP_m_vectors_size_y = ringDim;//partP_m_vectors[0].GetLength();
-
-    size_t partP_data_size = partP_m_vectors_size_x * partP_m_vectors_size_y * sizeof(unsigned long);
-    size_t partP_modulus_size = partP_m_vectors_size_x * sizeof(unsigned long);
-    size_t partP_total_size = partP_data_size + partP_modulus_size;
-    host_partP_m_vectors = (unsigned long*) malloc (partP_total_size);
 
     /*host_partP_m_vectors = (m_vectors_struct*) malloc(partP_m_vectors_size_x * sizeof(m_vectors_struct));
     for (uint32_t p = 0; p < partP_m_vectors_size_x; ++p) {
@@ -92,24 +84,7 @@ void cudaPortalForApproxModDownData::marshalCTilda(const std::vector<PolyImpl<Na
 }
 
 
-void cudaPortalForApproxModDownData::marshalWorkData(const std::vector<PolyImpl<NativeVector>>& partP_m_vectors,
-                                                     const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors) {
-    // partP
-    //this->partP_m_vectors_size_x = sizeP;//partP_m_vectors.size();
-    //this->partP_m_vectors_size_y = ringDim;//partP_m_vectors[0].GetLength();
-
-    assert(partP_m_vectors_size_x == partP_m_vectors.size() && "Error: partP_m_vectors size does not match sizeP");
-    assert(partP_m_vectors_size_y == partP_m_vectors[0].GetLength() && "Error: partP_m_vectors_size_y does not match ringDim");
-
-    size_t partP_modulus_offset = partP_m_vectors_size_x * partP_m_vectors_size_y;
-    for (uint32_t p = 0; p < partP_m_vectors_size_x; ++p) {
-        for (uint32_t rd = 0; rd < partP_m_vectors_size_y; ++rd) {
-            host_partP_m_vectors[p * partP_m_vectors_size_y + rd] = partP_m_vectors[p][rd].ConvertToInt<>();
-            //host_partP_m_vectors[p].data[rd] = partP_m_vectors[p][rd].ConvertToInt<>();
-        }
-        host_partP_m_vectors[partP_modulus_offset + p] = partP_m_vectors[p].GetModulus().ConvertToInt<>();
-        //host_partP_m_vectors[p].modulus = partP_m_vectors[p].GetModulus().ConvertToInt<>();
-    }
+void cudaPortalForApproxModDownData::marshalWorkData(const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors) {
 
     // partPSwitchedToQ
     //this->partPSwitchedToQ_m_vectors_size_x = sizeQ;//partPSwitchedToQ_m_vectors.size();
@@ -163,21 +138,6 @@ void cudaPortalForApproxModDownData::copyInPartP_Empty() {
 }
 
 void cudaPortalForApproxModDownData::copyInWorkData() {
-
-    // partP
-    size_t partP_data_size = partP_m_vectors_size_x * partP_m_vectors_size_y * sizeof(unsigned long);
-    size_t partP_modulus_size = partP_m_vectors_size_x * sizeof(unsigned long);
-    CUDA_CHECK(cudaMallocAsync((void**)&device_partP_m_vectors, partP_data_size + partP_modulus_size, stream));
-    CUDA_CHECK(cudaMemcpyAsync(device_partP_m_vectors, host_partP_m_vectors, partP_data_size + partP_modulus_size, cudaMemcpyHostToDevice, stream));
-    /*CUDA_CHECK(cudaMallocAsync((void**)&device_partP_m_vectors, partP_m_vectors_size_x * sizeof(m_vectors_struct), stream));
-    CUDA_CHECK(cudaMemcpyAsync(device_partP_m_vectors, host_partP_m_vectors, partP_m_vectors_size_x * sizeof(m_vectors_struct), cudaMemcpyHostToDevice, stream));
-
-    this->device_partP_m_vectors_data_ptr = (unsigned long**)malloc(partP_m_vectors_size_x * sizeof(unsigned long*));
-    for (uint32_t i = 0; i < partP_m_vectors_size_x; ++i) {
-        CUDA_CHECK(cudaMallocAsync((void**)&(device_partP_m_vectors_data_ptr[i]), partP_m_vectors_size_y * sizeof(unsigned long), stream));
-        CUDA_CHECK(cudaMemcpyAsync(&(device_partP_m_vectors[i].data), &(device_partP_m_vectors_data_ptr[i]), sizeof(unsigned long*), cudaMemcpyHostToDevice, stream));
-        CUDA_CHECK(cudaMemcpyAsync(device_partP_m_vectors_data_ptr[i], host_partP_m_vectors[i].data, partP_m_vectors_size_y * sizeof(unsigned long), cudaMemcpyHostToDevice, stream));
-    }*/
 
     // sum
     CUDA_CHECK(cudaMallocAsync((void**)&device_sum, sizeQ * ringDim * sizeof(uint128_t), stream));
@@ -277,7 +237,6 @@ void cudaPortalForApproxModDownData::freeHostMemory() {
         safeFree(host_partP_m_vectors[q].data);
     }*/
     //handleFreeError("host_partP_m_vectors", host_partP_m_vectors);
-    safeFree(host_partP_m_vectors);
 
     /*for (uint32_t q = 0; q < partPSwitchedToQ_m_vectors_size_x; ++q) {
         safeFree(host_partPSwitchedToQ_m_vectors[q].data);
@@ -287,7 +246,6 @@ void cudaPortalForApproxModDownData::freeHostMemory() {
 
 void cudaPortalForApproxModDownData::freeDeviceMemory() {
     printf("freeDeviceMemory\n");
-    CUDA_CHECK(cudaFreeAsync(device_partP_m_vectors, stream));
     /*// Free the 'data' array in each partP vector on the device
     for (uint32_t i = 0; i < partP_m_vectors_size_x; ++i) {
         if (device_partP_m_vectors[i].data != nullptr) {

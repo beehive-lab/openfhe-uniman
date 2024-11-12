@@ -1644,25 +1644,9 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     //usint sizeQ_approx   = (partP.m_vectors.size() > paramsP->GetParams().size()) ? paramsP->GetParams().size() : partP.m_vectors.size();
     //usint sizeP_approx   = partPSwitchedToQ.m_vectors.size();
 
-    std::cout << "(ApproxModDownCUDA) partP.m_vectors " << std::endl;
-    for (uint32_t p = 0; p < sizeP; p++) {
-        std::cout << "partP.m_vectors[" << p << "][0]= " << partP.m_vectors[p][0] << std::endl;
-        std::cout << "partP.m_vectors[" << p << "][1]= " << partP.m_vectors[p][1] << std::endl;
-        std::cout << "partP.m_vectors[" << p << "][2]= " << partP.m_vectors[p][2] << std::endl;
-    }
-
     // marshal work data
     std::cout << "(ApproxModDownCUDA) marshalWorkData" << std::endl;
-    portal->marshalWorkData(partP.m_vectors, partPSwitchedToQ.m_vectors);
-
-    std::cout << "(ApproxModDownCUDA - after marshal) partP_m_vectors " << std::endl;
-    uint32_t sizeX = portal->get_partP_size_x();
-    uint32_t sizeY = portal->get_partP_size_y();
-    //for (uint32_t p = 0; p < sizeP; p++) {
-    std::cout << "partP_m_vectors[" << 0 << "][0]= " << portal->getHost_partP_m_vectors()[0 * sizeY + 0] << std::endl;
-    std::cout << "partP_m_vectors[" << 0 << "][1]= " << portal->getHost_partP_m_vectors()[0 * sizeY + 1] << std::endl;
-    std::cout << "partP_m_vectors[" << sizeX-1 << "]["<< sizeY-1 <<"]= " << portal->getHost_partP_m_vectors()[sizeX-1 * sizeY + sizeY-1] << std::endl;
-    //}
+    portal->marshalWorkData(partPSwitchedToQ.m_vectors);
 
     // transfer work data
     std::cout << "(ApproxModDownCUDA) copyInWorkData" << std::endl;

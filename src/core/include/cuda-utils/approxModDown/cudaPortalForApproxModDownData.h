@@ -43,15 +43,6 @@ private:
     uint32_t            partP_empty_m_vectors_size_y; // values size
     unsigned long*      device_partP_empty_m_vectors; // flat
 
-    // partP
-    uint32_t            partP_m_vectors_size_x;
-    uint32_t            partP_m_vectors_size_y; // values size
-    unsigned long*      host_partP_m_vectors; // flat
-    unsigned long*      device_partP_m_vectors; // flat
-    //m_vectors_struct*   host_partP_m_vectors;
-    //m_vectors_struct*   device_partP_m_vectors;
-    //unsigned long**     device_partP_m_vectors_data_ptr;
-
     // sum
     uint128_t*          device_sum;
 
@@ -78,17 +69,14 @@ public:
     // Getter Functions
     cudaStream_t                                        getStream() const { return stream; }
     std::shared_ptr<cudaPortalForApproxModDownParams>   getParamsData() const { return paramsData; }
-    uint32_t                                            get_partP_size_x() const { return partP_m_vectors_size_x; }
-    uint32_t                                            get_partP_size_y() const { return partP_m_vectors_size_y; }
-    ulong*                                              getHost_partP_m_vectors() const { return host_partP_m_vectors; }
-    ulong*                                              getHost_partPSwitchedToQ_m_vectors() const { return host_partPSwitchedToQ_m_vectors; }
-    uint128_t*                                          getDevice_sum() const { return device_sum; }
-    ulong*                                              getDevice_partP_m_vectors() const { return device_partP_m_vectors; }
-    ulong*                                              getDevice_partPSwitchedToQ_m_vectors() const { return device_partPSwitchedToQ_m_vectors; }
 
     uint32_t                                            get_partP_empty_size_x() const { return partP_empty_m_vectors_size_x; }
     uint32_t                                            get_partP_empty_size_y() const { return partP_empty_m_vectors_size_y; }
     ulong*                                              getDevice_partP_empty_m_vectors() const { return device_partP_empty_m_vectors; }
+
+    ulong*                                              getHost_partPSwitchedToQ_m_vectors() const { return host_partPSwitchedToQ_m_vectors; }
+    uint128_t*                                          getDevice_sum() const { return device_sum; }
+    ulong*                                              getDevice_partPSwitchedToQ_m_vectors() const { return device_partPSwitchedToQ_m_vectors; }
 
     // Host allocations
     void allocateHostCTilda(uint32_t cTilda_size_x, uint32_t cTilda_size_y);
@@ -96,8 +84,7 @@ public:
     // Data Marshalling Functions
     void marshalCTilda(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors);
 
-    void marshalWorkData(const std::vector<PolyImpl<NativeVector>>& partP_vectors,
-                         const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors);
+    void marshalWorkData(const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors);
 
     void unmarshalWorkData(std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors);
 
