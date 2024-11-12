@@ -90,6 +90,8 @@ __global__ void inverseNTT_Part2(
     element[p_offset + tid] = ModMulFastConst(element[p_offset + tid], cycloOrderInv[p], modulus, preconCycloOrderInv[p]);
     //if (tid < 5)
         //printf("result[%d] = %lu\n", tid, element[p_offset + tid]);
+    //if (tid < 5)
+        //printf("(pt2 kernel) result[%d] = %lu\n", tid, element[p_offset + tid]);
 }
 
 
