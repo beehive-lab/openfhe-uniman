@@ -100,16 +100,16 @@ void iNTTKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stre
     cudaError_t         cudaStatus;
 
     // Check if kernel configuration is valid
-    cudaDeviceProp deviceProps;
-    cudaGetDeviceProperties(&deviceProps, 0);
-    if (threads.x > deviceProps.maxThreadsPerBlock) {
-        std::cerr << "threadsPerBlock exceeds maxThreadsPerBlock!" << std::endl;
-        return;
-    }
-    if (blocks.y > deviceProps.maxGridSize[0]) {
-        std::cerr << "Grid size exceeds maximum!" << std::endl;
-        return;
-    }
+    //cudaDeviceProp deviceProps;
+    //cudaGetDeviceProperties(&deviceProps, 0);
+    //if (threads.x > deviceProps.maxThreadsPerBlock) {
+    //    std::cerr << "threadsPerBlock exceeds maxThreadsPerBlock!" << std::endl;
+    //    return;
+    //}
+    //if (blocks.y > deviceProps.maxGridSize[0]) {
+    //    std::cerr << "Grid size exceeds maximum!" << std::endl;
+    //    return;
+    //}
 
     cudaStatus = cudaLaunchKernel((void*)inverseNTT_Part1, blocks, threads, args, 0U, stream);
 
@@ -123,16 +123,16 @@ void iNTTPart2Wrapper(dim3 blocksPt2, dim3 threads, void** args, cudaStream_t st
     cudaError_t         cudaStatus;
 
     // Check if kernel configuration is valid
-    cudaDeviceProp deviceProps;
-    cudaGetDeviceProperties(&deviceProps, 0);
-    if (threads.x > deviceProps.maxThreadsPerBlock) {
-        std::cerr << "threadsPerBlock exceeds maxThreadsPerBlock!" << std::endl;
-        return;
-    }
-    if (blocksPt2.y > deviceProps.maxGridSize[0]) {
-        std::cerr << "Grid size exceeds maximum!" << std::endl;
-        return;
-    }
+    //cudaDeviceProp deviceProps;
+    //cudaGetDeviceProperties(&deviceProps, 0);
+    //if (threads.x > deviceProps.maxThreadsPerBlock) {
+    //    std::cerr << "threadsPerBlock exceeds maxThreadsPerBlock!" << std::endl;
+    //    return;
+    //}
+    //if (blocksPt2.y > deviceProps.maxGridSize[0]) {
+    //    std::cerr << "Grid size exceeds maximum!" << std::endl;
+    //    return;
+    //}
 
     cudaStatus = cudaLaunchKernel((void*)inverseNTT_Part2, blocksPt2, threads, args, 0U, stream);
 

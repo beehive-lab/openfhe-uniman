@@ -1531,8 +1531,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
     std::shared_ptr<cudaPortalForApproxModDownData> portal) const {
-    std::cout << "(ApproxModDownCUDA) start" << std::endl;
-    std::cout << "=========================="<< std::endl;
 
     TimeVar timer, timer_total, switchFormatTimer;
     TIC(timer);
