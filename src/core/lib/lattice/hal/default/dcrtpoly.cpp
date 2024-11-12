@@ -1579,11 +1579,24 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     const int gpuBlocks = cudaUtils.getGpuBlocks();
     const int gpuThreads = cudaUtils.getGpuThreads();
 
+    // fill partP_empty - ok
+    //for (usint i = sizeQ, j = 0; i < sizeQP; i++, j++) {
+        //partP.m_vectors[j] = m_vectors[i];
+    //}
     portal->invokePartPFillKernel(gpuBlocks, gpuThreads);
 
-    for (usint i = sizeQ, j = 0; i < sizeQP; i++, j++) {
-        partP.m_vectors[j] = m_vectors[i];
-    }
+    //std::cout << "(ApproxModDownCUDA) m_vectors " << std::endl;
+    //for (usint i = 0; i < sizeQP; i++) {
+    //    for (uint32_t j = 0; j < 5; j++) {
+    //        std::cout << "m_vectors[" << i << "]["<< j <<"]= " << m_vectors[i][j].ConvertToInt() << std::endl;
+    //    }
+    //}
+    //std::cout << "(ApproxModDownCUDA) partP.m_vectors (before COEFFICIENT) " << std::endl;
+    //for (usint i = 0; i < sizeP; i++) {
+    //    for (uint32_t j = 0; j < 5; j++) {
+    //        std::cout << "partP.m_vectors[" << i << "][" << j << "]= " << partP.m_vectors[i][j].ConvertToInt() << std::endl;
+    //    }
+    //}
 
     partP.SetFormat(COEFFICIENT);
 
