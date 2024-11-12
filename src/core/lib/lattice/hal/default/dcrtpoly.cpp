@@ -1624,12 +1624,12 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     //}
 
     // Multiply everything by -t^(-1) mod P (BGVrns only)
-    if (t > 0) {
-#pragma omp parallel for
-        for (usint j = 0; j < sizeP; j++) {
-            partP.m_vectors[j] *= tInvModp[j];
-        }
-    }
+    //if (t > 0) {
+//#pragma omp parallel for
+        //for (usint j = 0; j < sizeP; j++) {
+            //partP.m_vectors[j] *= tInvModp[j];
+        //}
+    //}
     //std::cout << "(ApproxModDownCUDA) partP.m_vectors size = " << partP.m_vectors.size() << std::endl;
     //std::cout << "(ApproxModDownCUDA) partP.m_vectors[] size = " << partP.m_vectors[0].GetLength() << std::endl;
     accumulateTimer(approxModDown_pre, TOC_MS(timer));

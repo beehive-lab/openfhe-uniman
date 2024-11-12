@@ -86,6 +86,10 @@ public:
     ulong*                                              getDevice_partP_m_vectors() const { return device_partP_m_vectors; }
     ulong*                                              getDevice_partPSwitchedToQ_m_vectors() const { return device_partPSwitchedToQ_m_vectors; }
 
+    uint32_t                                            get_partP_empty_size_x() const { return partP_empty_m_vectors_size_x; }
+    uint32_t                                            get_partP_empty_size_y() const { return partP_empty_m_vectors_size_y; }
+    ulong*                                              getDevice_partP_empty_m_vectors() const { return device_partP_empty_m_vectors; }
+
     // Host allocations
     void allocateHostCTilda(uint32_t cTilda_size_x, uint32_t cTilda_size_y);
 

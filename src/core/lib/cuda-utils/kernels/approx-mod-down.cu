@@ -66,10 +66,12 @@ __global__ void approxModDown(
     //scalar values
     int ringDim, int sizeQP, int sizeP, int sizeQ,
     // work data along with their column size
-    ulong*      partP_m_vectors,            uint32_t partP_m_vectors_sizeY,
+    ulong*      partP_empty_m_vectors,      uint32_t partP_empty_m_vectors_sizeX, uint32_t partP_empty_m_vectors_sizeY,
     uint128_t*  sum,
     ulong*      partPSwitchedToQ_m_vectors, uint32_t partPSwitchedToQ_sizeY,
     // params data along with their column size (where applicable)
+    ulong*      tInvModp,
+    ulong*      tInvModpPrecon,
     ulong*      QHatInvModq,
     ulong*      QHatInvModqPrecon,
     uint128_t*  QHatModp,                   uint32_t QHatModp_sizeY,
@@ -77,14 +79,20 @@ __global__ void approxModDown(
 
     int ri = blockIdx.x * blockDim.x + threadIdx.x;
     if (ri < ringDim) {
-        if (ri ==0) {
-            printf("[kernel] partP_m_vectors[0][0]=%llu\n", partP_m_vectors[0 * ringDim + 0]);
-            printf("[kernel] partP_m_vectors[0][1]=%llu\n", partP_m_vectors[0 * ringDim + 1]);
-            printf("[kernel] partP_m_vectors[1][0]=%llu\n", partP_m_vectors[1 * ringDim + 0]);
-            printf("[kernel] partP_m_vectors[%d][%d]=%llu\n", sizeP-1, ringDim-1, partP_m_vectors[sizeP-1 * ringDim + ringDim-1]);
+
+        for (uint32_t j = 0; j < sizeP; j++) {
+            partP_empty_m_vectors[j * partP_empty_m_vectors_sizeY + ri] =
+                ModMulFastConst(partP_empty_m_vectors[j * partP_empty_m_vectors_sizeY + ri],
+                                tInvModp[j],
+                                partP_empty_m_vectors[partP_empty_m_vectors_sizeX * partP_empty_m_vectors_sizeY + j],
+                                tInvModpPrecon[j]);
+            //if (ri <2)
+                //printf("(kernel) {[%d]: %lu, %lu, %lu, %lu, %lu}\n", j, a, b, m, inv, res);
+            //partP_empty_m_vectors[j * partP_empty_m_vectors_sizeY + ri] = res;
         }
+
         // swap sizeP with sizeQ
-        approxSwitchCRTBasisFunc(ri, ringDim, sizeQ, sizeP, partP_m_vectors, partP_m_vectors_sizeY, QHatInvModq, QHatInvModqPrecon, QHatModp, QHatModp_sizeY, sum, modpBarrettMu, partPSwitchedToQ_m_vectors, partPSwitchedToQ_sizeY);
+        approxSwitchCRTBasisFunc(ri, ringDim, sizeQ, sizeP, partP_empty_m_vectors, partP_empty_m_vectors_sizeY, QHatInvModq, QHatInvModqPrecon, QHatModp, QHatModp_sizeY, sum, modpBarrettMu, partPSwitchedToQ_m_vectors, partPSwitchedToQ_sizeY);
     }
 }
 

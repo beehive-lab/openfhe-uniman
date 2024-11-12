@@ -232,21 +232,24 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxModDown(int gpuBlocks, 
     dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
     dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
 
+    ulong*              device_tInvModp             = paramsData->get_device_tInvModp();
+    ulong*              device_tInvModpPrecon       = paramsData->get_device_tInvModpPrecon();
     ulong*              device_QHatInvModq          = paramsData->get_device_PHatInvModp();
     ulong*              device_QHatInvModqPrecon    = paramsData->get_device_PHatInvModpPrecon();
     uint128_t*          device_QHatModp             = paramsData->get_device_PHatModq();
     uint32_t            QHatModP_sizeY              = paramsData->get_PHatModq_sizeY();
     uint128_t*          device_modpBarrettMu        = paramsData->get_device_modqBarrettMu();
 
-
     void *args[] = {
         // scalar values
         &ringDim, &sizeQP, &sizeP, &sizeQ,
         // work data along with their column size
-        &device_partP_m_vectors, &partP_m_vectors_size_y,
+        &device_partP_empty_m_vectors, &partP_empty_m_vectors_size_x, &partP_empty_m_vectors_size_y,
         &device_sum,
         &device_partPSwitchedToQ_m_vectors, &partPSwitchedToQ_m_vectors_size_y,
         // params data along with their column size (where applicable)
+        &device_tInvModp,
+        &device_tInvModpPrecon,
         &device_QHatInvModq,
         &device_QHatInvModqPrecon,
         &device_QHatModp, &QHatModP_sizeY,
