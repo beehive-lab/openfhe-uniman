@@ -60,6 +60,7 @@
 #include <cuda-utils/cudaPortalForApproxSwitchCRTBasis.h>
 #include <cuda-utils/approxModDown/cudaPortalForApproxModDownData.h>
 #include <cuda-utils/cuda-data-utils.h>
+#include <cuda-utils/switch-format/cudaPortalForSwitchFormat.h>
 #endif
 
 namespace lbcrypto {
