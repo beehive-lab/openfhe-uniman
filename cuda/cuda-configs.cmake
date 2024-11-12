@@ -40,4 +40,4 @@ list( APPEND CUDA_NVCC_FLAGS --verbose )
 #set(CUDA_PROPAGATE_HOST_FLAGS off)
 set(CUDA_SEPARABLE_COMPILATION ON)
 # enable debug information
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -lineinfo -rdynamic")
