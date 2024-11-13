@@ -68,8 +68,8 @@ void printTimers() {
     std::cout << "Total time in EvalFastKeySwitchCore_CPU = " << getEvalFastKeySwitchCoreTimer_CPU() << " ms" << std::endl;
     std::cout << "Total time in EvalFastKeySwitchCore_GPU = " << getEvalFastKeySwitchCoreTimer_GPU() << " ms" << std::endl;
     std::cout << "ApproxModDown: Total = " << approxModDown_total << " ms\n\tApproxModDown pre-proc = " << approxModDown_pre << " ms\n\tApproxModDown post-proc = " << approxModDown_post << " ms\n\tApproxModDown invocations = " << approxModDown_invocations << std::endl;
-    std::cout << "Switch format CPU = " << switchFormatTimerCPU << std::endl;
-    std::cout << "Switch format GPU = " << switchFormatTimerGPU << std::endl;
+    std::cout << "Switch format CPU = " << switchFormatTimerCPU << " ns" << std::endl;
+    std::cout << "Switch format GPU = " << switchFormatTimerGPU << " ns" << std::endl;
 }
 
 };

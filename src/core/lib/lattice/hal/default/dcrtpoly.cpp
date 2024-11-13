@@ -1572,10 +1572,12 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     // invoke switch format kernel
     TIC(switchFormatTimer);
     switchFormatPortal->invokeSwitchFormatKernel(COEFFICIENT);
-    accumulateTimer(switchFormatTimerGPU, TOC_MS(switchFormatTimer));
+    accumulateTimer(switchFormatTimerGPU, TOC_NS(switchFormatTimer));
 
     // Set format argument manually
     DCRTPolyType partPSwitchedToQ(paramsQ, COEFFICIENT, true);
+
+    accumulateTimer(approxModDown_pre, TOC_MS(timer));
 
     // marshal work data
     portal->marshalWorkData(partPSwitchedToQ.m_vectors);
@@ -1697,7 +1699,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
 
     TIC(switchFormatTimer);
     partP.SetFormat(COEFFICIENT);
-    accumulateTimer(switchFormatTimerCPU, TOC_MS(switchFormatTimer));
+    accumulateTimer(switchFormatTimerCPU, TOC_NS(switchFormatTimer));
 
     // Multiply everything by -t^(-1) mod P (BGVrns only)
     if (t > 0) {
