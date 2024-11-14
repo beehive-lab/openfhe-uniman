@@ -22,6 +22,8 @@ namespace lbcrypto {
         uint32_t            sizeQ;
         uint32_t            sizeP;
 
+        uint32_t            t;
+
         // sizes
         uint32_t    PInvModq_size;             // (size1) should = PInvModqPrecon_size = modqBarrettMu_size = tModqPrecon
         uint32_t    PInvModqPrecon_size;       // (size1)
@@ -73,7 +75,7 @@ namespace lbcrypto {
                             uint32_t PInvModq_size, uint32_t PInvModqPrecon_size, uint32_t PHatInvModp_size,
                             uint32_t PHatInvModpPrecon_size, uint32_t PHatModq_size_x, uint32_t PHatModq_size_y,
                             uint32_t modqBarrettMu_size, uint32_t tInvModp_size, uint32_t tInvModpPrecon_size,
-                            uint32_t tModqPrecon_size);
+                            uint32_t t, uint32_t tModqPrecon_size);
 
         // Destructor
         ~cudaPortalForApproxModDownParams();
@@ -93,6 +95,10 @@ namespace lbcrypto {
 
         uint32_t get_sizeP() const {
             return sizeP;
+        }
+
+        uint32_t get_t() const {
+            return t;
         }
 
         ulong* get_device_PInvModq() const {

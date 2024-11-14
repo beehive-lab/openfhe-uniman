@@ -195,6 +195,8 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxModDown(int gpuBlocks, 
     uint128_t*          device_QHatModp             = paramsData->get_device_PHatModq();
     uint32_t            QHatModP_sizeY              = paramsData->get_PHatModq_sizeY();
     uint128_t*          device_modpBarrettMu        = paramsData->get_device_modqBarrettMu();
+    uint32_t            t                           = paramsData->get_t();
+    ulong*              device_tModqPrecon          = paramsData->get_device_tModqPrecon();
 
     void *args[] = {
         // scalar values
@@ -202,7 +204,7 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxModDown(int gpuBlocks, 
         // work data along with their column size
         &device_partP_empty_m_vectors, &partP_empty_m_vectors_size_x, &partP_empty_m_vectors_size_y,
         &device_sum,
-        &device_partPSwitchedToQ_m_vectors, &partPSwitchedToQ_m_vectors_size_y,
+        &device_partPSwitchedToQ_m_vectors, &partPSwitchedToQ_m_vectors_size_x, &partPSwitchedToQ_m_vectors_size_y,
         // params data along with their column size (where applicable)
         &device_tInvModp,
         &device_tInvModpPrecon,
@@ -210,6 +212,9 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxModDown(int gpuBlocks, 
         &device_QHatInvModqPrecon,
         &device_QHatModp, &QHatModP_sizeY,
         &device_modpBarrettMu,
+        //
+        &t,
+        &device_tModqPrecon
     };
 
     approxModDownKernelWrapper(blocks, threads, args, stream);

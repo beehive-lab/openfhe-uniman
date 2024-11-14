@@ -1587,10 +1587,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
 
     portal->invokeKernelOfApproxModDown(gpuBlocks, gpuThreads);
 
-    portal->copyOutResult();
-
-    portal->unmarshalWorkData(partPSwitchedToQ.m_vectors);
-
     TIC(timer);
 
     // Combine the switched DCRTPoly with the Q part of this to get the result
@@ -1599,13 +1595,9 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     if (diffQ > 0)
         ans.DropLastElements(diffQ);
 
-    // Multiply everything by t mod Q (BGVrns only)
-    if (t > 0) {
-#pragma omp parallel for
-        for (usint i = 0; i < sizeQ; i++) {
-            partPSwitchedToQ.m_vectors[i] *= t;
-        }
-    }
+    portal->copyOutResult();
+
+    portal->unmarshalWorkData(partPSwitchedToQ.m_vectors);
 
     partPSwitchedToQ.SetFormat(EVALUATION);
 

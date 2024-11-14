@@ -67,14 +67,17 @@ __global__ void approxModDown(
     // work data along with their column size
     ulong*      partP_empty_m_vectors,      uint32_t partP_empty_m_vectors_sizeX, uint32_t partP_empty_m_vectors_sizeY,
     uint128_t*  sum,
-    ulong*      partPSwitchedToQ_m_vectors, uint32_t partPSwitchedToQ_sizeY,
+    ulong*      partPSwitchedToQ_m_vectors, uint32_t partPSwitchedToQ_sizeX, uint32_t partPSwitchedToQ_sizeY,
     // params data along with their column size (where applicable)
     ulong*      tInvModp,
     ulong*      tInvModpPrecon,
     ulong*      QHatInvModq,
     ulong*      QHatInvModqPrecon,
     uint128_t*  QHatModp,                   uint32_t QHatModp_sizeY,
-    uint128_t*  modpBarrettMu) {
+    uint128_t*  modpBarrettMu,
+    //
+    uint32_t t,
+    ulong* tModqPrecon) {
 
     int ri = blockIdx.x * blockDim.x + threadIdx.x;
     if (ri < ringDim) {
@@ -92,6 +95,17 @@ __global__ void approxModDown(
 
         // swap sizeP with sizeQ
         approxSwitchCRTBasisFunc(ri, ringDim, sizeQ, sizeP, partP_empty_m_vectors, partP_empty_m_vectors_sizeY, QHatInvModq, QHatInvModqPrecon, QHatModp, QHatModp_sizeY, sum, modpBarrettMu, partPSwitchedToQ_m_vectors, partPSwitchedToQ_sizeY);
+
+        // Multiply everything by t mod Q (BGVrns only)
+        if (t > 0) {
+            for (uint32_t q = 0; q < sizeQ; q++) {
+                partPSwitchedToQ_m_vectors[q * partPSwitchedToQ_sizeY + ri] =
+                    ModMulFastConst(partPSwitchedToQ_m_vectors[q * partPSwitchedToQ_sizeY + ri],
+                                    t,
+                                    partPSwitchedToQ_m_vectors[partPSwitchedToQ_sizeX * partPSwitchedToQ_sizeY + q],
+                                    tModqPrecon[q]);
+            }
+        }
     }
 }
 

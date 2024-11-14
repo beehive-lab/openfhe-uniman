@@ -8,8 +8,8 @@ cudaPortalForApproxModDownParams::cudaPortalForApproxModDownParams(
     uint32_t ringDim, uint32_t sizeQP, uint32_t sizeQ, uint32_t sizeP, cudaStream_t stream,
     uint32_t PInvModq_size, uint32_t PInvModqPrecon_size, uint32_t PHatInvModp_size,
     uint32_t PHatInvModpPrecon_size, uint32_t PHatModq_size_x, uint32_t PHatModq_size_y,
-    uint32_t modqBarrettMu_size, uint32_t tInvModp_size, uint32_t tInvModpPrecon_size, uint32_t tModqPrecon_size)
-: ringDim(ringDim), sizeQP(sizeQP), sizeQ(sizeQ), sizeP(sizeP),
+    uint32_t modqBarrettMu_size, uint32_t tInvModp_size, uint32_t tInvModpPrecon_size, uint32_t t, uint32_t tModqPrecon_size)
+: ringDim(ringDim), sizeQP(sizeQP), sizeQ(sizeQ), sizeP(sizeP), t(t),
 PInvModq_size(PInvModq_size), PInvModqPrecon_size(PInvModqPrecon_size), PHatInvModp_size(PHatInvModp_size),
 PHatInvModpPrecon_size(PHatInvModpPrecon_size), PHatModq_size_x(PHatModq_size_x), PHatModq_size_y(PHatModq_size_y),
 modqBarrettMu_size(modqBarrettMu_size), tInvModp_size(tInvModp_size), tInvModpPrecon_size(tInvModpPrecon_size),
