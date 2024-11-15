@@ -1556,10 +1556,14 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
 
     portal->invokePartPFillKernel(gpuBlocks, gpuThreads);
 
-    std::shared_ptr<cudaPortalForSwitchFormat> switchFormatPortal = std::make_shared<cudaPortalForSwitchFormat>(portal);
+    std::shared_ptr<cudaPortalForSwitchFormat> partPSwitchFormatPortal =
+        std::make_shared<cudaPortalForSwitchFormat>(portal->getDevice_partP_empty_m_vectors(),
+                                                    portal->get_partP_empty_size_x(),
+                                                    portal->get_partP_empty_size_y(),
+                                                    portal->getStream());
 
     // Get and marshal the twiddle factors for switch format
-    switchFormatPortal->marshalTwiddleFactors(partP.m_vectors,
+    partPSwitchFormatPortal->marshalInvTwiddleFactors(partP.m_vectors,
                                               partP.GetRootOfUnityInverseReverseTableByModulus(),
                                               partP.GetRootOfUnityInversePreconReverseTableByModulus(),
                                               partP.GetParams()->GetCyclotomicOrder(),
@@ -1567,11 +1571,11 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
                                               partP.GetCycloOrderInversePreconTableByModulus());
 
     // Copy in switch format params
-    switchFormatPortal->copyInTwiddleFactors();
+    partPSwitchFormatPortal->copyInInvTwiddleFactors();
 
     // invoke switch format kernel
     TIC(switchFormatTimer);
-    switchFormatPortal->invokeSwitchFormatKernel(COEFFICIENT);
+    partPSwitchFormatPortal->invokeSwitchFormatKernel(COEFFICIENT);
     accumulateTimer(switchFormatTimerGPU, TOC_NS(switchFormatTimer));
 
     // Set format argument manually
@@ -1595,11 +1599,24 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     if (diffQ > 0)
         ans.DropLastElements(diffQ);
 
+    //partPSwitchedToQ.SetFormat(EVALUATION);
+    std::shared_ptr<cudaPortalForSwitchFormat> partPSwitchedToQSwitchFormatPortal =
+        std::make_shared<cudaPortalForSwitchFormat>(portal->getDevice_partPSwitchedToQ_m_vectors(),
+                                                    portal->get_partPSwitchedToQ_size_x(),
+                                                    portal->get_partPSwitchedToQ_size_y(),
+                                                    portal->getStream());
+
+    partPSwitchedToQSwitchFormatPortal->marshalTwiddleFactors(partPSwitchedToQ.m_vectors,
+                                                              partPSwitchedToQ.GetRootOfUnityReverseTableByModulus(),
+                                                              partPSwitchedToQ.GetRootOfUnityPreconReverseTableByModulus());
+
+    partPSwitchedToQSwitchFormatPortal->copyInTwiddleFactors();
+
+    partPSwitchedToQSwitchFormatPortal->invokeSwitchFormatKernel(EVALUATION);
+
     portal->copyOutResult();
 
     portal->unmarshalWorkData(partPSwitchedToQ.m_vectors);
-
-    partPSwitchedToQ.SetFormat(EVALUATION);
 
 #pragma omp parallel for
     for (usint i = 0; i < sizeQ; i++) {

@@ -5,7 +5,9 @@
 #include <iostream> // for printf
 #include <cuda_runtime.h>
 
-void iNTTKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
-void iNTTPart2Wrapper(dim3 blocksPt2, dim3 threads, void** args, cudaStream_t stream);
+void fNTTKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
+
+void iNTTPart1KernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
+void iNTTPart2KernelWrapper(dim3 blocksPt2, dim3 threads, void** args, cudaStream_t stream);
 
 #endif

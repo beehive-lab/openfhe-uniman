@@ -74,6 +74,8 @@ public:
     uint32_t                                            get_partP_empty_size_y() const { return partP_empty_m_vectors_size_y; }
     ulong*                                              getDevice_partP_empty_m_vectors() const { return device_partP_empty_m_vectors; }
 
+    uint32_t                                            get_partPSwitchedToQ_size_x() const { return partPSwitchedToQ_m_vectors_size_x; }
+    uint32_t                                            get_partPSwitchedToQ_size_y() const { return partPSwitchedToQ_m_vectors_size_y; }
     ulong*                                              getHost_partPSwitchedToQ_m_vectors() const { return host_partPSwitchedToQ_m_vectors; }
     uint128_t*                                          getDevice_sum() const { return device_sum; }
     ulong*                                              getDevice_partPSwitchedToQ_m_vectors() const { return device_partPSwitchedToQ_m_vectors; }
