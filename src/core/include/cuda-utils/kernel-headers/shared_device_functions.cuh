@@ -9,6 +9,10 @@
 
 using uint128_t = unsigned __int128;
 
+__device__ inline ulong ModSubFast(ulong a, ulong b, ulong modulus) {
+    return a >= b ? a - b : a + (modulus - b);
+}
+
 /**
  * CUDA implementation of:
  * NativeIntegerT ModMulFastConst(const NativeIntegerT& b, const NativeIntegerT& modulus, const NativeIntegerT& bInv)
