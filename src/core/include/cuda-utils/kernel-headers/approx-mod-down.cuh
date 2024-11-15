@@ -12,6 +12,8 @@ void approxModDownKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStre
 
 void fillPartPKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
 
+void ansFillKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
+
 void printMemoryInfo();
 
 #endif

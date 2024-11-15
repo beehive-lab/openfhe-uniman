@@ -68,6 +68,11 @@ void cudaPortalForApproxModDownData::allocateHostData() {
         exit(1);
     }
 
+    // ans
+    this->ans_m_vectors_size_x = sizeQ;
+    this->ans_m_vectors_size_y = ringDim;
+    // note: host_ans is allocated in copy out
+
 }
 
 
@@ -103,14 +108,14 @@ void cudaPortalForApproxModDownData::marshalWorkData(const std::vector<PolyImpl<
 
 }
 
-void cudaPortalForApproxModDownData::unmarshalWorkData(std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors) {
+void cudaPortalForApproxModDownData::unmarshalWorkData(std::vector<PolyImpl<NativeVector>>& ans_m_vectors) {
     // make sure stream has finished all queued tasks before touching the results from host
     CUDA_CHECK(cudaStreamSynchronize(stream));
     //std::cout << "==> UNMARSHAL START" << std::endl;
 
-    for (usint x = 0; x < partPSwitchedToQ_m_vectors_size_x; x++) {
-        for(usint y = 0; y < partPSwitchedToQ_m_vectors_size_y; y++) {
-            partPSwitchedToQ_m_vectors[x][y] = NativeInteger(host_partPSwitchedToQ_m_vectors[x * partPSwitchedToQ_m_vectors_size_y + y]);
+    for (usint x = 0; x < ans_m_vectors_size_x; x++) {
+        for(usint y = 0; y < ans_m_vectors_size_y; y++) {
+            ans_m_vectors[x][y] = NativeInteger(host_ans_m_vectors[x * ans_m_vectors_size_y + y]);
         }
     }
 }
@@ -151,19 +156,16 @@ void cudaPortalForApproxModDownData::copyInWorkData() {
         CUDA_CHECK(cudaMallocAsync((void**)&(device_partPSwitchedToQ_m_vectors_data_ptr[p]), partPSwitchedToQ_m_vectors_size_y * sizeof(unsigned long), stream));
         CUDA_CHECK(cudaMemcpyAsync(&(device_partPSwitchedToQ_m_vectors[p].data), &(device_partPSwitchedToQ_m_vectors_data_ptr[p]), sizeof(unsigned long*), cudaMemcpyHostToDevice, stream));
     }*/
+    // ans - only for data, no need for modulus
+    size_t ans_data_size = ans_m_vectors_size_x * ans_m_vectors_size_y * sizeof(unsigned long);
+    CUDA_CHECK(cudaMallocAsync((void**)&device_ans_m_vectors, ans_data_size, stream));
 }
 
 void cudaPortalForApproxModDownData::copyOutResult() {
-    //printf("(copyOut): SizeP= %d, sizeQ= %d, copy out size = %d\n", sizeP, sizeQ, partPSwitchedToQ_m_vectors_size_x);
+    size_t ans_data_size = ans_m_vectors_size_x * ans_m_vectors_size_y * sizeof(unsigned long);
+    host_ans_m_vectors = (unsigned long*) malloc(ans_data_size);
 
-    size_t data_size = partPSwitchedToQ_m_vectors_size_x * partPSwitchedToQ_m_vectors_size_y * sizeof(unsigned long);
-    CUDA_CHECK(cudaMemcpyAsync(host_partPSwitchedToQ_m_vectors, device_partPSwitchedToQ_m_vectors, data_size, cudaMemcpyDeviceToHost, stream));
-    /*for(uint32_t p = 0; p < partPSwitchedToQ_m_vectors_size_x; p++) {
-        std::cout << "==> COPY OUT (" << whoAmI() << ")" << std::endl;
-        //CUDA_CHECK(cudaMemcpyAsync(host_partPSwitchedToQ_m_vectors[p].data, device_partPSwitchedToQ_m_vectors_data_ptr[p], partPSwitchedToQ_m_vectors_size_y * sizeof(unsigned long), cudaMemcpyDeviceToHost, stream));
-    }*/
-
-    //std::cout << "==> COPY OUT FINISHED" << std::endl;
+    CUDA_CHECK(cudaMemcpyAsync(host_ans_m_vectors, device_ans_m_vectors, ans_data_size, cudaMemcpyDeviceToHost, stream));
 }
 
 // Kernel Invocation Function
@@ -218,6 +220,25 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxModDown(int gpuBlocks, 
     };
 
     approxModDownKernelWrapper(blocks, threads, args, stream);
+}
+
+void cudaPortalForApproxModDownData::invokeAnsFillKernel(int gpuBlocks, int gpuThreads) {
+    dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
+    dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
+
+    ulong* device_pInvModq = paramsData->get_device_PInvModq();
+    ulong* device_pInvModqPrecon = paramsData->get_device_PInvModqPrecon();
+
+    void *args[] = {
+        &sizeQ,
+        &device_cTilda_m_vectors, &cTilda_m_vectors_size_x, &cTilda_m_vectors_size_y,
+        &device_partPSwitchedToQ_m_vectors, &partPSwitchedToQ_m_vectors_size_x, &partPSwitchedToQ_m_vectors_size_y,
+        &device_ans_m_vectors, &ans_m_vectors_size_x, &ans_m_vectors_size_y,
+        &device_pInvModq,
+        &device_pInvModqPrecon
+        };
+
+    ansFillKernelWrapper(blocks, threads, args, stream);
 }
 
 // Resources Deallocation - Error Handling - Misc Functions

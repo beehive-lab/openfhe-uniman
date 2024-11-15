@@ -152,3 +152,32 @@ void approxModDownKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStre
 
     //std::cout << "End New approxSwitchCRTBasisKernelWrapper" << std::endl;
 }
+
+__global__ void ansFill(int sizeQ,
+                        ulong*      cTilda_m_vectors,           uint32_t cTilda_m_vectors_sizeX, uint32_t cTilda_m_vectors_sizeY,
+                        ulong*      partPSwitchedToQ_m_vectors, uint32_t partPSwitchedToQ_sizeX, uint32_t partPSwitchedToQ_sizeY,
+                        ulong*      ans_m_vectors, uint32_t ans_sizeX, uint32_t ans_sizeY,
+                        ulong*      pInvModq,
+                        ulong*      pInvModqPrecon) {
+
+    int ri = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (uint32_t q = 0; q < sizeQ; q++) {
+        ulong cTildaModulus = cTilda_m_vectors[cTilda_m_vectors_sizeX * cTilda_m_vectors_sizeY + q];
+
+        ulong diff = ModSubFast(cTilda_m_vectors[q * cTilda_m_vectors_sizeY + ri], partPSwitchedToQ_m_vectors[q * partPSwitchedToQ_sizeY + ri], cTildaModulus); // ok
+        ans_m_vectors[q * ans_sizeY + ri] = ModMulFastConst(diff, pInvModq[q], cTildaModulus, pInvModqPrecon[q]);
+        //if (ri < 2) {
+            //printf("(kernel) diff=%lu, pInvModq=%lu, cTildaModulus=%lu, pInvModqPrecon=%lu, res = %lu\n", diff, pInvModq[q], cTildaModulus, pInvModqPrecon[q], ans_m_vectors[q * ans_sizeY + ri]);
+        //}
+    }
+}
+
+void ansFillKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+    cudaError_t         cudaStatus;
+    cudaStatus = cudaLaunchKernel((void*)ansFill, blocks, threads, args, 0U, stream);
+    if (cudaStatus != cudaSuccess) {
+        printf("ansFill kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
+        exit(-1);
+    }
+}

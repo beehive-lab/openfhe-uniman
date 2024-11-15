@@ -588,7 +588,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                 ringDim, sizeQP, sizeQ, sizeP, cudaUtils.getParamsStream(),
                 PInvModq_size, PInvModqPrecon_size, PHatInvModp_size,
                 PHatInvModpPrecon_size, PHatModq_size_x, PHatModq_size_y,
-                modqBarrettMu_size, tInvModp_size, tInvModpPrecon_size, tModqPrecon_size);
+                modqBarrettMu_size, tInvModp_size, tInvModpPrecon_size, t, tModqPrecon_size);
     // create portal objs for work data
     std::shared_ptr<cudaPortalForApproxModDownData> workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream0(), 0);
     std::shared_ptr<cudaPortalForApproxModDownData> workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream1(), 1);

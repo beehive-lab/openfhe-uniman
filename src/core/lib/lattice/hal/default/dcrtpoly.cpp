@@ -1614,15 +1614,12 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
 
     partPSwitchedToQSwitchFormatPortal->invokeSwitchFormatKernel(EVALUATION);
 
+    portal->invokeAnsFillKernel(gpuBlocks, gpuThreads);
+
     portal->copyOutResult();
 
-    portal->unmarshalWorkData(partPSwitchedToQ.m_vectors);
+    portal->unmarshalWorkData(ans.m_vectors);
 
-#pragma omp parallel for
-    for (usint i = 0; i < sizeQ; i++) {
-        auto diff        = m_vectors[i] - partPSwitchedToQ.m_vectors[i];
-        ans.m_vectors[i] = diff * PInvModq[i];
-    }
     //std::cout << "[END] ApproxModDownCUDA" << std::endl;
     accumulateTimer(approxModDown_post, TOC_MS(timer));
     accumulateTimer(approxModDown_total, TOC_MS(timer_total));

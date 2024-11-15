@@ -54,6 +54,12 @@ private:
     //m_vectors_struct*   device_partPSwitchedToQ_m_vectors;
     //unsigned long**     device_partPSwitchedToQ_m_vectors_data_ptr;
 
+    // ans
+    uint32_t            ans_m_vectors_size_x;
+    uint32_t            ans_m_vectors_size_y;
+    unsigned long*      host_ans_m_vectors; //flat
+    unsigned long*      device_ans_m_vectors; //flat
+
 public:
 
     // Constructor
@@ -99,6 +105,7 @@ public:
     // Kernel Invocation Function
     void invokePartPFillKernel(int gpuBlocks, int gpuThreads);
     void invokeKernelOfApproxModDown(int gpuBlocks, int gpuThreads);
+    void invokeAnsFillKernel(int gpuBlocks, int gpuThreads);
 
     // Resources Allocation/Deallocation - Error Handling - Misc Functions
 
