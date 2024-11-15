@@ -5,6 +5,34 @@
 #include "cuda-utils/m_vectors.h"
 #include "cuda-utils/kernel-headers/shared_device_functions.cuh"
 
+__global__ void fill_partP(int sizeQP, int sizeQ,
+ulong*      cTilda_m_vectors,           uint32_t cTilda_m_vectors_sizeX, uint32_t cTilda_m_vectors_sizeY,
+ulong*      partP_empty_m_vectors,      uint32_t partP_empty_m_vectors_sizeX, uint32_t partP_empty_m_vectors_sizeY) {
+
+    int ri = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // fill partP_empty - ok
+    for (uint32_t i = sizeQ, j = 0; i < sizeQP; i++, j++) {
+        // data - ok
+        partP_empty_m_vectors[j * partP_empty_m_vectors_sizeY + ri] = cTilda_m_vectors[i * cTilda_m_vectors_sizeY + ri];
+        // modulus - ok
+        if (ri <= j)
+            partP_empty_m_vectors[partP_empty_m_vectors_sizeX * partP_empty_m_vectors_sizeY + j] = cTilda_m_vectors[cTilda_m_vectors_sizeX * cTilda_m_vectors_sizeY + i];
+    }
+}
+
+void fillPartPKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+    cudaError_t         cudaStatus;
+
+    //cudaDeviceSynchronize();
+    cudaStatus = cudaLaunchKernel((void*)fill_partP, blocks, threads, args, 0U, stream);
+    if (cudaStatus != cudaSuccess) {
+        printf("fill_partP kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
+        //return;
+        exit(-1);
+    }
+}
+
 __device__ inline void approxSwitchCRTBasisFunc(int ri, int ringDim, int sizeP, int sizeQ,
                                      ulong*             m_vectors, uint32_t m_vectors_sizeY,
                                      ulong*             QHatInvModq,

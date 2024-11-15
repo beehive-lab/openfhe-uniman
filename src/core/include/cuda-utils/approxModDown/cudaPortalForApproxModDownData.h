@@ -10,7 +10,6 @@
 #include "cudaPortalForApproxModDownParams.h"
 //#include "cuda-utils/kernel-headers/shared_device_functions.cuh"
 #include "cuda-utils/kernel-headers/approx-mod-down.cuh"
-#include "cuda-utils/kernel-headers/fill-partP.cuh"
 
 namespace lbcrypto {
     class Params;

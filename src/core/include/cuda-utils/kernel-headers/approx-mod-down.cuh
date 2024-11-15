@@ -10,6 +10,8 @@ using uint128_t = unsigned __int128;
 
 void approxModDownKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
 
+void fillPartPKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
+
 void printMemoryInfo();
 
 #endif
