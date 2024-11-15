@@ -658,6 +658,16 @@ std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTFxd<VecType>::Co
 }
 
 template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTFxd<VecType>::ExtractRootOfUnityReverseTableByModulus() {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractRootOfUnityReverseTableByModulus is not implemented for ChineseRemainderTransformFTTFxd");
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTFxd<VecType>::ExtractRootOfUnityPreconReverseTableByModulus() {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractRootOfUnityPreconReverseTableByModulus is not implemented for ChineseRemainderTransformFTTFxd");
+}
+
+template <typename VecType>
 std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTFxd<VecType>::ExtractRootOfUnityInverseReverseTableByModulus() {
     OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractRootOfUnityInverseReverseTableByModulus is not implemented for ChineseRemainderTransformFTTFxd");
 }

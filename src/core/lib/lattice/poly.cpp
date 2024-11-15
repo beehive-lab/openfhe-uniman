@@ -836,6 +836,18 @@ void PolyImpl<VecType>::SwitchFormat() {
 }
 
 template <typename VecType>
+std::map<ulong, std::vector<ulong>> PolyImpl<VecType>::ExtractRootOfUnityReverseTableByModulus() {
+    const auto& map = ChineseRemainderTransformFTT<VecType>().ExtractRootOfUnityReverseTableByModulus();
+    return map;
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> PolyImpl<VecType>::ExtractRootOfUnityPreconReverseTableByModulus() {
+    const auto& map = ChineseRemainderTransformFTT<VecType>().ExtractRootOfUnityPreconReverseTableByModulus();
+    return map;
+}
+
+template <typename VecType>
 std::map<ulong, std::vector<ulong>> PolyImpl<VecType>::ExtractRootOfUnityInverseReverseTableByModulus() {
     const auto& map = ChineseRemainderTransformFTT<VecType>().ExtractRootOfUnityInverseReverseTableByModulus();
     return map;

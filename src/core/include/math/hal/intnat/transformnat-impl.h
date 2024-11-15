@@ -659,6 +659,15 @@ std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::Co
 
     return newMap;
 }
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityReverseTableByModulus() {
+    return ConvertTable(m_rootOfUnityReverseTableByModulus);
+}
+
+template <typename VecType>
+std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityPreconReverseTableByModulus() {
+    return ConvertTable(m_rootOfUnityPreconReverseTableByModulus);
+}
 
 template <typename VecType>
 std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityInverseReverseTableByModulus() {

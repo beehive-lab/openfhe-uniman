@@ -365,6 +365,9 @@ public:
     static std::map<IntType, VecType> m_rootOfUnityInversePreconReverseTableByModulus;
 
     /// Functions that extract the NTT twiddle factors in primitive map format. These functions are used for GPU Acceleration.
+    std::map<ulong, std::vector<ulong>> ExtractRootOfUnityReverseTableByModulus();
+    std::map<ulong, std::vector<ulong>> ExtractRootOfUnityPreconReverseTableByModulus();
+    /// Functions that extract the inverse NTT twiddle factors in primitive map format. These functions are used for GPU Acceleration.
     std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInverseReverseTableByModulus();
     std::map<ulong, std::vector<ulong>> ExtractRootOfUnityInversePreconReverseTableByModulus();
     std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus();
