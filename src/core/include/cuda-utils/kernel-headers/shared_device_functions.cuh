@@ -41,12 +41,8 @@ __device__ inline uint128_t Mul128(ulong a, ulong b) {
  * @return 1 if overflow occurs, 0 otherwise
  */
 __device__ inline ulong AdditionWithCarryOut(ulong a, ulong b, ulong& c) {
-    a += b;
-    c = a;
-    if (a < b)
-        return 1;
-    else
-        return 0;
+    c = a + b;
+    return (c < a);
 }
 
 /**
@@ -56,11 +52,7 @@ __device__ inline ulong AdditionWithCarryOut(ulong a, ulong b, ulong& c) {
  * @return 1 if overflow occurs, 0 otherwise
  */
 __device__ inline ulong IsAdditionOverflow(ulong a, ulong b) {
-    a += b;
-    if (a < b)
-        return 1;
-    else
-        return 0;
+    return (a + b) < b ? 1 : 0;
 }
 
 /**
@@ -72,44 +64,34 @@ __device__ inline ulong IsAdditionOverflow(ulong a, ulong b) {
  * @param mu: 2^128/modulus (128-bit)
  * @return result: 64-bit result = a mod m
  */
-__device__ inline ulong BarrettUint128ModUint64(uint128_t a, ulong modulus, uint128_t mu) {
-    // (a * mu)/2^128 // we need the upper 128-bit of (256-bit product)
-    ulong result = 0, a_lo = 0, a_hi = 0, mu_lo = 0, mu_hi = 0, left_hi = 0, middle_lo = 0, middle_hi = 0, tmp1 = 0,
-          tmp2 = 0, carry = 0;
-    uint128_t middle = 0;
+__device__ ulong BarrettUint128ModUint64(uint128_t a, ulong modulus, uint128_t mu) {
+    ulong a_lo = (uint64_t)a;
+    ulong a_hi = a >> 64;
+    ulong mu_lo = (uint64_t)mu;
+    ulong mu_hi = mu >> 64;
 
-    a_lo  = (uint64_t)a;
-    a_hi  = a >> 64;
-    mu_lo = (uint64_t)mu;
-    mu_hi = mu >> 64;
+    // Compute intermediate values
+    ulong left_hi = (Mul128(a_lo, mu_lo)) >> 64;
+    uint128_t middle = Mul128(a_lo, mu_hi);
+    ulong middle_lo = (uint64_t)middle;
+    ulong middle_hi = middle >> 64;
 
-    left_hi = (Mul128(a_lo, mu_lo)) >> 64;  // mul left parts, discard lower word
+    ulong carry, tmp1, tmp2;
+    //carry = AdditionWithCarryOut(middle_lo, left_hi, tmp1);
+    tmp1 = middle_lo + left_hi;
+    carry = (tmp1 < middle_lo);
+    tmp2 = middle_hi + carry;
 
-    middle    = Mul128(a_lo, mu_hi);  // mul middle first
+    middle = Mul128(a_hi, mu_lo);
     middle_lo = (uint64_t)middle;
     middle_hi = middle >> 64;
+    carry = IsAdditionOverflow(middle_lo, tmp1);
+    left_hi = middle_hi + carry;
 
-    // accumulate and check carry
-    carry = AdditionWithCarryOut(middle_lo, left_hi, tmp1);
-
-    tmp2 = middle_hi + carry;  // accumulate
-
-    middle    = Mul128(a_hi, mu_lo);  // mul middle second
-    middle_lo = (uint64_t)middle;
-    middle_hi = middle >> 64;
-
-    carry = IsAdditionOverflow(middle_lo, tmp1);  // check carry
-
-    left_hi = middle_hi + carry;  // accumulate
-
-    // now we have the lower word of (a * mu)/2^128, no need for higher word
     tmp1 = a_hi * mu_hi + tmp2 + left_hi;
+    ulong result = a_lo - tmp1 * modulus;
 
-    // subtract lower words only, higher words should be the same
-    result = a_lo - tmp1 * modulus;
-
-    while (result >= modulus)
-        result -= modulus;
+    result -= (result >= modulus) ? modulus : 0;
 
     return result;
 }
