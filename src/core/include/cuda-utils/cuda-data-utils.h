@@ -43,6 +43,12 @@ namespace lbcrypto {
         ptr = NULL;    \
     } while (0)
 
+#define SAFE_CUDA_FREE_HOST(ptr) \
+    do {                         \
+        cudaFreeHost(ptr);               \
+        ptr = NULL;              \
+    } while (0)
+
 using PolyType = PolyImpl<NativeVector>;
 
 /**
@@ -107,15 +113,15 @@ private:
 
     void createCUDAStreams() {
         cudaError_t err;
-        err = cudaStreamCreate(&paramsStream);
+        err = cudaStreamCreateWithFlags(&paramsStream, cudaStreamNonBlocking);
         if (err != cudaSuccess) {
             throw std::runtime_error("CUDA error during paramsStream creation: " + std::string(cudaGetErrorString(err)));
         }
-        err = cudaStreamCreate(&workDataStream0);
+        err = cudaStreamCreateWithFlags(&workDataStream0, cudaStreamNonBlocking);
         if (err != cudaSuccess) {
             throw std::runtime_error("CUDA error during workDataStream0 creation: " + std::string(cudaGetErrorString(err)));
         }
-        err = cudaStreamCreate(&workDataStream1);
+        err = cudaStreamCreateWithFlags(&workDataStream1, cudaStreamNonBlocking);
         if (err != cudaSuccess) {
             throw std::runtime_error("CUDA error during workDataStream1 creation: " + std::string(cudaGetErrorString(err)));
         }

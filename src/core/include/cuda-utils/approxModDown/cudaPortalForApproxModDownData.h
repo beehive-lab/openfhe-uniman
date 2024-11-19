@@ -127,6 +127,14 @@ private:
     }
 
     template<typename T>
+    void safeCudaFreeHost(T*& ptr) {
+        if (ptr != nullptr) {
+            cudaFreeHost(ptr);
+            ptr = nullptr; // Set to nullptr to avoid dangling pointer
+        }
+    }
+
+    template<typename T>
     void safeCudaFreeAsync(T*& ptr, cudaStream_t stream) {
         if (ptr != nullptr) {
             CUDA_CHECK(cudaFreeAsync(ptr, stream));  // Custom macro to check CUDA calls

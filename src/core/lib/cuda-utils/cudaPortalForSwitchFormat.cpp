@@ -26,17 +26,17 @@ cudaPortalForSwitchFormat::cudaPortalForSwitchFormat(ulong* device_m_vectors, ui
 cudaPortalForSwitchFormat::~cudaPortalForSwitchFormat() {
     if (host_rootOfUnityReverseTable) {
         // forward NTT
-        SAFE_FREE(host_rootOfUnityReverseTable);
-        SAFE_FREE(host_rootOfUnityPreconReverseTable);
+        SAFE_CUDA_FREE_HOST(host_rootOfUnityReverseTable);
+        SAFE_CUDA_FREE_HOST(host_rootOfUnityPreconReverseTable);
 
         CUDA_SAFE_FREE(device_rootOfUnityReverseTable, stream);
         CUDA_SAFE_FREE(device_rootOfUnityPreconReverseTable, stream);
     } else {
         // inverse NTT
-        SAFE_FREE(host_rootOfUnityInverseReverseTable);
-        SAFE_FREE(host_rootOfUnityInversePreconReverseTable);
-        SAFE_FREE(host_cycloOrderInverseTable);
-        SAFE_FREE(host_cycloOrderInversePreconTable);
+        SAFE_CUDA_FREE_HOST(host_rootOfUnityInverseReverseTable);
+        SAFE_CUDA_FREE_HOST(host_rootOfUnityInversePreconReverseTable);
+        SAFE_CUDA_FREE_HOST(host_cycloOrderInverseTable);
+        SAFE_CUDA_FREE_HOST(host_cycloOrderInversePreconTable);
 
         CUDA_SAFE_FREE(device_rootOfUnityInverseReverseTable, stream);
         CUDA_SAFE_FREE(device_rootOfUnityInversePreconReverseTable, stream);
@@ -56,7 +56,8 @@ ulong* cudaPortalForSwitchFormat::get_device_cycloOrderInversePreconMap()       
 // Flatten Map Functions
 void cudaPortalForSwitchFormat::flattenRootOfUnityReverseTableByModulus(const std::vector<PolyImpl<NativeVector>>& m_vectors,
                                                                         const std::map<ulong, std::vector<ulong>>& inputMap_rootOfUnityReverse) {
-    host_rootOfUnityReverseTable = (ulong*)malloc(sizeX * sizeY * sizeof(ulong));
+    //host_rootOfUnityReverseTable = (ulong*)malloc(sizeX * sizeY * sizeof(ulong));
+    cudaMallocHost((void**)&host_rootOfUnityReverseTable, sizeX * sizeY * sizeof(ulong),cudaHostAllocDefault);
     for (uint32_t i = 0; i < sizeX; i++) {
         long key = m_vectors[i].GetModulus().ConvertToInt<>();
         const auto& currentValues = inputMap_rootOfUnityReverse.at(key);
@@ -66,7 +67,8 @@ void cudaPortalForSwitchFormat::flattenRootOfUnityReverseTableByModulus(const st
 
 void cudaPortalForSwitchFormat::flattenRootOfUnityPreconReverseTableByModulus(const std::vector<PolyImpl<NativeVector>>& m_vectors,
                                                                               const std::map<ulong, std::vector<ulong>>& inputMap_rootOfUnityPrecon) {
-    host_rootOfUnityPreconReverseTable = (ulong*)malloc(sizeX * sizeY * sizeof(ulong));
+    //host_rootOfUnityPreconReverseTable = (ulong*)malloc(sizeX * sizeY * sizeof(ulong));
+    cudaMallocHost((void**)&host_rootOfUnityPreconReverseTable, sizeX * sizeY * sizeof(ulong), cudaHostAllocDefault);
     for (uint32_t i = 0; i < sizeX; i++) {
         long key = m_vectors[i].GetModulus().ConvertToInt<>();
         const auto& currentValues = inputMap_rootOfUnityPrecon.at(key);
@@ -76,7 +78,8 @@ void cudaPortalForSwitchFormat::flattenRootOfUnityPreconReverseTableByModulus(co
 
 void cudaPortalForSwitchFormat::flattenRootOfUnityInverseReverseTableByModulus(const std::vector<PolyImpl<NativeVector>>& m_vectors,
                                                                                const std::map<ulong, std::vector<ulong>>& inputMap_rootOfUnityInverseReverse) {
-    host_rootOfUnityInverseReverseTable = (ulong*)malloc(sizeX * sizeY * sizeof(ulong));
+    //host_rootOfUnityInverseReverseTable = (ulong*)malloc(sizeX * sizeY * sizeof(ulong));
+    cudaMallocHost((void**)&host_rootOfUnityInverseReverseTable, sizeX * sizeY * sizeof(ulong), cudaHostAllocDefault);
     for (uint32_t i = 0; i < sizeX; i++) {
         long key = m_vectors[i].GetModulus().ConvertToInt<>();
         const auto& currentValues = inputMap_rootOfUnityInverseReverse.at(key);
@@ -86,7 +89,8 @@ void cudaPortalForSwitchFormat::flattenRootOfUnityInverseReverseTableByModulus(c
 
 void cudaPortalForSwitchFormat::flattenRootOfUnityInversePreconReverseTableByModulus(const std::vector<PolyImpl<NativeVector>>& m_vectors,
                                                                                      const std::map<ulong, std::vector<ulong>>& inputMap_rootOfUnityInversePrecon) {
-    host_rootOfUnityInversePreconReverseTable = (ulong*)malloc(sizeX * sizeY * sizeof(ulong));
+    //host_rootOfUnityInversePreconReverseTable = (ulong*)malloc(sizeX * sizeY * sizeof(ulong));
+    cudaMallocHost((void**)&host_rootOfUnityInversePreconReverseTable, sizeX * sizeY * sizeof(ulong), cudaHostAllocDefault);
     for (uint32_t i = 0; i < sizeX; i++) {
         long key = m_vectors[i].GetModulus().ConvertToInt<>();
         const auto& currentValues = inputMap_rootOfUnityInversePrecon.at(key);
@@ -99,7 +103,8 @@ void cudaPortalForSwitchFormat::flattenCycloOrderInverseTableByModulus(const std
                                                                        const std::map<ulong, std::vector<ulong>>& inputMap_cycloOrderInverseMap) {
     uint32_t CycloOrderHf = (cyclotomicOrder >> 1);
     uint32_t msb = lbcrypto::GetMSB64(CycloOrderHf - 1);
-    host_cycloOrderInverseTable = (ulong*)malloc(sizeX * sizeof(ulong));
+    //host_cycloOrderInverseTable = (ulong*)malloc(sizeX * sizeof(ulong));
+    cudaMallocHost((void**)&host_cycloOrderInverseTable, sizeX * sizeof(ulong), cudaHostAllocDefault);
     for (uint32_t i = 0; i < sizeX; i++) {
         long key = m_vectors[i].GetModulus().ConvertToInt<>();
         const auto& currentValues = inputMap_cycloOrderInverseMap.at(key);
@@ -113,6 +118,7 @@ void cudaPortalForSwitchFormat::flattenCycloOrderInversePreconTableByModulus(con
     uint32_t CycloOrderHf = (cyclotomicOrder >> 1);
     uint32_t msb = lbcrypto::GetMSB64(CycloOrderHf - 1);
     host_cycloOrderInversePreconTable = (ulong*)malloc(sizeX * sizeof(ulong));
+    cudaMallocHost((void**)&host_cycloOrderInversePreconTable, sizeX * sizeof(ulong), cudaHostAllocDefault);
     for (uint32_t i = 0; i < sizeX; i++) {
         long key = m_vectors[i].GetModulus().ConvertToInt<>();
         const auto& currentValues = inputMap_cycloOrderInversePreconMap.at(key);

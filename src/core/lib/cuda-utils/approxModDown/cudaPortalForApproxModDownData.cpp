@@ -34,7 +34,8 @@ void cudaPortalForApproxModDownData::allocateHostCTilda(uint32_t cTilda_size_x, 
     size_t cTilda_data_size     = cTilda_m_vectors_size_x * cTilda_m_vectors_size_y * sizeof(unsigned long);
     size_t cTilda_modulus_size  = cTilda_m_vectors_size_x * sizeof(unsigned long);
     size_t cTilda_total_size    = cTilda_data_size + cTilda_modulus_size;
-    host_cTilda_m_vectors       = (unsigned long*) malloc (cTilda_total_size);
+    //host_cTilda_m_vectors       = (unsigned long*) malloc (cTilda_total_size);
+    cudaHostAlloc((void**)&host_cTilda_m_vectors, cTilda_total_size, cudaHostAllocDefault);
 
     // partP_empty
     this->partP_empty_m_vectors_size_x = sizeP;
@@ -60,7 +61,10 @@ void cudaPortalForApproxModDownData::allocateHostData() {
     size_t data_size = partPSwitchedToQ_m_vectors_size_x * partPSwitchedToQ_m_vectors_size_y * sizeof(unsigned long);
     size_t modulus_size = partPSwitchedToQ_m_vectors_size_x * sizeof(unsigned long);
     size_t total_size = data_size + modulus_size;
-    host_partPSwitchedToQ_m_vectors = (unsigned long*) malloc (total_size);
+    //host_partPSwitchedToQ_m_vectors = (unsigned long*) malloc (total_size);
+    //cudaHostAlloc((void**)&host_cTilda_m_vectors, cTilda_total_size, cudaHostAllocDefault);
+    cudaHostAlloc((void**)&host_partPSwitchedToQ_m_vectors, total_size, cudaHostAllocDefault);
+
 
     // Ensure allocation was successful
     if (host_partPSwitchedToQ_m_vectors == nullptr) {
@@ -163,7 +167,8 @@ void cudaPortalForApproxModDownData::copyInWorkData() {
 
 void cudaPortalForApproxModDownData::copyOutResult() {
     size_t ans_data_size = ans_m_vectors_size_x * ans_m_vectors_size_y * sizeof(unsigned long);
-    host_ans_m_vectors = (unsigned long*) malloc(ans_data_size);
+    //host_ans_m_vectors = (unsigned long*) malloc(ans_data_size);
+    cudaMallocHost((void**)&host_ans_m_vectors, ans_data_size, cudaHostAllocDefault);
 
     CUDA_CHECK(cudaMemcpyAsync(host_ans_m_vectors, device_ans_m_vectors, ans_data_size, cudaMemcpyDeviceToHost, stream));
 }
@@ -254,8 +259,11 @@ void cudaPortalForApproxModDownData::handleFreeError(const std::string& operatio
 
 void cudaPortalForApproxModDownData::freeHostMemory() {
 
-    safeFree(host_cTilda_m_vectors);
-    safeFree(host_partPSwitchedToQ_m_vectors);
+    safeCudaFreeHost(host_cTilda_m_vectors);
+    //safeFree(host_partPSwitchedToQ_m_vectors);
+    safeCudaFreeHost(host_partPSwitchedToQ_m_vectors);
+
+    safeCudaFreeHost(host_ans_m_vectors);
 }
 
 void cudaPortalForApproxModDownData::freeDeviceMemory() {
