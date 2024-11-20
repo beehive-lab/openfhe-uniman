@@ -61,6 +61,7 @@
 #include <cuda-utils/approxModDown/cudaPortalForApproxModDownData.h>
 #include <cuda-utils/cuda-data-utils.h>
 #include <cuda-utils/switch-format/cudaPortalForSwitchFormat.h>
+#include <nvToolsExt.h>
 #endif
 
 namespace lbcrypto {

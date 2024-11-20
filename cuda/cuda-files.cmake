@@ -29,7 +29,7 @@ target_compile_features(CUDALibrary PRIVATE cuda_std_17)
 # CUDA libraries to include
 #message(STATUS "CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}") # /usr/local/cuda-12.2/include
 #message(STATUS "CUDA_LIBRARIES: ${CUDA_LIBRARIES}") #/usr/local/cuda-12.2/lib64/libcudart_static.a;Threads::Threads;dl;/usr/lib/x86_64-linux-gnu/librt.so
-target_link_libraries(CUDALibrary ${CUDA_LIBRARIES})
+target_link_libraries(CUDALibrary ${CUDA_LIBRARIES} nvToolsExt)
 target_include_directories(CUDALibrary PUBLIC ${CUDA_INCLUDE_DIRS})
 
 install(TARGETS CUDALibrary
