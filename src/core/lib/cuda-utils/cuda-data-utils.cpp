@@ -3,8 +3,6 @@
 
 #include <iomanip>
 
-#include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
-
 // use this namespace in order to access openFHE internal data types
 namespace lbcrypto {
 

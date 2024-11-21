@@ -15,8 +15,6 @@ namespace lbcrypto {
 
 class cudaPortalForSwitchFormat {
 
-    std::shared_ptr<cudaPortalForApproxModDownData> approxModDownData;
-
     cudaStream_t stream;
 
     uint32_t cyclotomicOrder;
@@ -58,7 +56,6 @@ public:
     ulong* get_device_cycloOrderInversePreconMap();
 
     // Setters
-    void set_approxModDownDataPtr(std::shared_ptr<cudaPortalForApproxModDownData> ptr) { this->approxModDownData = ptr;}
 
     // Marshalling Functions
     // forward NTT
