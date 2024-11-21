@@ -69,8 +69,8 @@ __global__ void forwardNTT(
 __global__ void inverseNTT_Part1(
     uint32_t x, uint32_t m, uint32_t n, uint32_t step,
     ulong* element, uint32_t sizeX, uint32_t sizeY,
-    ulong* rootOfUnityInverseTable,
-    ulong* preconRootOfUnityInverseTable
+    ulong* rootOfUnityInverseReverseTable,
+    ulong* preconRootOfUnityInverseReverseTable
     ) {
 
     // Use thread ID to handle indices
@@ -83,8 +83,8 @@ __global__ void inverseNTT_Part1(
         //uint32_t step        = (n/m) >> 1;
         uint32_t psi_step    = tid/step; // i -> middle loop
         uint32_t indexOmega  = m + psi_step;
-        ulong omega          = rootOfUnityInverseTable[x_offset + indexOmega]; // ok
-        ulong preconOmega    = preconRootOfUnityInverseTable[x_offset + indexOmega];
+        ulong omega          = rootOfUnityInverseReverseTable[x_offset + indexOmega]; // ok
+        ulong preconOmega    = preconRootOfUnityInverseReverseTable[x_offset + indexOmega];
         uint32_t target_idx  = (psi_step * step << 1) + (tid % step); // indexLo -> inner loop
         uint32_t indexLo     = target_idx;
         uint32_t indexHi     = target_idx + step;

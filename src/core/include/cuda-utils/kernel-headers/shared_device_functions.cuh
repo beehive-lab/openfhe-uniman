@@ -64,7 +64,7 @@ __device__ inline ulong IsAdditionOverflow(ulong a, ulong b) {
  * @param mu: 2^128/modulus (128-bit)
  * @return result: 64-bit result = a mod m
  */
-__device__ ulong BarrettUint128ModUint64(uint128_t a, ulong modulus, uint128_t mu) {
+__device__ inline ulong BarrettUint128ModUint64(uint128_t a, ulong modulus, uint128_t mu) {
     ulong a_lo = (uint64_t)a;
     ulong a_hi = a >> 64;
     ulong mu_lo = (uint64_t)mu;
