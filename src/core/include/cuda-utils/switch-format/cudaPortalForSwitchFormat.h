@@ -6,7 +6,7 @@
 #include "lattice/poly.h"
 
 #include <cuda_runtime.h>
-#include "cuda-utils/approxModDown/cudaPortalForApproxModDownData.h"
+#include <cuda-utils/cuda_util_macros.h>
 #include <cuda-utils/kernel-headers/switch-format.cuh>
 
 namespace lbcrypto {

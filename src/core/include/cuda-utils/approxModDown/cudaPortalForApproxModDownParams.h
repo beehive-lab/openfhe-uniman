@@ -10,6 +10,7 @@
 #include "lattice/poly.h"
 #include <cuda_runtime.h>
 #include <cuda-utils/cuda-data-utils.h>
+#include <cuda-utils/cuda_util_macros.h>
 
 namespace lbcrypto {
 
