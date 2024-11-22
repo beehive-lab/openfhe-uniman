@@ -590,8 +590,6 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                 PHatInvModpPrecon_size, PHatModq_size_x, PHatModq_size_y,
                 modqBarrettMu_size, tInvModp_size, tInvModpPrecon_size, t, tModqPrecon_size);
     // create portal objs for work data
-    std::shared_ptr<cudaPortalForApproxModDownData> workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream0(), 0);
-    std::shared_ptr<cudaPortalForApproxModDownData> workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream1(), 1);
 
     // marshal params
     paramsDataPortal->marshalParams(cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
@@ -601,23 +599,29 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     // transfer params -once for both kernel invocations-
     paramsDataPortal->copyInParams();
 
-    std::future<DCRTPoly> resultCt0 = std::async(std::launch::async,[cTilda, paramsQl, cryptoParams, t, workDataPortal0]() {
-            return (*cTilda)[0].ApproxModDownCUDA(paramsQl, cryptoParams->GetParamsP(),
-                                                  cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
-                                                  cryptoParams->GetPHatInvModp(), cryptoParams->GetPHatInvModpPrecon(),
-                                                  cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),
-                                                  cryptoParams->GettInvModp(), cryptoParams->GettInvModpPrecon(),
-                                                  t, cryptoParams->GettModqPrecon(),
-                                                  workDataPortal0);});
+    std::future<DCRTPoly> resultCt0 = std::async(std::launch::async, [cTilda, paramsQl, cryptoParams, t, paramsDataPortal, &cudaUtils]() {
+        auto workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream0(), 0);
+        return (*cTilda)[0].ApproxModDownCUDA(paramsQl, cryptoParams->GetParamsP(),
+                                          cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
+                                          cryptoParams->GetPHatInvModp(), cryptoParams->GetPHatInvModpPrecon(),
+                                          cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),
+                                          cryptoParams->GettInvModp(), cryptoParams->GettInvModpPrecon(),
+                                          t, cryptoParams->GettModqPrecon(),
+                                          workDataPortal0);
+    });
 
-    std::future<DCRTPoly> resultCt1 = std::async(std::launch::async,[cTilda, paramsQl, cryptoParams, t, workDataPortal1]() {
-            return (*cTilda)[1].ApproxModDownCUDA(paramsQl, cryptoParams->GetParamsP(),
-                                                  cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
-                                                  cryptoParams->GetPHatInvModp(), cryptoParams->GetPHatInvModpPrecon(),
-                                                  cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),
-                                                  cryptoParams->GettInvModp(), cryptoParams->GettInvModpPrecon(),
-                                                  t, cryptoParams->GettModqPrecon(),
-                                                  workDataPortal1);});
+
+    std::future<DCRTPoly> resultCt1 = std::async(std::launch::async, [cTilda, paramsQl, cryptoParams, t, paramsDataPortal, &cudaUtils]() {
+        auto workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream1(), 1);
+        return (*cTilda)[1].ApproxModDownCUDA(paramsQl, cryptoParams->GetParamsP(),
+                                          cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
+                                          cryptoParams->GetPHatInvModp(), cryptoParams->GetPHatInvModpPrecon(),
+                                          cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),
+                                          cryptoParams->GettInvModp(), cryptoParams->GettInvModpPrecon(),
+                                          t, cryptoParams->GettModqPrecon(),
+                                          workDataPortal1);
+    });
+
 
     DCRTPoly ct0 = resultCt0.get();
     DCRTPoly ct1 = resultCt1.get();
