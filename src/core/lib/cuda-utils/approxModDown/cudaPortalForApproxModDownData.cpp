@@ -148,11 +148,13 @@ void cudaPortalForApproxModDownData::copyInWorkData() {
     CUDA_CHECK(cudaMallocAsync((void**)&device_sum, sizeQ * ringDim * sizeof(uint128_t), stream));
     CUDA_CHECK(cudaMemsetAsync(device_sum, 0, sizeQ * ringDim * sizeof(uint128_t), stream));
 
-    // partPSwitchedToQ  TODO: copy in only modulus part
     size_t data_size = partPSwitchedToQ_m_vectors_size_x * partPSwitchedToQ_m_vectors_size_y * sizeof(unsigned long);
     size_t modulus_size = partPSwitchedToQ_m_vectors_size_x * sizeof(unsigned long);
     CUDA_CHECK(cudaMallocAsync((void**)&device_partPSwitchedToQ_m_vectors, data_size + modulus_size, stream));
-    CUDA_CHECK(cudaMemcpyAsync(device_partPSwitchedToQ_m_vectors, host_partPSwitchedToQ_m_vectors, data_size + modulus_size, cudaMemcpyHostToDevice, stream));
+    // Copy *only* modulus portion to the appropriate offset in the allocated memory
+    unsigned long* device_modulus = device_partPSwitchedToQ_m_vectors + (partPSwitchedToQ_m_vectors_size_x * partPSwitchedToQ_m_vectors_size_y);
+    unsigned long* host_modulus = host_partPSwitchedToQ_m_vectors + (partPSwitchedToQ_m_vectors_size_x * partPSwitchedToQ_m_vectors_size_y);
+    CUDA_CHECK(cudaMemcpyAsync(device_modulus, host_modulus, modulus_size, cudaMemcpyHostToDevice, stream));
     /*CUDA_CHECK(cudaMallocAsync((void**)&device_partPSwitchedToQ_m_vectors, partPSwitchedToQ_m_vectors_size_x * sizeof(m_vectors_struct), stream));
     CUDA_CHECK(cudaMemcpyAsync(device_partPSwitchedToQ_m_vectors, host_partPSwitchedToQ_m_vectors, partPSwitchedToQ_m_vectors_size_x * sizeof(m_vectors_struct), cudaMemcpyHostToDevice, stream));
     this->device_partPSwitchedToQ_m_vectors_data_ptr = (unsigned long**)malloc(partPSwitchedToQ_m_vectors_size_x * sizeof(unsigned long*));
