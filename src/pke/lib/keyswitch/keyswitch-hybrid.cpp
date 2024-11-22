@@ -589,15 +589,19 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                 PInvModq_size, PInvModqPrecon_size, PHatInvModp_size,
                 PHatInvModpPrecon_size, PHatModq_size_x, PHatModq_size_y,
                 modqBarrettMu_size, tInvModp_size, tInvModpPrecon_size, t, tModqPrecon_size);
-    // create portal objs for work data
+    nvtxRangePop();
 
-    // marshal params
-    paramsDataPortal->marshalParams(cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
-                                    cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),
-                                    cryptoParams->GettInvModp(), cryptoParams->GettInvModpPrecon(), cryptoParams->GettModqPrecon());
+    // Create a future to marshal params and copy them into device memory
+    std::future<void> marshalAndCopyParamsFuture = std::async(std::launch::async, [paramsDataPortal, cryptoParams]() {
+        // marshal params
+        paramsDataPortal->marshalParams(cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(), cryptoParams->GetPHatInvModp(),
+                                        cryptoParams->GetPHatInvModpPrecon(), cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),
+                                        cryptoParams->GettInvModp(), cryptoParams->GettInvModpPrecon(), cryptoParams->GettModqPrecon());
 
-    // transfer params -once for both kernel invocations-
-    paramsDataPortal->copyInParams();
+        // transfer params -once for both kernel invocations-
+        paramsDataPortal->copyInParams();
+        nvtxRangePop();
+    });
 
     std::future<DCRTPoly> resultCt0 = std::async(std::launch::async, [cTilda, paramsQl, cryptoParams, t, paramsDataPortal, &cudaUtils]() {
         auto workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream0(), 0);
