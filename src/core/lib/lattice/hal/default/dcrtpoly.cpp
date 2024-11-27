@@ -3331,6 +3331,37 @@ std::map<ulong, std::vector<ulong>> DCRTPolyImpl<VecType>::ExtractCycloOrderInve
     return m_vectors[0].ExtractCycloOrderInversePreconTableByModulus();
 }
 
+template <typename VecType>
+void DCRTPolyImpl<VecType>::ExtractRootOfUnityReverseBatch(const NativeInteger& modulus, ulong* dst) {
+    return m_vectors[0].ExtractRootOfUnityReverseBatch(modulus, dst);
+}
+
+template <typename VecType>
+void DCRTPolyImpl<VecType>::ExtractRootOfUnityPreconReverseBatch(const NativeInteger& modulus, ulong* dst) {
+    return m_vectors[0].ExtractRootOfUnityPreconReverseBatch(modulus, dst);
+}
+
+template <typename VecType>
+void DCRTPolyImpl<VecType>::ExtractRootOfUnityInverseReverseBatch(const NativeInteger& modulus, ulong* dst) {
+    // note: is the same for all m_vectors[i]
+    return m_vectors[0].ExtractRootOfUnityInverseReverseBatch(modulus, dst);
+}
+
+template <typename VecType>
+void DCRTPolyImpl<VecType>::ExtractRootOfUnityInversePreconReverseBatch(const NativeInteger& modulus, ulong* dst) {
+    return m_vectors[0].ExtractRootOfUnityInversePreconReverseBatch(modulus, dst);
+}
+
+template <typename VecType>
+ulong DCRTPolyImpl<VecType>::ExtractCycloOrderInverseBatch(const NativeInteger& modulus, const uint32_t& msb) {
+    return m_vectors[0].ExtractCycloOrderInverseBatch(modulus, msb);
+}
+
+template <typename VecType>
+ulong DCRTPolyImpl<VecType>::ExtractCycloOrderInversePreconBatch(const NativeInteger& modulus, const uint32_t& msb) {
+    return m_vectors[0].ExtractCycloOrderInversePreconBatch(modulus, msb);
+}
+
 
 #ifdef OUT
 template <typename VecType>

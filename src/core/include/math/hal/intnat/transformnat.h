@@ -373,8 +373,16 @@ public:
     std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus();
     std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus();
 
+    void ExtractRootOfUnityReverseBatch(const IntType& modulus, ulong* dst);
+    void ExtractRootOfUnityPreconReverseBatch(const IntType& modulus, ulong* dst);
+    void ExtractRootOfUnityInverseReverseBatch(const IntType& modulus, ulong* dst);
+    void ExtractRootOfUnityInversePreconReverseBatch(const IntType& modulus, ulong* dst);
+    ulong ExtractCycloOrderInverseBatch(const IntType& modulus, const uint32_t& msb);
+    ulong ExtractCycloOrderInversePreconBatch(const IntType& modulus, const uint32_t& msb);
+
 private:
     std::map<ulong, std::vector<ulong>> ConvertTable(const std::map<IntType, VecType>& table);
+    void ConvertBatch(const VecType& vec, ulong* dst);
 };
 
 // struct used as a key in BlueStein transform

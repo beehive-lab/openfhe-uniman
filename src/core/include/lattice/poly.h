@@ -727,6 +727,14 @@ public:
     std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus();
     std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus();
 
+ void ExtractRootOfUnityReverseBatch(const NativeInteger& modulus, ulong* dst);
+ void ExtractRootOfUnityPreconReverseBatch(const NativeInteger& modulus, ulong* dst);
+
+ void ExtractRootOfUnityInverseReverseBatch(const NativeInteger& modulus, ulong* dst);
+ void ExtractRootOfUnityInversePreconReverseBatch(const NativeInteger& modulus, ulong* dst);
+ ulong ExtractCycloOrderInverseBatch(const NativeInteger& modulus, const uint32_t& msb);
+ ulong ExtractCycloOrderInversePreconBatch(const NativeInteger& modulus, const uint32_t& msb);
+
     /**
    * @brief Make the element values sparse. Sets every index not equal to zero
    * mod the wFactor to zero.

@@ -147,6 +147,13 @@ public:
     virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus() = 0;
     virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus() = 0;
 
+ virtual void ExtractRootOfUnityReverseBatch(const IntType& modulus, ulong* dst) = 0;
+ virtual void ExtractRootOfUnityPreconReverseBatch(const IntType& modulus, ulong* dst) = 0;
+ virtual void ExtractRootOfUnityInverseReverseBatch(const IntType& modulus, ulong* dst) = 0;
+ virtual void ExtractRootOfUnityInversePreconReverseBatch(const IntType& modulus, ulong* dst) = 0;
+ virtual ulong ExtractCycloOrderInverseBatch(const IntType& modulus, const uint32_t& msb) = 0;
+ virtual ulong ExtractCycloOrderInversePreconBatch(const IntType& modulus, const uint32_t& msb) = 0;
+
     /**
    * Precomputation of root of unity tables for transforms in the ring
    * Z_q[X]/(X^n+1)
@@ -179,6 +186,7 @@ public:
 
 private:
     virtual std::map<ulong, std::vector<ulong>> ConvertTable(const std::map<IntType, VecType>& table) = 0;
+    virtual void ConvertBatch(const VecType& vec, ulong* dst) = 0;
 };
 
 /**

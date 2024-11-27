@@ -457,6 +457,14 @@ public:
     virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus() = 0;
     virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus() = 0;
 
+ virtual void ExtractRootOfUnityReverseBatch(const NativeInteger& modulus, ulong* dst) = 0;
+ virtual void ExtractRootOfUnityPreconReverseBatch(const NativeInteger& modulus, ulong* dst) = 0;
+
+ virtual void ExtractRootOfUnityInverseReverseBatch(const NativeInteger& modulus, ulong* dst) = 0;
+ virtual void ExtractRootOfUnityInversePreconReverseBatch(const NativeInteger& modulus, ulong* dst) = 0;
+ virtual ulong ExtractCycloOrderInverseBatch(const NativeInteger& modulus, const uint32_t& msb) = 0;
+ virtual ulong ExtractCycloOrderInversePreconBatch(const NativeInteger& modulus, const uint32_t& msb) = 0;
+
     /**
       * Getters for the NTT twiddle factors in primitive map format.
       * These functions are used for GPU Acceleration.
@@ -487,6 +495,30 @@ public:
 
     std::map<ulong, std::vector<ulong>> GetCycloOrderInversePreconTableByModulus() {
        return this->ExtractCycloOrderInversePreconTableByModulus();
+    }
+
+    void GetRootOfUnityReverseBatch(const NativeInteger& modulus, ulong* dst) {
+       return this->ExtractRootOfUnityReverseBatch(modulus, dst);
+    }
+
+    void GetRootOfUnityPreconReverseBatch(const NativeInteger& modulus, ulong* dst) {
+       return this->ExtractRootOfUnityPreconReverseBatch(modulus, dst);
+    }
+
+    void GetRootOfUnityInverseReverseBatch(const NativeInteger& modulus, ulong* dst){
+       return this->ExtractRootOfUnityInverseReverseBatch(modulus, dst);
+    }
+
+    void GetRootOfUnityInversePreconReverseBatch(const NativeInteger& modulus, ulong* dst) {
+       return this->ExtractRootOfUnityInversePreconReverseBatch(modulus, dst);
+    }
+
+    ulong GetCycloOrderInverseBatch(const NativeInteger& modulus, const uint32_t& msb) {
+       return this->ExtractCycloOrderInverseBatch(modulus, msb);
+    }
+
+    ulong GetCycloOrderInversePreconBatch(const NativeInteger& modulus, const uint32_t& msb) {
+       return this->ExtractCycloOrderInversePreconBatch(modulus, msb);
     }
 };
 

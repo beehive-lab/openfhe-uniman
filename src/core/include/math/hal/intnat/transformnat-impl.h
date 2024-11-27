@@ -659,6 +659,14 @@ std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::Co
 
     return newMap;
 }
+
+template <typename VecType>
+void ChineseRemainderTransformFTTNat<VecType>::ConvertBatch(const VecType& vec, ulong* dst) {
+    for (size_t i = 0; i < vec.GetLength(); ++i) {
+        dst[i] = vec[i].ConvertToInt();
+    }
+}
+
 template <typename VecType>
 std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityReverseTableByModulus() {
     return ConvertTable(m_rootOfUnityReverseTableByModulus);
@@ -688,6 +696,36 @@ std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::Ex
 template <typename VecType>
 std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTNat<VecType>::ExtractCycloOrderInversePreconTableByModulus() {
     return ConvertTable(m_cycloOrderInversePreconTableByModulus);
+}
+
+template <typename VecType>
+void ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityReverseBatch(const IntType& modulus, ulong* dst) {
+    ConvertBatch(m_rootOfUnityReverseTableByModulus[modulus], dst);
+}
+
+template <typename VecType>
+void ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityPreconReverseBatch(const IntType& modulus, ulong* dst) {
+    ConvertBatch(m_rootOfUnityPreconReverseTableByModulus[modulus], dst);
+}
+
+template <typename VecType>
+void ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityInverseReverseBatch(const IntType& modulus, ulong* dst) {
+    ConvertBatch(m_rootOfUnityInverseReverseTableByModulus[modulus], dst);
+}
+
+template <typename VecType>
+void ChineseRemainderTransformFTTNat<VecType>::ExtractRootOfUnityInversePreconReverseBatch(const IntType& modulus, ulong* dst) {
+    ConvertBatch(m_rootOfUnityInversePreconReverseTableByModulus[modulus], dst);
+}
+
+template <typename VecType>
+ulong ChineseRemainderTransformFTTNat<VecType>::ExtractCycloOrderInverseBatch(const IntType& modulus, const uint32_t& msb) {
+    return m_cycloOrderInverseTableByModulus[modulus][msb].ConvertToInt();
+}
+
+template <typename VecType>
+ulong ChineseRemainderTransformFTTNat<VecType>::ExtractCycloOrderInversePreconBatch(const IntType& modulus, const uint32_t& msb) {
+    return m_cycloOrderInversePreconTableByModulus[modulus][msb].ConvertToInt();
 }
 
 

@@ -1332,6 +1332,14 @@ public:
     std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus() override;
     std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus() override;
 
+ void ExtractRootOfUnityReverseBatch(const NativeInteger& modulus, ulong* dst) override;
+ void ExtractRootOfUnityPreconReverseBatch(const NativeInteger& modulus, ulong* dst) override;
+
+ void ExtractRootOfUnityInverseReverseBatch(const NativeInteger& modulus, ulong* dst) override;
+ void ExtractRootOfUnityInversePreconReverseBatch(const NativeInteger& modulus, ulong* dst) override;
+ ulong ExtractCycloOrderInverseBatch(const NativeInteger& modulus, const uint32_t& msb) override;
+ ulong ExtractCycloOrderInversePreconBatch(const NativeInteger& modulus, const uint32_t& msb) override;
+
     /**
    * @brief Switch modulus and adjust the values
    *

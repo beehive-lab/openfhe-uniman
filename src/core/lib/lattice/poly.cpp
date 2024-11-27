@@ -872,6 +872,36 @@ std::map<ulong, std::vector<ulong>> PolyImpl<VecType>::ExtractCycloOrderInverseP
 }
 
 template <typename VecType>
+void PolyImpl<VecType>::ExtractRootOfUnityReverseBatch(const NativeInteger& modulus, ulong* dst) {
+    ChineseRemainderTransformFTT<VecType>().ExtractRootOfUnityReverseBatch(modulus, dst);
+}
+
+template <typename VecType>
+void PolyImpl<VecType>::ExtractRootOfUnityPreconReverseBatch(const NativeInteger& modulus, ulong* dst) {
+    ChineseRemainderTransformFTT<VecType>().ExtractRootOfUnityPreconReverseBatch(modulus, dst);
+}
+
+template <typename VecType>
+void PolyImpl<VecType>::ExtractRootOfUnityInverseReverseBatch(const NativeInteger& modulus, ulong* dst) {
+    ChineseRemainderTransformFTT<VecType>().ExtractRootOfUnityInverseReverseBatch(modulus, dst);
+}
+
+template <typename VecType>
+void PolyImpl<VecType>::ExtractRootOfUnityInversePreconReverseBatch(const NativeInteger& modulus, ulong* dst) {
+    ChineseRemainderTransformFTT<VecType>().ExtractRootOfUnityInversePreconReverseBatch(modulus, dst);
+}
+
+template <typename VecType>
+ulong PolyImpl<VecType>::ExtractCycloOrderInverseBatch(const NativeInteger& modulus, const uint32_t& msb) {
+    return ChineseRemainderTransformFTT<VecType>().ExtractCycloOrderInverseBatch(modulus, msb);
+}
+
+template <typename VecType>
+ulong PolyImpl<VecType>::ExtractCycloOrderInversePreconBatch(const NativeInteger& modulus, const uint32_t& msb) {
+    return ChineseRemainderTransformFTT<VecType>().ExtractCycloOrderInversePreconBatch(modulus, msb);
+}
+
+template <typename VecType>
 void PolyImpl<VecType>::ArbitrarySwitchFormat() {
     OPENFHE_DEBUG_FLAG(false);
 

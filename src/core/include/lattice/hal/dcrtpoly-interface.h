@@ -1365,6 +1365,14 @@ public:
     virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInverseTableByModulus() = 0;
     virtual std::map<ulong, std::vector<ulong>> ExtractCycloOrderInversePreconTableByModulus() = 0;
 
+ virtual void ExtractRootOfUnityReverseBatch(const NativeInteger& modulus, ulong* dst) = 0;
+ virtual void ExtractRootOfUnityPreconReverseBatch(const NativeInteger& modulus, ulong* dst) = 0;
+
+ virtual void ExtractRootOfUnityInverseReverseBatch(const NativeInteger& modulus, ulong* dst) = 0;
+ virtual void ExtractRootOfUnityInversePreconReverseBatch(const NativeInteger& modulus, ulong* dst) = 0;
+ virtual ulong ExtractCycloOrderInverseBatch(const NativeInteger& modulus, const uint32_t& msb) = 0;
+ virtual ulong ExtractCycloOrderInversePreconBatch(const NativeInteger& modulus, const uint32_t& msb) = 0;
+
     /**
    * @brief Switch modulus and adjust the values
    *

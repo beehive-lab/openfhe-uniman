@@ -688,6 +688,41 @@ std::map<ulong, std::vector<ulong>> ChineseRemainderTransformFTTFxd<VecType>::Ex
 }
 
 template <typename VecType>
+void ChineseRemainderTransformFTTFxd<VecType>::ConvertBatch(const VecType& vec, ulong* dst) {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ConvertBatch is not implemented for ChineseRemainderTransformFTTFxd");
+}
+
+template <typename VecType>
+void ChineseRemainderTransformFTTFxd<VecType>::ExtractRootOfUnityReverseBatch(const IntType& modulus, ulong* dst) {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractRootOfUnityReverseBatch is not implemented for ChineseRemainderTransformFTTFxd");
+}
+
+template <typename VecType>
+void ChineseRemainderTransformFTTFxd<VecType>::ExtractRootOfUnityPreconReverseBatch(const IntType& modulus, ulong* dst) {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractRootOfUnityPreconReverseBatch is not implemented for ChineseRemainderTransformFTTFxd");
+}
+
+template <typename VecType>
+void ChineseRemainderTransformFTTFxd<VecType>::ExtractRootOfUnityInverseReverseBatch(const IntType& modulus, ulong* dst) {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractRootOfUnityInverseReverseBatch is not implemented for ChineseRemainderTransformFTTFxd");
+}
+
+template <typename VecType>
+void ChineseRemainderTransformFTTFxd<VecType>::ExtractRootOfUnityInversePreconReverseBatch(const IntType& modulus, ulong* dst) {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractRootOfUnityInversePreconReverseBatch is not implemented for ChineseRemainderTransformFTTFxd");
+}
+
+template <typename VecType>
+ulong ChineseRemainderTransformFTTFxd<VecType>::ExtractCycloOrderInverseBatch(const IntType& modulus, const uint32_t& msb) {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractCycloOrderInverseBatch is not implemented for ChineseRemainderTransformFTTFxd");
+}
+
+template <typename VecType>
+ulong ChineseRemainderTransformFTTFxd<VecType>::ExtractCycloOrderInversePreconBatch(const IntType& modulus, const uint32_t& msb) {
+    OPENFHE_THROW(lbcrypto::not_implemented_error, "ExtractCycloOrderInversePreconBatch is not implemented for ChineseRemainderTransformFTTFxd");
+}
+
+template <typename VecType>
 void ChineseRemainderTransformFTTFxd<VecType>::InverseTransformFromBitReverse(const VecType& element,
                                                                               const IntType& rootOfUnity,
                                                                               const usint CycloOrder, VecType* result) {
