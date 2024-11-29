@@ -1013,6 +1013,15 @@ public:
         const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
         std::shared_ptr<cudaPortalForApproxModDownData> portal) const = 0;
 
+ virtual DerivedType ApproxModDownCUDABatched(
+        const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
+        const std::vector<NativeInteger>& PInvModq, const std::vector<NativeInteger>& PInvModqPrecon,
+        const std::vector<NativeInteger>& PHatInvModp, const std::vector<NativeInteger>& PHatInvModpPrecon,
+        const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
+        const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
+        const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
+        std::shared_ptr<cudaPortalForApproxModDownData> portal) const = 0;
+
     virtual DerivedType ApproxSwitchCRTBasisCUDA(const std::shared_ptr<Params> paramsQ,
                                                  const std::shared_ptr<Params> paramsP,
                                                  const std::vector<NativeInteger>& QHatInvModq,

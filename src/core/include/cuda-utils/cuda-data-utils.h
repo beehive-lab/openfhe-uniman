@@ -2,6 +2,8 @@
 #define OPENFHE_CUDA_DATA_UTILS_H
 
 #include <cstdint> // for uint32_t type
+
+#include "cuda_util_macros.h"
 #include "lattice/poly.h"
 #include "cuda-utils/kernel-headers/approx-switch-crt-basis.cuh"
 #include "cuda-utils/m_vectors.h"
@@ -43,6 +45,13 @@ public:
     cudaStream_t getParamsStream() const { return paramsStream; }
     cudaStream_t getWorkDataStream0() const { return workDataStream0; }
     cudaStream_t getWorkDataStream1() const { return workDataStream1; }
+    cudaStream_t* getPipelineStreams0() const { return pipelineStreams0; }
+    cudaStream_t* getPipelineStreams1() const { return pipelineStreams1; }
+
+    cudaEvent_t  getWorkDataEvent0() const { return workDataEvent0; }
+    cudaEvent_t  getWorkDataEvent1() const { return workDataEvent1; }
+    cudaEvent_t* getEvents0() const { return events0; }
+    cudaEvent_t* getEvents1() const { return events1; }
 
 
 private:
@@ -53,11 +62,21 @@ private:
     cudaStream_t        paramsStream;
     cudaStream_t        workDataStream0;
     cudaStream_t        workDataStream1;
+    cudaEvent_t         workDataEvent0;
+    cudaEvent_t         workDataEvent1;
+
+    int                 numOfPipelineStreams;
+    cudaStream_t*       pipelineStreams0;
+    cudaStream_t*       pipelineStreams1;
+    cudaEvent_t*        events0;
+    cudaEvent_t*        events1;
 
     // private constructor to prevent instantatiation from outside
     cudaDataUtils() {
         gpuBlocks = 0;
         gpuThreads = 0;
+
+        numOfPipelineStreams = 50;
 
         createCUDAStreams();
     }
@@ -86,6 +105,19 @@ private:
         if (err != cudaSuccess) {
             throw std::runtime_error("CUDA error during workDataStream1 creation: " + std::string(cudaGetErrorString(err)));
         }
+        CUDA_CHECK(cudaEventCreate(&workDataEvent0));
+        CUDA_CHECK(cudaEventCreate(&workDataEvent1));
+
+        pipelineStreams0 = (cudaStream_t*) malloc(numOfPipelineStreams * sizeof(cudaStream_t));
+        pipelineStreams1 = (cudaStream_t*) malloc(numOfPipelineStreams * sizeof(cudaStream_t));
+        events0 = (cudaEvent_t*) malloc(numOfPipelineStreams * sizeof(cudaEvent_t));
+        events1 = (cudaEvent_t*) malloc(numOfPipelineStreams * sizeof(cudaEvent_t));
+        for (int i = 0; i < numOfPipelineStreams; i++) {
+            CUDA_CHECK(cudaStreamCreateWithFlags(&pipelineStreams0[i], cudaStreamNonBlocking));
+            CUDA_CHECK(cudaStreamCreateWithFlags(&pipelineStreams1[i], cudaStreamNonBlocking));
+            CUDA_CHECK(cudaEventCreate(&events0[i]));
+            CUDA_CHECK(cudaEventCreate(&events1[i]));
+        }
     }
 
     void destroyCUDAStreams() {
@@ -112,6 +144,19 @@ private:
                 std::cerr << "CUDA error during workDataStream1 destruction: "
                           << cudaGetErrorString(err) << std::endl;
             }
+        }
+
+        CUDA_CHECK(cudaEventDestroy(workDataEvent0));
+        CUDA_CHECK(cudaEventDestroy(workDataEvent1));
+        for (int i = 0; i < numOfPipelineStreams; i++) {
+            if (pipelineStreams0[i])
+                CUDA_CHECK(cudaStreamDestroy(pipelineStreams0[i]));
+            if (pipelineStreams1[i])
+                CUDA_CHECK(cudaStreamDestroy(pipelineStreams1[i]));
+            if (events0)
+                CUDA_CHECK(cudaEventDestroy(events0[i]));
+            if (events1)
+                CUDA_CHECK(cudaEventDestroy(events1[i]));
         }
     }
 

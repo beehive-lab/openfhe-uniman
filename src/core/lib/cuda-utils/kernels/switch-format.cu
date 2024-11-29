@@ -22,6 +22,8 @@ __device__ int calculateI(int ri, int m) {
     return ri - m + 1; // Adjusting the calculation
 }
 
+/// Original kernels
+
 __global__ void forwardNTT(
     uint32_t x, uint32_t m, uint32_t n, uint32_t step,
     ulong* element, uint32_t sizeX, uint32_t sizeY,
@@ -63,6 +65,8 @@ __global__ void forwardNTT(
 
         element[x_offset + indexLo] = hiVal;
         element[x_offset + indexHi] = loVal;
+        //if (m < 8 && tid < 5)
+            //printf("(forwardNTT) m=%d, tid=%d, i=%d, modulus=%lu, target_idx=%d, indexOmega=%d, omega=%llu, [indexLo=%d, loVal=%llu], [indexHi=%d, hiVal=%llu] \n", m, tid, psi_step, modulus, target_idx, indexOmega, omega, target_idx, loVal, target_idx+step, hiVal);
     }
 }
 
@@ -113,8 +117,8 @@ __global__ void inverseNTT_Part1(
 
         element[x_offset + indexLo] = loVal;
         element[x_offset + indexHi] = omegaFactor;
-        //if (tid < 16)
-        //printf("m=%d, tid=%d, i=%d, indexOmega=%d, omega=%llu, [indexLo=%d, loVal=%llu], [indexHi=%d, hiVal=%llu] \n", m, tid, psi_step, indexOmega, omega, target_idx, loVal, target_idx+step, hiVal);
+        //if (m < 8 && tid < 5)
+            //printf("(inverseNTT) m=%d, tid=%d, i=%d, modulus=%lu, target_idx=%d, indexOmega=%d, omega=%llu, [indexLo=%d, loVal=%llu], [indexHi=%d, hiVal=%llu] \n", m, tid, psi_step, modulus, target_idx, indexOmega, omega, target_idx, loVal, target_idx+step, hiVal);
     }
 }
 
@@ -137,6 +141,100 @@ __global__ void inverseNTT_Part2(
         //printf("(pt2 kernel) result[%d] = %lu\n", tid, element[p_offset + tid]);
 }
 
+/// Batched kernels
+
+__global__ void forwardNTT_Batch(
+    uint32_t m, uint32_t n, uint32_t step,
+    ulong* element, ulong modulus,
+    ulong* rootOfUnityReverseTable,
+    ulong* preconRootOfUnityReverseTable) {
+
+    uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < (n >> 1)) {
+        uint32_t psi_step    = tid/step; // i -> middle loop
+        uint32_t indexOmega  = m + psi_step;
+        ulong omega          = rootOfUnityReverseTable[indexOmega]; // ok
+        ulong preconOmega    = preconRootOfUnityReverseTable[indexOmega];
+        uint32_t target_idx  = (psi_step * step << 1) + (tid % step); // indexLo -> inner loop
+        uint32_t indexLo     = target_idx;
+        uint32_t indexHi     = target_idx + step;
+
+        ulong loVal = element[indexLo];
+        ulong omegaFactor = element[indexHi];
+
+        ulong res = ModMulFastConst(omegaFactor, omega, modulus, preconOmega);
+        //if (tid == 0 && (m == 1))
+        //printf("(kernel modmul) {%lu, %lu, %lu, %lu, %lu}\n", omegaFactor, omega, modulus, preconOmega, res);
+        omegaFactor = res;
+
+        ulong hiVal = loVal + omegaFactor;
+
+        if (hiVal >= modulus)
+            hiVal -= modulus;
+
+        if (loVal < omegaFactor)
+            loVal += modulus;
+
+        loVal -= omegaFactor;
+
+        element[indexLo] = hiVal;
+        element[indexHi] = loVal;
+        //if (m < 8 && tid < 5)
+            //printf("(forwardNTT-batch) m=%d, tid=%d, i=%d, modulus=%lu, target_idx=%d, indexOmega=%d, omega=%llu, [indexLo=%d, loVal=%llu], [indexHi=%d, hiVal=%llu] \n", m, tid, psi_step, modulus, target_idx, indexOmega, omega, target_idx, loVal, target_idx+step, hiVal);
+    }
+}
+
+__global__ void inverseNTT_Batch_Part1(
+    uint32_t m, uint32_t n, uint32_t step,
+    ulong* element, ulong modulus,
+    ulong* rootOfUnityInverseReverseTable,
+    ulong* preconRootOfUnityInverseReverseTable) {
+
+    uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    //if (m < 8 && tid < 2)
+    //printf("hello from kernel m=%u, n=%u, step=%u\n", m,n, step);
+    if (tid < (n >> 1)) {
+        uint32_t psi_step    = tid/step; // i -> middle loop
+        uint32_t indexOmega  = m + psi_step;
+        ulong omega          = rootOfUnityInverseReverseTable[indexOmega];
+        ulong preconOmega    = preconRootOfUnityInverseReverseTable[indexOmega];
+        uint32_t target_idx  = (psi_step * step << 1) + (tid % step); // indexLo -> inner loop
+        uint32_t indexLo     = target_idx;
+        uint32_t indexHi     = target_idx + step;
+
+        ulong hiVal = element[indexHi];
+        ulong loVal = element[indexLo];
+
+        ulong omegaFactor = loVal;
+
+        if (omegaFactor < hiVal)
+            omegaFactor += modulus;
+
+        omegaFactor -= hiVal;
+
+        loVal += hiVal;
+        if (loVal >= modulus)
+            loVal -= modulus;
+
+        omegaFactor = ModMulFastConst(omegaFactor, omega, modulus, preconOmega);
+
+        element[indexLo] = loVal;
+        element[indexHi] = omegaFactor;
+        //if (m < 8 && tid < 5)
+            //printf("(inverseNTT-batch) m=%d, tid=%d, i=%d, modulus=%lu, target_idx=%d, indexOmega=%d, omega=%llu, [indexLo=%d, loVal=%llu], [indexHi=%d, hiVal=%llu] \n", m, tid, psi_step, modulus, target_idx, indexOmega, omega, target_idx, loVal, target_idx+step, hiVal);
+    }
+}
+
+__global__ void inverseNTT_Batch_Part2(
+    ulong* element, ulong modulus,
+    ulong cycloOrderInv, ulong preconCycloOrderInv) {
+
+    uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    element[tid] = ModMulFastConst(element[tid], cycloOrderInv, modulus, preconCycloOrderInv);
+}
+
+
+/// Kernel Wrappers
 
 void fNTTKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
     cudaError_t         cudaStatus;
@@ -188,6 +286,35 @@ void iNTTPart2KernelWrapper(dim3 blocksPt2, dim3 threads, void** args, cudaStrea
     //}
 
     cudaStatus = cudaLaunchKernel((void*)inverseNTT_Part2, blocksPt2, threads, args, 0U, stream);
+
+    if (cudaStatus != cudaSuccess) {
+        printf("inverseNTTKernelPt2 kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
+        exit(-1);
+    }
+}
+
+void fNTTBatchKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+    cudaError_t         cudaStatus;
+    cudaStatus = cudaLaunchKernel((void*)forwardNTT_Batch, blocks, threads, args, 0U, stream);
+
+    if (cudaStatus != cudaSuccess) {
+        printf("forwardNTT_Batch kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
+        exit(-1);
+    }
+}
+
+void iNTTBatchPart1KernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+    //cudaStreamSynchronize(stream);
+    cudaError_t cudaStatus = cudaLaunchKernel((void*)inverseNTT_Batch_Part1, blocks, threads, args, 0U, stream);
+
+    if (cudaStatus != cudaSuccess) {
+        printf("inverseNTT_Batch_Part1 kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
+        exit(-1);
+    }
+}
+
+void iNTTBatchPart2KernelWrapper(dim3 blocksPt2, dim3 threads, void** args, cudaStream_t stream) {
+    cudaError_t cudaStatus = cudaLaunchKernel((void*)inverseNTT_Batch_Part2, blocksPt2, threads, args, 0U, stream);
 
     if (cudaStatus != cudaSuccess) {
         printf("inverseNTTKernelPt2 kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);

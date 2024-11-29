@@ -10,7 +10,8 @@ using uint128_t = unsigned __int128;
 
 void callMyKernel(uint32_t ringDim, uint32_t sizeQ, uint32_t sizeP);
 
-void approxSwitchCRTBasisKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
+void approxSwitchCRTBasisKernelWrapper(dim3 blocks, dim3 threads, void** args, size_t sharedMemSize, cudaStream_t stream);
+void approxSwitchCRTBasisKernelWrapperV2(dim3 blocks, dim3 threads, void** args, size_t sharedMemSize, cudaStream_t stream);
 
 void printMemoryInfo();
 

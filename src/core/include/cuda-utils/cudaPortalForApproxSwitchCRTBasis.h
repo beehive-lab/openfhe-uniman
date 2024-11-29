@@ -31,7 +31,7 @@ private:
     m_vectors_struct*   host_m_vectors;
     m_vectors_struct*   host_ans_m_vectors;
 
-    uint128_t*          device_sum;
+    //uint128_t*          device_sum;
 
     m_vectors_struct*   device_m_vectors;
     unsigned long**     device_m_vectors_data_ptr;
@@ -51,7 +51,7 @@ public:
     cudaStream_t                                getStream() const;
     std::shared_ptr<cudaPortalForParamsData>    getParamsData() const;
     m_vectors_struct*                           getHost_ans_m_vectors() const;
-    uint128_t*                                  getDevice_sum() const;
+    //uint128_t*                                  getDevice_sum() const;
     m_vectors_struct*                           getDevice_m_vectors() const;
     m_vectors_struct*                           getDevice_ans_m_vectors() const;
 
@@ -68,6 +68,7 @@ public:
 
     // Kernel Invocation Function
     void invokeKernelOfApproxSwitchCRTBasis(int gpuBlocks, int gpuThreads);
+    void invokeKernelOfApproxSwitchCRTBasisV2(int gpuBlocks, int gpuThreads);
 
     // Resources Allocation/Deallocation - Error Handling - Misc Functions
 

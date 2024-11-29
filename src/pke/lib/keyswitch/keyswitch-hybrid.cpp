@@ -589,7 +589,6 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                 PInvModq_size, PInvModqPrecon_size, PHatInvModp_size,
                 PHatInvModpPrecon_size, PHatModq_size_x, PHatModq_size_y,
                 modqBarrettMu_size, tInvModp_size, tInvModpPrecon_size, t, tModqPrecon_size);
-    nvtxRangePop();
 
     // Create a future to marshal params and copy them into device memory
     std::future<void> marshalAndCopyParamsFuture = std::async(std::launch::async, [paramsDataPortal, cryptoParams]() {
@@ -600,12 +599,11 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
         // transfer params -once for both kernel invocations-
         paramsDataPortal->copyInParams();
-        nvtxRangePop();
     });
 
     std::future<DCRTPoly> resultCt0 = std::async(std::launch::async, [cTilda, paramsQl, cryptoParams, t, paramsDataPortal, &cudaUtils]() {
-        auto workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream0(), 0);
-        return (*cTilda)[0].ApproxModDownCUDA(paramsQl, cryptoParams->GetParamsP(),
+        auto workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream0(), cudaUtils.getPipelineStreams0(), cudaUtils.getWorkDataEvent0(), cudaUtils.getEvents0(), 0);
+        return (*cTilda)[0].ApproxModDownCUDABatched(paramsQl, cryptoParams->GetParamsP(),
                                           cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
                                           cryptoParams->GetPHatInvModp(), cryptoParams->GetPHatInvModpPrecon(),
                                           cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),
@@ -616,8 +614,8 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
 
     std::future<DCRTPoly> resultCt1 = std::async(std::launch::async, [cTilda, paramsQl, cryptoParams, t, paramsDataPortal, &cudaUtils]() {
-        auto workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream1(), 1);
-        return (*cTilda)[1].ApproxModDownCUDA(paramsQl, cryptoParams->GetParamsP(),
+        auto workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(paramsDataPortal, cudaUtils.getWorkDataStream1(), cudaUtils.getPipelineStreams1(), cudaUtils.getWorkDataEvent1(), cudaUtils.getEvents1(), 1);
+        return (*cTilda)[1].ApproxModDownCUDABatched(paramsQl, cryptoParams->GetParamsP(),
                                           cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
                                           cryptoParams->GetPHatInvModp(), cryptoParams->GetPHatInvModpPrecon(),
                                           cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),

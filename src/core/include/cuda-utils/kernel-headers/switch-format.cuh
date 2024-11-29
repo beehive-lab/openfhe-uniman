@@ -10,4 +10,8 @@ void fNTTKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stre
 void iNTTPart1KernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
 void iNTTPart2KernelWrapper(dim3 blocksPt2, dim3 threads, void** args, cudaStream_t stream);
 
+void fNTTBatchKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
+void iNTTBatchPart1KernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream);
+void iNTTBatchPart2KernelWrapper(dim3 blocksPt2, dim3 threads, void** args, cudaStream_t stream);
+
 #endif

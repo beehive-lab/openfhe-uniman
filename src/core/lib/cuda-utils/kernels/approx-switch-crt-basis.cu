@@ -56,12 +56,55 @@ __global__ void approxSwitchCRTBasis(int ringDim, int sizeP, int sizeQ,
     }
 }
 
-void approxSwitchCRTBasisKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+__global__ void approxSwitchCRTBasisV2(int ringDim, int sizeP, int sizeQ, uint32_t pIndex,
+                                     m_vectors_struct*  m_vectors,
+                                     ulong*             QHatInvModq,
+                                     ulong*             QHatInvModqPrecon,
+                                     uint128_t*         QHatModp,
+                                     uint128_t*         modpBarrettMu,
+                                     m_vectors_struct*  ans_m_vectors) {
+
+    //extern __shared__ uint128_t s[]; // Shared memory
+    //extern __shared__ uint128_t m_vectors_shared[]; // Shared memory
+    extern __shared__ ulong shared_qi[];
+    //int t = threadIdx.x;
+    int ri = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (ri < ringDim) {
+        // Initialize shared memory
+        if (threadIdx.x < sizeQ) {
+            shared_qi[threadIdx.x] = m_vectors[threadIdx.x].modulus;
+        }
+        __syncthreads();
+        uint128_t sum = 0;
+        //__syncthreads();
+
+        for (int i = 0; i < sizeQ; i++) {
+            ulong xi = m_vectors[i].data[ri];
+            //ulong qi = shared_qi[i];
+
+            // Modular multiplication
+            ulong xQHatInvModqi = ModMulFastConst(xi, QHatInvModq[i], shared_qi[i], QHatInvModqPrecon[i]);
+
+            // Accumulate into shared memory for this `pIndex`
+            //s[t] += (uint128_t)xQHatInvModqi * QHatModp[i * sizeP + pIndex];
+            sum += (uint128_t)xQHatInvModqi * QHatModp[i * sizeP + pIndex];
+        }
+        //__syncthreads();
+
+        // Perform modular reduction and write the result
+        ulong pj = ans_m_vectors[pIndex].modulus;
+        ans_m_vectors[pIndex].data[ri] = BarrettUint128ModUint64(sum, pj, modpBarrettMu[pIndex]);
+    }
+
+}
+
+void approxSwitchCRTBasisKernelWrapper(dim3 blocks, dim3 threads, void** args, size_t sharedMemSize, cudaStream_t stream) {
     //std::cout << "New approxSwitchCRTBasisKernelWrapper" << std::endl;
     cudaError_t         cudaStatus;
 
     //cudaDeviceSynchronize();
-    cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, 0U, stream);
+    cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasis, blocks, threads, args, sharedMemSize, stream);
     if (cudaStatus != cudaSuccess) {
         printf("approxSwitchCRTBasis kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
         //return;
@@ -71,6 +114,14 @@ void approxSwitchCRTBasisKernelWrapper(dim3 blocks, dim3 threads, void** args, c
 
     //std::cout << "End New approxSwitchCRTBasisKernelWrapper" << std::endl;
 
+}
+
+void approxSwitchCRTBasisKernelWrapperV2(dim3 blocks, dim3 threads, void** args, size_t sharedMemSize, cudaStream_t stream) {
+    cudaError_t cudaStatus = cudaLaunchKernel((void*)approxSwitchCRTBasisV2, blocks, threads, args, sharedMemSize, stream);
+    if (cudaStatus != cudaSuccess) {
+        printf("approxSwitchCRTBasisV2 kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
+        exit(-1);
+    }
 }
 
 void callApproxSwitchCRTBasisKernel(int gpuBlocks, int gpuThreads,

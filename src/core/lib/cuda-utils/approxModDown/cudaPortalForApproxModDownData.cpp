@@ -6,7 +6,7 @@ namespace lbcrypto {
 
 using PolyType = PolyImpl<NativeVector>;
 
-cudaPortalForApproxModDownData::cudaPortalForApproxModDownData(std::shared_ptr<cudaPortalForApproxModDownParams> params_data, cudaStream_t workDataStream, int id) {
+cudaPortalForApproxModDownData::cudaPortalForApproxModDownData(std::shared_ptr<cudaPortalForApproxModDownParams> params_data, cudaStream_t workDataStream, cudaStream_t* pipelineStreams, cudaEvent_t workDataEvent, cudaEvent_t* pipelineEvents, int id) {
     this->id = id;
     this->paramsData = params_data;
 
@@ -15,6 +15,10 @@ cudaPortalForApproxModDownData::cudaPortalForApproxModDownData(std::shared_ptr<c
     this->sizeQ = params_data->get_sizeQ();
 
     this->stream = workDataStream;
+    this->pipelineStreams = pipelineStreams;
+
+    this->event = workDataEvent;
+    this->pipelineEvents = pipelineEvents;
 
     allocateHostData();
 }
@@ -193,7 +197,7 @@ void cudaPortalForApproxModDownData::invokePartPFillKernel(int gpuBlocks, int gp
 }
 
 void cudaPortalForApproxModDownData::invokeKernelOfApproxModDown(int gpuBlocks, int gpuThreads) {
-
+    //cudaDeviceSynchronize();
     dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
     dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
 
@@ -227,9 +231,11 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxModDown(int gpuBlocks, 
     };
 
     approxModDownKernelWrapper(blocks, threads, args, stream);
+    //cudaStreamSynchronize(stream);
 }
 
 void cudaPortalForApproxModDownData::invokeAnsFillKernel(int gpuBlocks, int gpuThreads) {
+    //cudaDeviceSynchronize();
     dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
     dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
 

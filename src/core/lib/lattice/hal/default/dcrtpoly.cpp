@@ -37,6 +37,7 @@
 #include <cinttypes>
 #include <fstream>
 #include <memory>
+#include <cuda-utils/switch-format/cudaPortalForSwitchFormatBatch.h>
 #include <utils/timers.h>
 
 #include "lattice/lat-hal.h"
@@ -1523,6 +1524,182 @@ void DCRTPolyImpl<VecType>::ApproxModUp(const std::shared_ptr<Params> paramsQ, c
 
 #if defined(WITH_CUDA)
 template <typename VecType>
+DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
+    const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
+    const std::vector<NativeInteger>& PInvModq, const std::vector<NativeInteger>& PInvModqPrecon,
+    const std::vector<NativeInteger>& PHatInvModp, const std::vector<NativeInteger>& PHatInvModpPrecon,
+    const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
+    const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
+    const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon,
+    std::shared_ptr<cudaPortalForApproxModDownData> portal) const {
+    //nvtxRangePush("ApproxModDownCUDABatched");
+
+    //nvtxRangePushA("init");
+    usint sizeQP = m_vectors.size();
+    usint sizeP  = paramsP->GetParams().size();
+    usint sizeQ  = sizeQP - sizeP;
+
+    DCRTPolyType partP(paramsP, this->GetFormat(), true);
+    //nvtxRangePop();
+
+    portal->set_SizeQP(sizeQP);
+    //nvtxRangePushA("allocateHostCTilda");
+    portal->allocateHostCTilda(m_vectors.size(), m_vectors[0].GetLength());
+    //nvtxRangePop();
+    //nvtxRangePushA("marshalCTilda");
+    portal->marshalCTilda(m_vectors);
+    //nvtxRangePop();
+    //nvtxRangePushA("copyInCTilda");
+    portal->copyInCTilda();
+    //nvtxRangePop();
+    //nvtxRangePushA("copyInPartP_Empty");
+    portal->copyInPartP_Empty();
+    //nvtxRangePop();
+
+    // get gpu configuration
+    cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
+    const int gpuBlocks = cudaUtils.getGpuBlocks();
+    const int gpuThreads = cudaUtils.getGpuThreads();
+
+    //nvtxRangePushA("invokePartPFillKernel");
+    portal->invokePartPFillKernel(gpuBlocks, gpuThreads);
+    //nvtxRangePop();
+
+    CUDA_CHECK(cudaEventRecord(portal->getEvent(), portal->getStream()));
+
+    // switch format cuda portal obj (to COEFFICIENT)
+    //nvtxRangePushA("partPSFPortal");
+    std::shared_ptr<cudaPortalForSwitchFormatBatch> partPSFPortal =
+        std::make_shared<cudaPortalForSwitchFormatBatch>(portal->getDevice_partP_empty_m_vectors(),
+                                                         portal->get_partP_empty_size_x(),
+                                                         portal->get_partP_empty_size_y(),
+                                                         1, portal->getStream());
+    //nvtxRangePop();
+
+    //nvtxRangePushA("init pipeline");
+    const auto          cyclotomicOrder = partP.GetParams()->GetCyclotomicOrder();
+    const uint32_t      CycloOrderHf        = (cyclotomicOrder >> 1);
+    const uint32_t      msb                 = GetMSB64(CycloOrderHf - 1);
+    const uint32_t      n                   = partP.m_vectors[0].GetLength();
+    const uint32_t      totalButterflyOps   = n >> 1;
+    constexpr uint32_t  threadsPerBlock     = 512;
+    const auto          blocksDim_Pt1       = dim3(totalButterflyOps / threadsPerBlock , 1U, 1U);
+    const auto          blocksDim_Pt2       = dim3(n / threadsPerBlock, 1U, 1U);
+    constexpr auto      threadsPerBlockDim  = dim3(512, 1U, 1U);
+    //nvtxRangePop();
+
+    // inverse switch format pipeline
+    //nvtxRangePushA("pipeline");
+    for (uint32_t i = 0; i < partP.m_vectors.size(); i++) {
+        auto ptr_offset = i * portal->get_partP_empty_size_y();
+        auto modulus = partP.m_vectors[i].GetModulus();
+        auto pipelineStream = portal->getPipelineStream(i);
+        auto pipelineEvent = portal->getPipelineEvent(i);
+        CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, portal->getEvent(), 0));
+
+        // stage1: mashal twiddle factors to pinned host memory
+        partP.GetRootOfUnityInverseReverseBatch(modulus, partPSFPortal->get_host_rootOfUnityInverseReverseTable() + ptr_offset);
+        partP.GetRootOfUnityInversePreconReverseBatch(modulus, partPSFPortal->get_host_rootOfUnityInversePreconReverseTable() + ptr_offset);
+
+        // stage2: copy In
+        partPSFPortal->copyInInvTwiddleFactorsBatch(ptr_offset, pipelineStream);
+
+        auto cyOrderInv = partP.GetCycloOrderInverseBatch(modulus, msb);
+        auto cyOrderInvPrec = partP.GetCycloOrderInversePreconBatch(modulus, msb);
+
+        // stage3: compute (inverse NTT)
+        partPSFPortal->switchFormatToCoefficientBatch(blocksDim_Pt1, blocksDim_Pt2, threadsPerBlockDim,
+                                                      n, modulus, cyOrderInv, cyOrderInvPrec, ptr_offset, pipelineStream);
+        CUDA_CHECK(cudaEventRecord(pipelineEvent, pipelineStream));
+        CUDA_CHECK(cudaStreamWaitEvent(portal->getStream(), pipelineEvent, 0));
+    }
+    //nvtxRangePop();
+    //for (uint32_t i = 0; i < partP.m_vectors.size(); ++i) {
+        //cudaStreamWaitEvent(portal->getStream(), portal->getPipelineEvent(i), 0);
+    //}
+    ///
+
+    // Set format argument manually
+    //nvtxRangePushA("alloc partPSwitchedToQ");
+    DCRTPolyType partPSwitchedToQ(paramsQ, COEFFICIENT, true);
+    //nvtxRangePop();
+
+    // marshal work data
+    //nvtxRangePushA("marshalWorkData");
+    portal->marshalWorkData(partPSwitchedToQ.m_vectors);
+    //nvtxRangePop();
+
+    // transfer work data
+    //nvtxRangePushA("copyInWorkData");
+    portal->copyInWorkData();
+    //nvtxRangePop();
+
+    //nvtxRangePushA("KernelOfApproxModDown");
+    portal->invokeKernelOfApproxModDown(gpuBlocks, gpuThreads);
+    CUDA_CHECK(cudaEventRecord(portal->getEvent(), portal->getStream()));
+    //nvtxRangePop();
+
+    // Combine the switched DCRTPoly with the Q part of this to get the result
+    DCRTPolyType ans(paramsQ, EVALUATION, true);
+    uint32_t diffQ = paramsQ->GetParams().size() - sizeQ;
+    if (diffQ > 0)
+        ans.DropLastElements(diffQ);
+
+    // switch format cuda portal obj (to EVALUATION)
+    //nvtxRangePushA("partPSwitchedToQSFPortal");
+    std::shared_ptr<cudaPortalForSwitchFormatBatch> partPSwitchedToQSFPortal =
+        std::make_shared<cudaPortalForSwitchFormatBatch>(portal->getDevice_partPSwitchedToQ_m_vectors(),
+                                                         portal->get_partPSwitchedToQ_size_x(),
+                                                         portal->get_partPSwitchedToQ_size_y(),
+                                                         0,
+                                                         portal->getStream());
+    //nvtxRangePop();
+
+    // forward switch format pipeline
+    //nvtxRangePushA("pipeline");
+    for (uint32_t i = 0; i < partPSwitchedToQ.m_vectors.size(); i++) {
+        auto ptr_offset = i * portal->get_partPSwitchedToQ_size_y();
+        auto modulus = partPSwitchedToQ.m_vectors[i].GetModulus();
+        auto pipelineStream = portal->getPipelineStream(i);
+        auto pipelineEvent = portal->getPipelineEvent(i);
+        //
+        CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, portal->getEvent(), 0));
+
+        // stage1: mashal twiddle factors to pinned host memory
+        partPSwitchedToQ.GetRootOfUnityReverseBatch(modulus, partPSwitchedToQSFPortal->get_host_rootOfUnityReverseTable() + ptr_offset);
+        partPSwitchedToQ.GetRootOfUnityPreconReverseBatch(modulus, partPSwitchedToQSFPortal->get_host_rootOfUnityPreconReverseTable() + ptr_offset);
+
+        // stage2: copy in
+        partPSwitchedToQSFPortal->copyInTwiddleFactorsBatch(ptr_offset, pipelineStream);
+
+        // stage3: compute (forward NTT)
+        partPSwitchedToQSFPortal->switchFormatToEvaluationBatch(blocksDim_Pt1, threadsPerBlockDim,
+                                                                n, modulus, ptr_offset, pipelineStream);
+        CUDA_CHECK(cudaEventRecord(pipelineEvent, pipelineStream));
+        CUDA_CHECK(cudaStreamWaitEvent(portal->getStream(), pipelineEvent, 0));
+    }
+    //nvtxRangePop();
+
+    //nvtxRangePushA("AnsFillKernel");
+    portal->invokeAnsFillKernel(gpuBlocks, gpuThreads);
+    //nvtxRangePop();
+
+    //nvtxRangePushA("copyOutResult");
+    portal->copyOutResult();
+    //nvtxRangePop();
+
+
+    //nvtxRangePushA("unmarshalWorkData");
+    portal->unmarshalWorkData(ans.m_vectors);
+    //nvtxRangePop();
+
+    //std::cout << "[END] ApproxModDownCUDA" << std::endl;
+
+    //nvtxRangePop();
+    return ans;
+}
+
+template <typename VecType>
 DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDA(
     const std::shared_ptr<Params> paramsQ, const std::shared_ptr<Params> paramsP,
     const std::vector<NativeInteger>& PInvModq, const std::vector<NativeInteger>& PInvModqPrecon,
@@ -1667,7 +1844,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxSwitchCRTBasisCUDA(
     // invoke approxSwitchCRTBasis kernel
     const int gpuBlocks = cudaUtils.getGpuBlocks();
     const int gpuThreads = cudaUtils.getGpuThreads();
-    workDataPortal->invokeKernelOfApproxSwitchCRTBasis(gpuBlocks, gpuThreads);
+    workDataPortal->invokeKernelOfApproxSwitchCRTBasisV2(gpuBlocks, gpuThreads);
 
     workDataPortal->copyOutResult();
 

@@ -31,7 +31,7 @@ cudaPortalForApproxSwitchCRTBasis::~cudaPortalForApproxSwitchCRTBasis() {
 cudaStream_t                                cudaPortalForApproxSwitchCRTBasis::getStream() const { return stream; }
 std::shared_ptr<cudaPortalForParamsData>    cudaPortalForApproxSwitchCRTBasis::getParamsData() const { return paramsData; }
 m_vectors_struct*                           cudaPortalForApproxSwitchCRTBasis::getHost_ans_m_vectors() const {return host_ans_m_vectors;}
-uint128_t*                                  cudaPortalForApproxSwitchCRTBasis::getDevice_sum() const { return device_sum;}
+//uint128_t*                                  cudaPortalForApproxSwitchCRTBasis::getDevice_sum() const { return device_sum;}
 m_vectors_struct*                           cudaPortalForApproxSwitchCRTBasis::getDevice_m_vectors() const { return device_m_vectors;}
 m_vectors_struct*                           cudaPortalForApproxSwitchCRTBasis::getDevice_ans_m_vectors() const { return device_ans_m_vectors;}
 
@@ -117,17 +117,17 @@ void cudaPortalForApproxSwitchCRTBasis::copyInWorkData() {
     }
 
     // sum
-    err = cudaMallocAsync((void**)&device_sum, sizeP * ringDim * sizeof(uint128_t), stream);
-    if (err != cudaSuccess) {
-        printf("Error allocating device_sum: %s (%d)\n", cudaGetErrorString(err), err);
-        return; // or handle error appropriately
-    }
+    //err = cudaMallocAsync((void**)&device_sum, sizeP * ringDim * sizeof(uint128_t), stream);
+    //if (err != cudaSuccess) {
+        //printf("Error allocating device_sum: %s (%d)\n", cudaGetErrorString(err), err);
+        //return; // or handle error appropriately
+    //}
 
-    err = cudaMemsetAsync(device_sum, 0, sizeP * ringDim * sizeof(uint128_t), stream);
-    if (err != cudaSuccess) {
-        printf("Error setting device_sum to zero: %s (%d)\n", cudaGetErrorString(err), err);
-        return; // or handle error appropriately
-    }
+    //err = cudaMemsetAsync(device_sum, 0, sizeP * ringDim * sizeof(uint128_t), stream);
+    //if (err != cudaSuccess) {
+        //printf("Error setting device_sum to zero: %s (%d)\n", cudaGetErrorString(err), err);
+        //return; // or handle error appropriately
+    //}
 
     // ans_m_vectors
     err = cudaMallocAsync((void**)&device_ans_m_vectors, sizeP * sizeof(m_vectors_struct), stream);
@@ -170,6 +170,42 @@ void cudaPortalForApproxSwitchCRTBasis::copyOutResult() {
 
 // Kernel Invocation Function
 
+void cudaPortalForApproxSwitchCRTBasis::invokeKernelOfApproxSwitchCRTBasisV2(int gpuBlocks, int gpuThreads) {
+    dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
+    dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
+
+    ulong*              device_QHatInvModq          = paramsData->getDevice_QHatInvModq();
+    ulong*              device_QHatInvModqPrecon    = paramsData->getDevice_QHatInvModqPrecon();
+    uint128_t*          device_QHatModp             = paramsData->getDevice_QHatModp();
+    uint128_t*          device_modpBarrettMu        = paramsData->getDevice_modpBarrettMu();
+
+    size_t sharedMemSize = gpuThreads * sizeof(ulong);
+    //printf("sharedMem1024=%lu\n", 1024 * sizeP * sizeof(uint128_t));
+    //printf("sharedMem512=%lu\n", 512 * sizeP * sizeof(uint128_t));
+    //printf("sharedMem256=%lu\n", 256 * sizeP * sizeof(uint128_t));
+    //size_t sharedMemSize = gpuThreads * sizeof(ulong);
+    //size_t sharedMemSize2 = gpuThreads * sizeof(ulong);
+
+    // Loop over `sizeP` and invoke kernel for each `pIndex`
+    for (uint32_t pIndex = 0; pIndex < sizeP; ++pIndex) {
+        void* args[] = {
+            &ringDim, &sizeP, &sizeQ, &pIndex,
+            &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon,
+            &device_QHatModp, &device_modpBarrettMu, &device_ans_m_vectors
+        };
+
+        approxSwitchCRTBasisKernelWrapperV2(blocks, threads, args, sharedMemSize, stream);
+        //approxSwitchCRTBasisKernelWrapperV2(blocks, threads, args, 0U, stream);
+
+        // Optional: Check for errors after each kernel launch
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            fprintf(stderr, "Kernel launch failed for pIndex %d: %s\n", pIndex, cudaGetErrorString(err));
+            return;
+        }
+    }
+}
+
 void cudaPortalForApproxSwitchCRTBasis::invokeKernelOfApproxSwitchCRTBasis(int gpuBlocks, int gpuThreads) {
 
     dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
@@ -180,9 +216,21 @@ void cudaPortalForApproxSwitchCRTBasis::invokeKernelOfApproxSwitchCRTBasis(int g
     uint128_t*          device_QHatModp             = paramsData->getDevice_QHatModp();
     uint128_t*          device_modpBarrettMu        = paramsData->getDevice_modpBarrettMu();
 
-    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, &device_sum, &device_modpBarrettMu, &device_ans_m_vectors};
+    void *args[] = {&ringDim, &sizeP, &sizeQ, &device_m_vectors, &device_QHatInvModq, &device_QHatInvModqPrecon, &device_QHatModp, /*&device_sum,*/ &device_modpBarrettMu, &device_ans_m_vectors};
 
-    approxSwitchCRTBasisKernelWrapper(blocks, threads, args, stream);
+    size_t sharedMemSize = gpuThreads * sizeP * sizeof(uint128_t);
+
+    // Get device properties
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, 0);
+
+    // Log shared memory information
+    printf("Max shared memory per block: %ld bytes\n", prop.sharedMemPerBlock);
+    printf("Requested shared memory: %ld bytes\n", sharedMemSize);
+    printf("Requested shared memory (without sizeP): %ld bytes\n", gpuThreads * sizeof(uint128_t));
+
+
+    approxSwitchCRTBasisKernelWrapper(blocks, threads, args, sharedMemSize, stream);
 }
 
 // Resources Allocation/Deallocation - Error Handling - Misc Functions
@@ -253,11 +301,11 @@ void cudaPortalForApproxSwitchCRTBasis::freeDeviceMemory() {
     }
 
     // Free device_sum memory
-    if (device_sum) {
-        err = cudaFreeAsync(device_sum, stream);
-        handleCUDAError("freeing device_sum", err);
-        device_sum = nullptr;
-    }
+    //if (device_sum) {
+        //err = cudaFreeAsync(device_sum, stream);
+        //handleCUDAError("freeing device_sum", err);
+        //device_sum = nullptr;
+    //}
 
     // Free device_ans_m_vectors_data_ptr memory
     for (uint32_t p = 0; p < sizeP; ++p) {

@@ -25,6 +25,9 @@ private:
     std::shared_ptr<cudaPortalForApproxModDownParams> paramsData;
 
     cudaStream_t stream;
+    cudaStream_t* pipelineStreams;
+    cudaEvent_t  event;
+    cudaEvent_t* pipelineEvents;
 
     uint32_t ringDim;
     uint32_t sizeQP;
@@ -63,7 +66,7 @@ private:
 public:
 
     // Constructor
-    cudaPortalForApproxModDownData(std::shared_ptr<cudaPortalForApproxModDownParams> params_data, cudaStream_t workDataStream, int id);
+    cudaPortalForApproxModDownData(std::shared_ptr<cudaPortalForApproxModDownParams> params_data, cudaStream_t workDataStream, cudaStream_t* pipelineStreams, cudaEvent_t workDataEvent, cudaEvent_t* pipelineEvents, int id);
 
     // Destructor
     ~cudaPortalForApproxModDownData();
@@ -73,6 +76,9 @@ public:
 
     // Getter Functions
     cudaStream_t                                        getStream() const { return stream; }
+    cudaStream_t                                        getPipelineStream(int i) const { return pipelineStreams[i]; }
+    cudaEvent_t                                         getEvent() const { return event;}
+    cudaEvent_t                                         getPipelineEvent(int i) const { return pipelineEvents[i]; }
     std::shared_ptr<cudaPortalForApproxModDownParams>   getParamsData() const { return paramsData; }
 
     uint32_t                                            get_partP_empty_size_x() const { return partP_empty_m_vectors_size_x; }
