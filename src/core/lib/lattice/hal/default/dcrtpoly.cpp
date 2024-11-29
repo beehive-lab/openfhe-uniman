@@ -37,7 +37,6 @@
 #include <cinttypes>
 #include <fstream>
 #include <memory>
-#include <cuda-utils/switch-format/cudaPortalForSwitchFormatBatch.h>
 #include <utils/timers.h>
 
 #include "lattice/lat-hal.h"
