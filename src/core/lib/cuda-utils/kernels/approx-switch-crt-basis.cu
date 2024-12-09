@@ -78,7 +78,7 @@ __global__ void approxSwitchCRTBasisV2(int ringDim, int sizeP, int sizeQ, uint32
         __syncthreads();
         uint128_t sum = 0;
         //__syncthreads();
-
+        #pragma unroll
         for (int i = 0; i < sizeQ; i++) {
             ulong xi = m_vectors[i].data[ri];
             //ulong qi = shared_qi[i];

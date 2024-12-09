@@ -102,6 +102,7 @@ __global__ void approxSwitchCRTBasisPt1Batch(int sizeP, uint32_t i,
 
     ulong xi = m_vectors[ri];
     ulong xQHatInvModqi = ModMulFastConst(xi, QHatInvModq, modulus, QHatInvModqPrecon);
+    #pragma unroll
     for(int j = 0; j < sizeP; j++) {
         sum[ri * sizeP + j] += (uint128_t)xQHatInvModqi * QHatModp[j];
     }
