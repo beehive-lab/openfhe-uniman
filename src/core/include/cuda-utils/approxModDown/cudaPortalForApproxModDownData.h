@@ -81,13 +81,13 @@ public:
     ~cudaPortalForApproxModDownData();
 
     // Setter Functions
-    void                                                set_SizeQP(uint32_t size) { sizeQP = size; }
+    void                                                set_SizeQP(const uint32_t size) { sizeQP = size; }
 
     // Getter Functions
     cudaStream_t                                        getStream() const { return stream; }
-    cudaStream_t                                        getPipelineStream(int i) const { return pipelineStreams[i]; }
+    cudaStream_t                                        getPipelineStream(const uint32_t i) const { return pipelineStreams[i]; }
     cudaEvent_t                                         getEvent() const { return event;}
-    cudaEvent_t                                         getPipelineEvent(int i) const { return pipelineEvents[i]; }
+    cudaEvent_t                                         getPipelineEvent(const uint32_t i) const { return pipelineEvents[i]; }
 
     uint32_t                                            get_partP_empty_size_x() const { return partP_empty_m_vectors_size_x; }
     uint32_t                                            get_partP_empty_size_y() const { return partP_empty_m_vectors_size_y; }
@@ -100,24 +100,23 @@ public:
     ulong*                                              getDevice_partPSwitchedToQ_m_vectors() const { return device_partPSwitchedToQ_m_vectors; }
 
     // Data Marshalling Functions
-    void marshalCTildaBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t partP_index, uint32_t cTilda_index);
-    void marshalCTildaQBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t index);
-    void marshalPHatModqBatch(const std::vector<std::vector<NativeInteger>>& PHatModq, uint32_t index);
-    void unmarshalWorkDataBatchWrapper(std::vector<PolyImpl<NativeVector>>& ans_m_vectors, uint32_t i, uint32_t ptr_offset, cudaStream_t pipelineStream);
+    void marshalCTildaBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t partP_index, uint32_t cTilda_index) const;
+    void marshalCTildaQBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t index) const;
+    void marshalPHatModqBatch(const std::vector<std::vector<NativeInteger>>& PHatModq, uint32_t index) const;
+    void unmarshalWorkDataBatchWrapper(std::vector<PolyImpl<NativeVector>>& ans_m_vectors, uint32_t i, uint32_t ptr_offset, cudaStream_t pipelineStream) const;
 
     // Data Transfer Functions
-    void copyInCTildaQ_Batch(uint32_t ptrOffset, cudaStream_t stream);
-    void copyInPartP_Batch(uint32_t ptrOffset, cudaStream_t stream);
-    void copyInPHatModqBatch(uint32_t index, cudaStream_t stream);
+    void copyInCTildaQ_Batch(uint32_t ptrOffset, cudaStream_t stream) const;
+    void copyInPartP_Batch(uint32_t ptrOffset, cudaStream_t stream) const;
+    void copyInPHatModqBatch(uint32_t index, cudaStream_t stream) const;
 
-    void copyOutResultBatch(uint32_t ptrOffset, cudaStream_t stream);
+    void copyOutResultBatch(uint32_t ptrOffset, cudaStream_t stream) const;
 
     // Kernel Invocation Functions
     void invokeKernelOfApproxModDownBatchPt1(int gpuBlocks, int gpuThreads, ulong modulus, ulong tInvModp, ulong tInvModpPrecon, uint32_t ptr_offset, cudaStream_t stream);
     void invokeKernelOfApproxSwitchCRTBasisPt1Batch(int gpuBlocks, int gpuThreads,
                                                     uint32_t i, ulong modulus, uint32_t ptr_offset,
                                                     ulong QHatInvModq, ulong QHatInvModqPrecon,
-                                                    //ulong ans_modulus, uint128_t modpBarrettMu,
                                                     cudaStream_t stream);
     void invokeKernelOfApproxSwitchCRTBasisPt2Batch(int gpuBlocks, int gpuThreads,
                                                     uint32_t i, ulong ans_modulus, uint32_t ptr_offset,
@@ -126,7 +125,7 @@ public:
     void invokeAnsFillBatchKernel(int gpuBlocks, int gpuThreads,
                                   uint32_t i, ulong modulus, uint32_t ptr_offset,
                                   ulong pInvModq, ulong pInvModqPrecon,
-                                  cudaStream_t stream);
+                                  cudaStream_t stream) const;
 
     // Resources Allocation/Deallocation - Error Handling - Misc Functions
 

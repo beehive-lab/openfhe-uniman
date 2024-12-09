@@ -48,19 +48,19 @@ public:
     ulong* get_host_rootOfUnityInverseReverseTable() { return host_rootOfUnityInverseReverseTable; }
     ulong* get_host_rootOfUnityInversePreconReverseTable() { return host_rootOfUnityInversePreconReverseTable; }
 
-    void copyInTwiddleFactorsBatch(uint32_t ptrOffset, cudaStream_t stream);
-    void copyInInvTwiddleFactorsBatch(uint32_t ptrOffset, cudaStream_t stream);
+    void copyInTwiddleFactorsBatch(uint32_t ptrOffset, cudaStream_t stream) const;
+    void copyInInvTwiddleFactorsBatch(uint32_t ptrOffset, cudaStream_t stream) const;
 
     // forward NTT
     void switchFormatToEvaluationBatch(
         dim3 blocksDim, dim3 threadsPerBlockDim,
-        uint32_t n, NativeInteger& modulus, uint32_t ptr_offset, cudaStream_t stream);
+        uint32_t n, const NativeInteger& modulus, uint32_t ptr_offset, cudaStream_t stream) const;
 
     // Inverse NTT
     void switchFormatToCoefficientBatch(
         dim3 blocksDim_Pt1, dim3 blocksDim_Pt2, dim3 threadsPerBlockDim,
         uint32_t n, NativeInteger& modulus, ulong cycloOrderInverse, ulong cycloOrderInversePrecon,
-        uint32_t ptr_offset, cudaStream_t stream);
+        uint32_t ptr_offset, cudaStream_t stream) const;
 };
 }
 

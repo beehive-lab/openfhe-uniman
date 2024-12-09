@@ -561,10 +561,10 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     TimeVar timer;
     TIC(timer);
     ///
-    uint32_t ringDim = (*cTilda)[0].GetRingDimension();
-    uint32_t m_vectors_size = (*digits)[0].GetParams()->GetParams().size();
-    uint32_t sizeQ = (m_vectors_size > paramsQl->GetParams().size()) ? paramsQl->GetParams().size() : m_vectors_size;
-    uint32_t sizeP = cryptoParams->GetParamsP()->GetParams().size();
+    const uint32_t ringDim = (*cTilda)[0].GetRingDimension();
+    const uint32_t m_vectors_size = (*digits)[0].GetParams()->GetParams().size();
+    const uint32_t sizeQ = (m_vectors_size > paramsQl->GetParams().size()) ? paramsQl->GetParams().size() : m_vectors_size;
+    const uint32_t sizeP = cryptoParams->GetParamsP()->GetParams().size();
 
     //std::cout << "[EvalFastKeySwitchCore - opt implementation]: sizeP = " << sizeP << ", sizeQ = " << sizeQ << std::endl;
 

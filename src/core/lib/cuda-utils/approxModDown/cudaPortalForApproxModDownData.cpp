@@ -56,76 +56,81 @@ cudaPortalForApproxModDownData::~cudaPortalForApproxModDownData() {
 void cudaPortalForApproxModDownData::allocateHostData() {
 
     // crypto param
-    size_t phatmodq_size = PHatModq_size_x * PHatModq_size_y * sizeof(uint128_t);
-    cudaHostAlloc((void**)&host_PHatModq , phatmodq_size, cudaHostAllocDefault);
-    CUDA_CHECK(cudaMallocAsync((void**)&device_PHatModq, phatmodq_size, stream));
+    const size_t phatmodq_size = PHatModq_size_x * PHatModq_size_y * sizeof(uint128_t);
+    cudaHostAlloc(reinterpret_cast<void**>(&host_PHatModq) , phatmodq_size, cudaHostAllocDefault);
+    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_PHatModq), phatmodq_size, stream));
 
     // host input batched data
-    size_t input_data_size     = partP_empty_m_vectors_size_x * partP_empty_m_vectors_size_y * sizeof(unsigned long);
-    cudaHostAlloc((void**)&host_cTilda_m_vectors, input_data_size, cudaHostAllocDefault);
+    const size_t input_data_size     = partP_empty_m_vectors_size_x * partP_empty_m_vectors_size_y * sizeof(unsigned long);
+    cudaHostAlloc(reinterpret_cast<void**>(&host_cTilda_m_vectors), input_data_size, cudaHostAllocDefault);
 
     // device input batched data
-    CUDA_CHECK(cudaMallocAsync((void**)&device_partP_empty_m_vectors, input_data_size, stream));
+    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_partP_empty_m_vectors), input_data_size, stream));
 
     // device work (intermediate) data
-    size_t work_data_size = partPSwitchedToQ_m_vectors_size_x * partPSwitchedToQ_m_vectors_size_y * sizeof(unsigned long);
-    CUDA_CHECK(cudaMallocAsync((void**)&device_partPSwitchedToQ_m_vectors, work_data_size, stream));
+    const size_t work_data_size = partPSwitchedToQ_m_vectors_size_x * partPSwitchedToQ_m_vectors_size_y * sizeof(unsigned long);
+    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_partPSwitchedToQ_m_vectors), work_data_size, stream));
 
     // sum (intermediate)
-    CUDA_CHECK(cudaMallocAsync((void**)&device_sum, sizeQ * ringDim * sizeof(uint128_t), stream));
+    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_sum), sizeQ * ringDim * sizeof(uint128_t), stream));
     CUDA_CHECK(cudaMemsetAsync(device_sum, 0, sizeQ * ringDim * sizeof(uint128_t), stream));
 
     // cTildaQ
-    size_t cTildaQ_data_size = cTildaQ_m_vectors_size_x * cTildaQ_m_vectors_size_y * sizeof(ulong);
-    cudaHostAlloc((void**)&host_cTildaQ_m_vectors, cTildaQ_data_size, cudaHostAllocDefault);
-    CUDA_CHECK(cudaMallocAsync((void**)&device_cTildaQ_m_vectors, cTildaQ_data_size, stream));
+    const size_t cTildaQ_data_size = cTildaQ_m_vectors_size_x * cTildaQ_m_vectors_size_y * sizeof(ulong);
+    cudaHostAlloc(reinterpret_cast<void**>(&host_cTildaQ_m_vectors), cTildaQ_data_size, cudaHostAllocDefault);
+    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_cTildaQ_m_vectors), cTildaQ_data_size, stream));
 
     // ans: output
-    size_t ans_size = ans_m_vectors_size_x * ans_m_vectors_size_y * sizeof(ulong);
-    cudaMallocHost((void**)&host_ans_m_vectors, ans_size, cudaHostAllocDefault);
-    CUDA_CHECK(cudaMallocAsync((void**)&device_ans_m_vectors, ans_size, stream));
+    const size_t ans_size = ans_m_vectors_size_x * ans_m_vectors_size_y * sizeof(ulong);
+    cudaMallocHost(reinterpret_cast<void**>(&host_ans_m_vectors), ans_size, cudaHostAllocDefault);
+    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_ans_m_vectors), ans_size, stream));
 }
 
 
 // Data Marshaling Functions
 
 // marshal only the ctilda portion of interest (from sizeQ to sizeQP, so the final size equals to sizeP)
-void cudaPortalForApproxModDownData::marshalCTildaBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t partP_index, uint32_t cTilda_index) {
+void cudaPortalForApproxModDownData::marshalCTildaBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, const uint32_t partP_index, const uint32_t cTilda_index) const {
+    const uint32_t baseIndex = partP_index * cTilda_m_vectors_size_y;
     for (uint32_t rd = 0; rd < cTilda_m_vectors_size_y; ++rd) {
-        host_cTilda_m_vectors[partP_index * cTilda_m_vectors_size_y + rd] = cTilda_m_vectors[cTilda_index][rd].ConvertToInt<>();
+        host_cTilda_m_vectors[baseIndex + rd] = cTilda_m_vectors[cTilda_index][rd].ConvertToInt<>();
     }
 }
 
-void cudaPortalForApproxModDownData::marshalCTildaQBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t index) {
+void cudaPortalForApproxModDownData::marshalCTildaQBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, const uint32_t index) const {
+    const uint32_t baseIndex = index * cTildaQ_m_vectors_size_y;
     for (uint32_t rd = 0; rd < cTilda_m_vectors_size_y; ++rd) {
-        host_cTildaQ_m_vectors[index * cTildaQ_m_vectors_size_y + rd] = cTilda_m_vectors[index][rd].ConvertToInt<>();
+        host_cTildaQ_m_vectors[baseIndex + rd] = cTilda_m_vectors[index][rd].ConvertToInt<>();
     }
 }
 
-void cudaPortalForApproxModDownData::marshalPHatModqBatch(const std::vector<std::vector<NativeInteger>>& PHatModq, uint32_t index) {
+void cudaPortalForApproxModDownData::marshalPHatModqBatch(const std::vector<std::vector<NativeInteger>>& PHatModq, const uint32_t index) const {
+    const uint32_t baseIndex = index * PHatModq_size_y;
     for (uint32_t j = 0; j < PHatModq_size_y; ++j) {
-        host_PHatModq[index * PHatModq_size_y + j] = PHatModq[index][j].ConvertToInt<>();
+        host_PHatModq[baseIndex + j] = PHatModq[index][j].ConvertToInt<>();
     }
 }
 
 void unmarshalWorkDataBatch(void *void_arg) {
     //printf("Unmarshalling\n");
-    UnmarshalWorkDataBatchParams* args = (UnmarshalWorkDataBatchParams*)void_arg;
-    ulong* host_ans_m_vectors = args->host_ans_m_vectors;
+    const auto* args                                   = static_cast<UnmarshalWorkDataBatchParams*>(void_arg);
+    const ulong* host_ans_m_vectors                    = args->host_ans_m_vectors;
     std::vector<PolyImpl<NativeVector>>* ans_m_vectors = args->ans_m_vectors;
-    uint32_t i = args->i;
-    uint32_t ptrOffset = args->ptrOffset;
-    uint32_t size = args->size;
-    ulong* host_ans_ptr = host_ans_m_vectors + ptrOffset;
+    const uint32_t i                                   = args->i;
+    const uint32_t ptrOffset                           = args->ptrOffset;
+    const uint32_t size                                = args->size;
+    const ulong* host_ans_ptr                          = host_ans_m_vectors + ptrOffset;
     for(usint y = 0; y < size; y++) {
         (*ans_m_vectors)[i][y] = NativeInteger(host_ans_ptr[y]);
     }
     //free(void_arg);
 }
 
-void cudaPortalForApproxModDownData::unmarshalWorkDataBatchWrapper(std::vector<PolyImpl<NativeVector>>& ans_m_vectors, uint32_t i, uint32_t ptr_offset, cudaStream_t pipelineStream) {
-    UnmarshalWorkDataBatchParams* args = new UnmarshalWorkDataBatchParams(
-        &ans_m_vectors, host_ans_m_vectors, ans_m_vectors_size_y,i, ptr_offset);
+void cudaPortalForApproxModDownData::unmarshalWorkDataBatchWrapper(std::vector<PolyImpl<NativeVector>>& ans_m_vectors,
+                                                                   const uint32_t i, const uint32_t ptr_offset,
+                                                                   cudaStream_t pipelineStream) const {
+    auto* args = new UnmarshalWorkDataBatchParams(&ans_m_vectors, host_ans_m_vectors,
+                                                  ans_m_vectors_size_y,i, ptr_offset);
     cudaLaunchHostFunc(pipelineStream, unmarshalWorkDataBatch, args);
 
     //cudaStreamSynchronize(pipelineStream);
@@ -133,43 +138,43 @@ void cudaPortalForApproxModDownData::unmarshalWorkDataBatchWrapper(std::vector<P
 }
 
 // Data Transfer Functions
-void cudaPortalForApproxModDownData::copyInCTildaQ_Batch(uint32_t ptrOffset, cudaStream_t stream) {
-    auto device_m_vectors_ptr = device_cTildaQ_m_vectors + ptrOffset;
-    auto host_m_vectors_ptr = host_cTildaQ_m_vectors + ptrOffset;
-    size_t size = cTildaQ_m_vectors_size_y * sizeof(ulong);
+void cudaPortalForApproxModDownData::copyInCTildaQ_Batch(const uint32_t ptrOffset, cudaStream_t stream) const {
+    const auto device_m_vectors_ptr = device_cTildaQ_m_vectors + ptrOffset;
+    const auto host_m_vectors_ptr   = host_cTildaQ_m_vectors + ptrOffset;
+    const size_t size = cTildaQ_m_vectors_size_y * sizeof(ulong);
     CUDA_CHECK(cudaMemcpyAsync(device_m_vectors_ptr, host_m_vectors_ptr, size, cudaMemcpyHostToDevice, stream));
 }
 
-void cudaPortalForApproxModDownData::copyInPartP_Batch(uint32_t ptrOffset, cudaStream_t stream) {
-    size_t batchSize = partP_empty_m_vectors_size_y * sizeof(unsigned long);
-    auto device_m_vectors_ptr   = device_partP_empty_m_vectors         + ptrOffset;
-    auto host_m_vectors_ptr     = host_cTilda_m_vectors           + ptrOffset;
+void cudaPortalForApproxModDownData::copyInPartP_Batch(const uint32_t ptrOffset, cudaStream_t stream) const {
+    const size_t batchSize          = partP_empty_m_vectors_size_y * sizeof(unsigned long);
+    const auto device_m_vectors_ptr = device_partP_empty_m_vectors + ptrOffset;
+    const auto host_m_vectors_ptr   = host_cTilda_m_vectors + ptrOffset;
     CUDA_CHECK(cudaMemcpyAsync(device_m_vectors_ptr, host_m_vectors_ptr, batchSize, cudaMemcpyHostToDevice, stream));
 }
 
-void cudaPortalForApproxModDownData::copyInPHatModqBatch(uint32_t index, cudaStream_t stream) {
-    uint128_t batchSize = PHatModq_size_y * sizeof(uint128_t);
-    uint32_t ptrOffset = index * PHatModq_size_y;
-    uint128_t* host_ptr = host_PHatModq + ptrOffset;
-    uint128_t* device_ptr = device_PHatModq + ptrOffset;
+void cudaPortalForApproxModDownData::copyInPHatModqBatch(const uint32_t index, cudaStream_t stream) const {
+    const uint128_t batchSize = PHatModq_size_y * sizeof(uint128_t);
+    const uint32_t ptrOffset  = index * PHatModq_size_y;
+    const uint128_t* host_ptr = host_PHatModq + ptrOffset;
+    uint128_t* device_ptr     = device_PHatModq + ptrOffset;
     CUDA_CHECK(cudaMemcpyAsync(device_ptr, host_ptr, batchSize, cudaMemcpyHostToDevice, stream));
 }
 
-void cudaPortalForApproxModDownData::copyOutResultBatch(uint32_t ptrOffset, cudaStream_t stream) {
-    size_t batchSize = ans_m_vectors_size_y * sizeof(unsigned long);
-    auto device_m_vectors_ptr   = device_ans_m_vectors         + ptrOffset;
-    auto host_m_vectors_ptr     = host_ans_m_vectors           + ptrOffset;
+void cudaPortalForApproxModDownData::copyOutResultBatch(const uint32_t ptrOffset, cudaStream_t stream) const {
+    const size_t batchSize          = ans_m_vectors_size_y * sizeof(unsigned long);
+    const auto device_m_vectors_ptr = device_ans_m_vectors         + ptrOffset;
+    const auto host_m_vectors_ptr   = host_ans_m_vectors           + ptrOffset;
     CUDA_CHECK(cudaMemcpyAsync(host_m_vectors_ptr, device_m_vectors_ptr, batchSize, cudaMemcpyDeviceToHost, stream));
 }
 
 
 // Kernel Invocation Functions
 
-void cudaPortalForApproxModDownData::invokeKernelOfApproxModDownBatchPt1(int gpuBlocks, int gpuThreads,
+void cudaPortalForApproxModDownData::invokeKernelOfApproxModDownBatchPt1(const int gpuBlocks, const int gpuThreads,
                                                                          ulong modulus, ulong tInvModp, ulong tInvModpPrecon,
-                                                                         uint32_t ptr_offset, cudaStream_t stream) {
-    dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
-    dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
+                                                                         const uint32_t ptr_offset, cudaStream_t stream) {
+    const auto blocks  = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
+    const auto threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
 
     auto device_partP_ptr   = device_partP_empty_m_vectors + ptr_offset;
 
@@ -180,12 +185,12 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxModDownBatchPt1(int gpu
     approxModDownBatchPt1KernelWrapper(blocks, threads, args, stream);
 }
 
-void cudaPortalForApproxModDownData::invokeKernelOfApproxSwitchCRTBasisPt1Batch(int gpuBlocks, int gpuThreads,
-                                                                                uint32_t i, ulong modulus, uint32_t ptr_offset,
+void cudaPortalForApproxModDownData::invokeKernelOfApproxSwitchCRTBasisPt1Batch(const int gpuBlocks, const int gpuThreads,
+                                                                                uint32_t i, ulong modulus, const uint32_t ptr_offset,
                                                                                 ulong QHatInvModq, ulong QHatInvModqPrecon,
                                                                                 cudaStream_t stream) {
-    dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
-    dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
+    const auto blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
+    const auto threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
 
     auto device_m_vectors_ptr = device_partP_empty_m_vectors + ptr_offset;
     auto device_QHatModp = device_PHatModq + i * PHatModq_size_y ;
@@ -199,12 +204,12 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxSwitchCRTBasisPt1Batch(
     approxSwitchCRTBasisPt1BatchKernelWrapper(blocks, threads, args, stream);
 }
 
-void cudaPortalForApproxModDownData::invokeKernelOfApproxSwitchCRTBasisPt2Batch(int gpuBlocks, int gpuThreads,
-                                                                                uint32_t i, ulong ans_modulus, uint32_t ptr_offset,
+void cudaPortalForApproxModDownData::invokeKernelOfApproxSwitchCRTBasisPt2Batch(const int gpuBlocks, const int gpuThreads,
+                                                                                uint32_t i, ulong ans_modulus, const uint32_t ptr_offset,
                                                                                 uint128_t modpBarrettMu, uint32_t t, ulong tModqPrecon,
                                                                                 cudaStream_t stream) {
-    dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
-    dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
+    const auto blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
+    const auto threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
 
     auto device_partPSwitchedQ_m_vectors_ptr   = device_partPSwitchedToQ_m_vectors + ptr_offset;
     void* args[] = {&sizeQ, &i,
@@ -215,10 +220,10 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxSwitchCRTBasisPt2Batch(
     approxSwitchCRTBasisPt2BatchKernelWrapper(blocks, threads, args, stream);
 }
 
-void cudaPortalForApproxModDownData::invokeAnsFillBatchKernel(int gpuBlocks, int gpuThreads,
-                                                              uint32_t i, ulong modulus, uint32_t ptr_offset,
+void cudaPortalForApproxModDownData::invokeAnsFillBatchKernel(const int gpuBlocks, const int gpuThreads,
+                                                              uint32_t i, ulong modulus, const uint32_t ptr_offset,
                                                               ulong pInvModq, ulong pInvModqPrecon,
-                                                              cudaStream_t stream) {
+                                                              cudaStream_t stream) const {
     dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
     dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
 

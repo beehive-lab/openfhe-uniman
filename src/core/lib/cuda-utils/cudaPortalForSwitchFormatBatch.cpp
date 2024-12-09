@@ -2,28 +2,30 @@
 
 namespace lbcrypto {
 
-cudaPortalForSwitchFormatBatch::cudaPortalForSwitchFormatBatch(ulong* device_m_vectors, uint32_t m_vectors_sizeX, uint32_t m_vectors_sizeY, int isInverse, cudaStream_t mainStream)
+cudaPortalForSwitchFormatBatch::cudaPortalForSwitchFormatBatch(ulong* device_m_vectors, const uint32_t m_vectors_sizeX,
+                                                               const uint32_t m_vectors_sizeY, const int isInverse,
+                                                               cudaStream_t mainStream)
     :sizeX(m_vectors_sizeX), sizeY(m_vectors_sizeY), isInverse(isInverse), mainStream(mainStream) {
 
-    this->device_m_vectors = device_m_vectors;
-    size_t buffer_size = sizeX * sizeY * sizeof(ulong);
+    this->device_m_vectors   = device_m_vectors;
+    const size_t buffer_size = sizeX * sizeY * sizeof(ulong);
 
     if (!isInverse) {
         //printf("(cudaPortalForSwitchFormatBatch) is Forward\n");
-        cudaMallocHost((void**)&host_rootOfUnityReverseTable, buffer_size,cudaHostAllocDefault);
-        CUDA_CHECK(cudaMallocAsync((void**)&device_rootOfUnityReverseTable, buffer_size, mainStream));
-        cudaMallocHost((void**)&host_rootOfUnityPreconReverseTable, buffer_size, cudaHostAllocDefault);
-        CUDA_CHECK(cudaMallocAsync((void**)&device_rootOfUnityPreconReverseTable, buffer_size, mainStream));
+        cudaMallocHost(reinterpret_cast<void**>(&host_rootOfUnityReverseTable), buffer_size,cudaHostAllocDefault);
+        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_rootOfUnityReverseTable), buffer_size, mainStream));
+        cudaMallocHost(reinterpret_cast<void**>(&host_rootOfUnityPreconReverseTable), buffer_size, cudaHostAllocDefault);
+        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_rootOfUnityPreconReverseTable), buffer_size, mainStream));
         device_rootOfUnityInverseReverseTable = nullptr;
         device_rootOfUnityInversePreconReverseTable = nullptr;
     } else {
         //printf("(cudaPortalForSwitchFormatBatch) is Inverse\n");
-        cudaMallocHost((void**)&host_rootOfUnityInverseReverseTable, buffer_size, cudaHostAllocDefault);
-        CUDA_CHECK(cudaMallocAsync((void**)&device_rootOfUnityInverseReverseTable, buffer_size, mainStream));
+        cudaMallocHost(reinterpret_cast<void**>(&host_rootOfUnityInverseReverseTable), buffer_size, cudaHostAllocDefault);
+        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_rootOfUnityInverseReverseTable), buffer_size, mainStream));
         //printf("Allocating host_rootOfUnityInverseReverseTable with size: %lu\n", buffer_size);
         //printf("Pointer address: %p\n", host_rootOfUnityInverseReverseTable);
-        cudaMallocHost((void**)&host_rootOfUnityInversePreconReverseTable, buffer_size, cudaHostAllocDefault);
-        CUDA_CHECK(cudaMallocAsync((void**)&device_rootOfUnityInversePreconReverseTable, buffer_size, mainStream));
+        cudaMallocHost(reinterpret_cast<void**>(&host_rootOfUnityInversePreconReverseTable), buffer_size, cudaHostAllocDefault);
+        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_rootOfUnityInversePreconReverseTable), buffer_size, mainStream));
         //printf("Allocating host_rootOfUnityInversePreconReverseTable with size: %lu\n", buffer_size);
         //printf("Pointer address: %p\n", host_rootOfUnityInversePreconReverseTable);
         device_rootOfUnityReverseTable = nullptr;
@@ -49,33 +51,35 @@ cudaPortalForSwitchFormatBatch::~cudaPortalForSwitchFormatBatch() {
     }
 }
 
-void cudaPortalForSwitchFormatBatch::copyInTwiddleFactorsBatch(uint32_t ptrOffset, cudaStream_t stream) {
-    size_t twiddleFactorsBatchSize = sizeY * sizeof(ulong);
+void cudaPortalForSwitchFormatBatch::copyInTwiddleFactorsBatch(const uint32_t ptrOffset, cudaStream_t stream) const {
+    const size_t twiddleFactorsBatchSize = sizeY * sizeof(ulong);
 
-    auto device_reverse_table_ptr   = device_rootOfUnityReverseTable        + ptrOffset;
-    auto host_reverse_table_ptr     = host_rootOfUnityReverseTable          + ptrOffset;
-    auto device_precon_table_ptr    = device_rootOfUnityPreconReverseTable  + ptrOffset;
-    auto host_precon_table_ptr      = host_rootOfUnityPreconReverseTable    + ptrOffset;
+    const auto device_reverse_table_ptr = device_rootOfUnityReverseTable        + ptrOffset;
+    const auto host_reverse_table_ptr   = host_rootOfUnityReverseTable          + ptrOffset;
+    const auto device_precon_table_ptr  = device_rootOfUnityPreconReverseTable  + ptrOffset;
+    const auto host_precon_table_ptr    = host_rootOfUnityPreconReverseTable    + ptrOffset;
 
     CUDA_CHECK(cudaMemcpyAsync(device_reverse_table_ptr, host_reverse_table_ptr, twiddleFactorsBatchSize, cudaMemcpyHostToDevice, stream));
     CUDA_CHECK(cudaMemcpyAsync(device_precon_table_ptr, host_precon_table_ptr, twiddleFactorsBatchSize, cudaMemcpyHostToDevice, stream));
 }
 
-void cudaPortalForSwitchFormatBatch::copyInInvTwiddleFactorsBatch(uint32_t ptrOffset, cudaStream_t stream) {
-    size_t twiddleFactorsBatchSize = sizeY * sizeof(ulong);
+void cudaPortalForSwitchFormatBatch::copyInInvTwiddleFactorsBatch(const uint32_t ptrOffset, cudaStream_t stream) const {
+    const size_t twiddleFactorsBatchSize = sizeY * sizeof(ulong);
 
-    auto device_reverse_table_ptr   = device_rootOfUnityInverseReverseTable         + ptrOffset;
-    auto host_reverse_table_ptr     = host_rootOfUnityInverseReverseTable           + ptrOffset;
-    auto device_precon_table_ptr    = device_rootOfUnityInversePreconReverseTable   + ptrOffset;
-    auto host_precon_table_ptr      = host_rootOfUnityInversePreconReverseTable     + ptrOffset;
+    const auto device_reverse_table_ptr = device_rootOfUnityInverseReverseTable         + ptrOffset;
+    const auto host_reverse_table_ptr   = host_rootOfUnityInverseReverseTable           + ptrOffset;
+    const auto device_precon_table_ptr  = device_rootOfUnityInversePreconReverseTable   + ptrOffset;
+    const auto host_precon_table_ptr    = host_rootOfUnityInversePreconReverseTable     + ptrOffset;
 
     CUDA_CHECK(cudaMemcpyAsync(device_reverse_table_ptr, host_reverse_table_ptr, twiddleFactorsBatchSize, cudaMemcpyHostToDevice, stream));
     CUDA_CHECK(cudaMemcpyAsync(device_precon_table_ptr, host_precon_table_ptr, twiddleFactorsBatchSize, cudaMemcpyHostToDevice, stream));
 }
 
 // forward NTT
-void cudaPortalForSwitchFormatBatch::switchFormatToEvaluationBatch(dim3 blocks, dim3 threadsPerBlock,
-                                                                   uint32_t n, NativeInteger& modulus, uint32_t ptr_offset, cudaStream_t stream) {
+void cudaPortalForSwitchFormatBatch::switchFormatToEvaluationBatch(const dim3 blocks, const dim3 threadsPerBlock,
+                                                                   uint32_t n, const NativeInteger& modulus,
+                                                                   const uint32_t ptr_offset,
+                                                                   cudaStream_t stream) const {
     auto convertedModulus = modulus.ConvertToInt<>();
 
     // Calculate the pointers with the applied offset
@@ -99,10 +103,11 @@ void cudaPortalForSwitchFormatBatch::switchFormatToEvaluationBatch(dim3 blocks, 
 
 
 // inverse NTT
-void cudaPortalForSwitchFormatBatch::switchFormatToCoefficientBatch(
-    dim3 blocks_Pt1, dim3 blocks_Pt2, dim3 threadsPerBlock,
-    uint32_t n, NativeInteger& modulus, ulong cycloOrderInverse, ulong cycloOrderInversePrecon,
-    uint32_t ptr_offset, cudaStream_t stream) {
+void cudaPortalForSwitchFormatBatch::switchFormatToCoefficientBatch(const dim3 blocks_Pt1, const dim3 blocks_Pt2,
+                                                                    const dim3 threadsPerBlock, uint32_t n,
+                                                                    NativeInteger& modulus, ulong cycloOrderInverse,
+                                                                    ulong cycloOrderInversePrecon, const uint32_t ptr_offset,
+                                                                    cudaStream_t stream) const {
     auto convertedModulus = modulus.ConvertToInt<>();
 
     // Calculate the pointers with the applied offset

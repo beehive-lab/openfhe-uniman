@@ -1601,8 +1601,8 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
         // stage2: copy In
         partPSFPortal->copyInInvTwiddleFactorsBatch(ptr_offset, pipelineStream);
 
-        auto cyOrderInv = partP.GetCycloOrderInverseBatch(modulus, msb);
-        auto cyOrderInvPrec = partP.GetCycloOrderInversePreconBatch(modulus, msb);
+        const auto cyOrderInv = partP.GetCycloOrderInverseBatch(modulus, msb);
+        const auto cyOrderInvPrec = partP.GetCycloOrderInversePreconBatch(modulus, msb);
 
         // stage3: compute (inverse NTT)
         partPSFPortal->switchFormatToCoefficientBatch(blocksDim_Pt1, blocksDim_Pt2, threadsPerBlockDim,
@@ -1643,7 +1643,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
 
     // sizeQ pipeline
     // pipeline dimension = sizeQ
-    auto t_conv = t.ConvertToInt<>();
+    const auto t_conv = t.ConvertToInt<>();
     for (uint32_t i = 0; i < partPSwitchedToQ.m_vectors.size(); i++) {
         auto ptr_offset = i * portal->get_partPSwitchedToQ_size_y();
         auto modulus = partPSwitchedToQ.m_vectors[i].GetModulus();
