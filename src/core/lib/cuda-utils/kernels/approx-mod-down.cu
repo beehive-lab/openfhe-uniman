@@ -1,6 +1,9 @@
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 #include "cuda-utils/kernel-headers/approx-mod-down.cuh"
 
 #include <cinttypes>
+#include <cuda-utils/cuda_util_macros.h>
 
 #include "cuda-utils/m_vectors.h"
 #include "cuda-utils/kernel-headers/shared_device_functions.cuh"
@@ -89,6 +92,41 @@ __device__ inline void approxSwitchCRTBasisFunc(int ri, int ringDim, int sizeP, 
         }
 }
 
+__global__ void approxSwitchCRTBasisPt1Batch(int sizeP, uint32_t i,
+                                             ulong*             m_vectors, ulong modulus,
+                                             ulong QHatInvModq, ulong QHatInvModqPrecon,
+                                             uint128_t*         QHatModp,
+                                             uint128_t*         sum) {
+
+    int ri = blockIdx.x * blockDim.x + threadIdx.x;
+
+    ulong xi = m_vectors[ri];
+    ulong xQHatInvModqi = ModMulFastConst(xi, QHatInvModq, modulus, QHatInvModqPrecon);
+    for(int j = 0; j < sizeP; j++) {
+        sum[ri * sizeP + j] += (uint128_t)xQHatInvModqi * QHatModp[j];
+    }
+}
+
+__global__ void approxSwitchCRTBasisPt2Batch(int sizeP, uint32_t j,
+                                             uint128_t* sum,
+                                             ulong* ans_m_vectors, ulong modulus,
+                                             uint128_t modpBarrettMu, uint32_t t, ulong tModqPrecon) {
+    int ri = blockIdx.x * blockDim.x + threadIdx.x;
+
+    ans_m_vectors[ri] = BarrettUint128ModUint64(sum[ri * sizeP + j], modulus, modpBarrettMu);
+
+    // kernel fusion with the next step instead of approxModDownKernelPt2 (multiply everything by t mod Q)
+    ans_m_vectors[ri] = ModMulFastConst(ans_m_vectors[ri], t, modulus, tModqPrecon);
+}
+
+void approxSwitchCRTBasisPt1BatchKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+    CUDA_CHECK(cudaLaunchKernel((void*)approxSwitchCRTBasisPt1Batch, blocks, threads, args, 0U, stream));
+}
+
+void approxSwitchCRTBasisPt2BatchKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+    CUDA_CHECK(cudaLaunchKernel((void*)approxSwitchCRTBasisPt2Batch, blocks, threads, args, 0U, stream));
+}
+
 __global__ void approxModDown(
     //scalar values
     int ringDim, int sizeQP, int sizeP, int sizeQ,
@@ -137,6 +175,25 @@ __global__ void approxModDown(
     }
 }
 
+__global__ void approxModDownBatchPt1(
+    //scalar values
+    int ringDim,
+    // work data along with their column size
+    ulong*      partP_empty_m_vectors, ulong partP_empty_modulus,
+    // params data along with their column size (where applicable)
+    ulong       tInvModp,
+    ulong      tInvModpPrecon) {
+
+    int ri = blockIdx.x * blockDim.x + threadIdx.x;
+    if (ri < ringDim) {
+        partP_empty_m_vectors[ri] =
+            ModMulFastConst(partP_empty_m_vectors[ri],
+                            tInvModp,
+                            partP_empty_modulus,
+                            tInvModpPrecon);
+    }
+}
+
 void approxModDownKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
     //std::cout << "New approxSwitchCRTBasisKernelWrapper" << std::endl;
     cudaError_t         cudaStatus;
@@ -153,6 +210,10 @@ void approxModDownKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStre
     //std::cout << "End New approxSwitchCRTBasisKernelWrapper" << std::endl;
 }
 
+void approxModDownBatchPt1KernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+    CUDA_CHECK(cudaLaunchKernel((void*)approxModDownBatchPt1, blocks, threads, args, 0U, stream));
+}
+
 __global__ void ansFill(int sizeQ,
                         ulong*      cTilda_m_vectors,           uint32_t cTilda_m_vectors_sizeX, uint32_t cTilda_m_vectors_sizeY,
                         ulong*      partPSwitchedToQ_m_vectors, uint32_t partPSwitchedToQ_sizeX, uint32_t partPSwitchedToQ_sizeY,
@@ -167,9 +228,6 @@ __global__ void ansFill(int sizeQ,
 
         ulong diff = ModSubFast(cTilda_m_vectors[q * cTilda_m_vectors_sizeY + ri], partPSwitchedToQ_m_vectors[q * partPSwitchedToQ_sizeY + ri], cTildaModulus); // ok
         ans_m_vectors[q * ans_sizeY + ri] = ModMulFastConst(diff, pInvModq[q], cTildaModulus, pInvModqPrecon[q]);
-        //if (ri < 2) {
-            //printf("(kernel) diff=%lu, pInvModq=%lu, cTildaModulus=%lu, pInvModqPrecon=%lu, res = %lu\n", diff, pInvModq[q], cTildaModulus, pInvModqPrecon[q], ans_m_vectors[q * ans_sizeY + ri]);
-        //}
     }
 }
 
@@ -180,4 +238,19 @@ void ansFillKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t s
         printf("ansFill kernel launch failed: %s (%d) \n", cudaGetErrorString(cudaStatus), cudaStatus);
         exit(-1);
     }
+}
+
+__global__ void ansFillBatch(uint32_t i, ulong*      cTildaQ_m_vectors, ulong cTildaQ_modulus,
+                             ulong*      partPSwitchedToQ_m_vectors,
+                             ulong*      ans_m_vectors,
+                             ulong       pInvModq,
+                             ulong       pInvModqPrecon) {
+    int ri = blockIdx.x * blockDim.x + threadIdx.x;
+
+    ulong diff = ModSubFast(cTildaQ_m_vectors[ri], partPSwitchedToQ_m_vectors[ri], cTildaQ_modulus);
+    ans_m_vectors[ri] = ModMulFastConst(diff, pInvModq, cTildaQ_modulus, pInvModqPrecon);
+}
+
+void ansFillBatchKernelWrapper(dim3 blocks, dim3 threads, void** args, cudaStream_t stream) {
+    CUDA_CHECK(cudaLaunchKernel((void*)ansFillBatch, blocks, threads, args, 0U, stream));
 }

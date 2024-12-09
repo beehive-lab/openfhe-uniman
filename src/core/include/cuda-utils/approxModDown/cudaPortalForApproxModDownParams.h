@@ -122,6 +122,10 @@ namespace lbcrypto {
             return device_PHatModq;
         }
 
+        uint128_t * get_device_PHatModq(uint32_t i) const {
+            return device_PHatModq + (i * PHatModq_size_y);
+        }
+
         uint32_t get_PHatModq_sizeY() const {
             return PHatModq_size_y;
         }

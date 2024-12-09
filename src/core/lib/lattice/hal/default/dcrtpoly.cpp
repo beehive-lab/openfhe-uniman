@@ -1538,33 +1538,23 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
     usint sizeP  = paramsP->GetParams().size();
     usint sizeQ  = sizeQP - sizeP;
 
+    // input data
     DCRTPolyType partP(paramsP, this->GetFormat(), true);
+    // work data
+    DCRTPolyType partPSwitchedToQ(paramsQ, COEFFICIENT, true);
+    // output data
+    DCRTPolyType ans(paramsQ, EVALUATION, true);
+    uint32_t diffQ = paramsQ->GetParams().size() - sizeQ;
+    if (diffQ > 0)
+        ans.DropLastElements(diffQ);
     //nvtxRangePop();
 
     portal->set_SizeQP(sizeQP);
-    //nvtxRangePushA("allocateHostCTilda");
-    portal->allocateHostCTilda(m_vectors.size(), m_vectors[0].GetLength());
-    //nvtxRangePop();
-    //nvtxRangePushA("marshalCTilda");
-    portal->marshalCTilda(m_vectors);
-    //nvtxRangePop();
-    //nvtxRangePushA("copyInCTilda");
-    portal->copyInCTilda();
-    //nvtxRangePop();
-    //nvtxRangePushA("copyInPartP_Empty");
-    portal->copyInPartP_Empty();
-    //nvtxRangePop();
 
     // get gpu configuration
     cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
     const int gpuBlocks = cudaUtils.getGpuBlocks();
     const int gpuThreads = cudaUtils.getGpuThreads();
-
-    //nvtxRangePushA("invokePartPFillKernel");
-    portal->invokePartPFillKernel(gpuBlocks, gpuThreads);
-    //nvtxRangePop();
-
-    CUDA_CHECK(cudaEventRecord(portal->getEvent(), portal->getStream()));
 
     // switch format cuda portal obj (to COEFFICIENT)
     //nvtxRangePushA("partPSFPortal");
@@ -1573,7 +1563,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
                                                          portal->get_partP_empty_size_x(),
                                                          portal->get_partP_empty_size_y(),
                                                          1, portal->getStream());
-    //nvtxRangePop();
 
     //nvtxRangePushA("init pipeline");
     const auto          cyclotomicOrder = partP.GetParams()->GetCyclotomicOrder();
@@ -1587,14 +1576,23 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
     constexpr auto      threadsPerBlockDim  = dim3(512, 1U, 1U);
     //nvtxRangePop();
 
-    // inverse switch format pipeline
-    //nvtxRangePushA("pipeline");
+    // enable sync on main stream
+    CUDA_CHECK(cudaEventRecord(portal->getEvent(), portal->getStream()));
+
+    // SizeP pipeline
+    // pipeline dimension = sizeP
     for (uint32_t i = 0; i < partP.m_vectors.size(); i++) {
         auto ptr_offset = i * portal->get_partP_empty_size_y();
         auto modulus = partP.m_vectors[i].GetModulus();
         auto pipelineStream = portal->getPipelineStream(i);
         auto pipelineEvent = portal->getPipelineEvent(i);
+
+        // sync each pipeline stream on main stream
         CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, portal->getEvent(), 0));
+
+        portal->marshalCTildaBatch(m_vectors, i, i + sizeQ);
+
+        portal->copyInPartP_Batch(ptr_offset, pipelineStream);
 
         // stage1: mashal twiddle factors to pinned host memory
         partP.GetRootOfUnityInverseReverseBatch(modulus, partPSFPortal->get_host_rootOfUnityInverseReverseTable() + ptr_offset);
@@ -1609,60 +1607,53 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
         // stage3: compute (inverse NTT)
         partPSFPortal->switchFormatToCoefficientBatch(blocksDim_Pt1, blocksDim_Pt2, threadsPerBlockDim,
                                                       n, modulus, cyOrderInv, cyOrderInvPrec, ptr_offset, pipelineStream);
+        ////
+        portal->invokeKernelOfApproxModDownBatchPt1(gpuBlocks, gpuThreads,
+                                                    modulus.ConvertToInt<>(),
+                                                    tInvModp[i].ConvertToInt<>(),
+                                                    tInvModpPrecon[i].ConvertToInt<>(), ptr_offset, pipelineStream);
+
+        portal->invokeKernelOfApproxSwitchCRTBasisPt1Batch(gpuBlocks, gpuThreads,
+                                                           i, modulus.ConvertToInt<>(), ptr_offset,
+                                                           PHatInvModp[i].ConvertToInt<>(), PHatInvModpPrecon[i].ConvertToInt<>(),
+                                                           //ans.m_vectors[i].GetModulus().ConvertToInt(),
+                                                           //modqBarrettMu[i],
+                                                           pipelineStream);
+        ///
         CUDA_CHECK(cudaEventRecord(pipelineEvent, pipelineStream));
+        // sync main stream on each pipeline stream (maybe useless ?)
         CUDA_CHECK(cudaStreamWaitEvent(portal->getStream(), pipelineEvent, 0));
+        //CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, pipelineEvent, 0));
     }
-    //nvtxRangePop();
-    //for (uint32_t i = 0; i < partP.m_vectors.size(); ++i) {
-        //cudaStreamWaitEvent(portal->getStream(), portal->getPipelineEvent(i), 0);
-    //}
-    ///
-
-    // Set format argument manually
-    //nvtxRangePushA("alloc partPSwitchedToQ");
-    DCRTPolyType partPSwitchedToQ(paramsQ, COEFFICIENT, true);
-    //nvtxRangePop();
-
-    // marshal work data
-    //nvtxRangePushA("marshalWorkData");
-    portal->marshalWorkData(partPSwitchedToQ.m_vectors);
-    //nvtxRangePop();
-
-    // transfer work data
-    //nvtxRangePushA("copyInWorkData");
-    portal->copyInWorkData();
-    //nvtxRangePop();
-
-    //nvtxRangePushA("KernelOfApproxModDown");
-    portal->invokeKernelOfApproxModDown(gpuBlocks, gpuThreads);
-    CUDA_CHECK(cudaEventRecord(portal->getEvent(), portal->getStream()));
-    //nvtxRangePop();
-
-    // Combine the switched DCRTPoly with the Q part of this to get the result
-    DCRTPolyType ans(paramsQ, EVALUATION, true);
-    uint32_t diffQ = paramsQ->GetParams().size() - sizeQ;
-    if (diffQ > 0)
-        ans.DropLastElements(diffQ);
 
     // switch format cuda portal obj (to EVALUATION)
-    //nvtxRangePushA("partPSwitchedToQSFPortal");
     std::shared_ptr<cudaPortalForSwitchFormatBatch> partPSwitchedToQSFPortal =
         std::make_shared<cudaPortalForSwitchFormatBatch>(portal->getDevice_partPSwitchedToQ_m_vectors(),
                                                          portal->get_partPSwitchedToQ_size_x(),
                                                          portal->get_partPSwitchedToQ_size_y(),
                                                          0,
                                                          portal->getStream());
-    //nvtxRangePop();
 
-    // forward switch format pipeline
-    //nvtxRangePushA("pipeline");
+    // enable sync on main stream
+    CUDA_CHECK(cudaEventRecord(portal->getEvent(), portal->getStream()));
+
+    // sizeQ pipeline
+    // pipeline dimension = sizeQ
+    auto t_conv = t.ConvertToInt<>();
     for (uint32_t i = 0; i < partPSwitchedToQ.m_vectors.size(); i++) {
         auto ptr_offset = i * portal->get_partPSwitchedToQ_size_y();
         auto modulus = partPSwitchedToQ.m_vectors[i].GetModulus();
         auto pipelineStream = portal->getPipelineStream(i);
         auto pipelineEvent = portal->getPipelineEvent(i);
-        //
+
+        // sync on main stream
+        //CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, pipelineEvent, 0));
         CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, portal->getEvent(), 0));
+        //CUDA_CHECK(cudaStreamSynchronize(portal->getStream()));
+
+        ////
+        portal->invokeKernelOfApproxSwitchCRTBasisPt2Batch(gpuBlocks, gpuThreads, i, modulus.ConvertToInt(), ptr_offset, modqBarrettMu[i], t_conv, tModqPrecon[i].ConvertToInt(), pipelineStream); // ok
+        ///
 
         // stage1: mashal twiddle factors to pinned host memory
         partPSwitchedToQ.GetRootOfUnityReverseBatch(modulus, partPSwitchedToQSFPortal->get_host_rootOfUnityReverseTable() + ptr_offset);
@@ -1674,25 +1665,36 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
         // stage3: compute (forward NTT)
         partPSwitchedToQSFPortal->switchFormatToEvaluationBatch(blocksDim_Pt1, threadsPerBlockDim,
                                                                 n, modulus, ptr_offset, pipelineStream);
+
+        ////
+        portal->marshalCTildaQBatch(m_vectors, i);
+        portal->copyInCTildaQ_Batch(ptr_offset, pipelineStream);
+        portal->invokeAnsFillBatchKernel(gpuBlocks, gpuThreads, i, m_vectors[i].GetModulus().ConvertToInt<>(), ptr_offset,
+                                         PInvModq[i].ConvertToInt<>(), PInvModqPrecon[i].ConvertToInt<>(), pipelineStream);
+
+        portal->copyOutResultBatch(ptr_offset, pipelineStream);
+        //portal->unmarshalWorkDataBatch(ans.m_vectors, i, ptr_offset);
+
+        portal->unmarshalWorkDataBatchWrapper(ans.m_vectors, i, ptr_offset, pipelineStream);
+
+        //cudaLaunchHostFunc(pipelineStream, unmarshalWorkDataBatchWrapper, params);
+        ///
+        // enable sync for each pipeline stream
         CUDA_CHECK(cudaEventRecord(pipelineEvent, pipelineStream));
-        CUDA_CHECK(cudaStreamWaitEvent(portal->getStream(), pipelineEvent, 0));
+        //CUDA_CHECK(cudaStreamWaitEvent(portal->getStream(), pipelineEvent, 0));
     }
-    //nvtxRangePop();
 
-    //nvtxRangePushA("AnsFillKernel");
-    portal->invokeAnsFillKernel(gpuBlocks, gpuThreads);
-    //nvtxRangePop();
+    // wait for all pipeline streams to complete
+    for (uint32_t i = 0; i < partPSwitchedToQ.m_vectors.size(); i++) {
+        CUDA_CHECK(cudaEventSynchronize(portal->getPipelineEvent(i)));
+    }
 
-    //nvtxRangePushA("copyOutResult");
-    portal->copyOutResult();
-    //nvtxRangePop();
-
-
-    //nvtxRangePushA("unmarshalWorkData");
-    portal->unmarshalWorkData(ans.m_vectors);
-    //nvtxRangePop();
-
-    //std::cout << "[END] ApproxModDownCUDA" << std::endl;
+    /*for (uint32_t i = 0; i < ans.m_vectors.size(); i++) {
+        for (uint32_t j = 0; j < ans.m_vectors[i].GetLength(); j++) {
+            if (j < 10)
+                std::cout << "(AMD-Batch-after unmarshal): ans_m_vectors[" << i << "][" << j << "] = " << ans.m_vectors[i][j].ConvertToInt() << std::endl;
+        }
+    }*/
 
     //nvtxRangePop();
     return ans;
