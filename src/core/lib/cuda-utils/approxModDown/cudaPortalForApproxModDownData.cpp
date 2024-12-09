@@ -6,13 +6,17 @@ namespace lbcrypto {
 
 using PolyType = PolyImpl<NativeVector>;
 
-cudaPortalForApproxModDownData::cudaPortalForApproxModDownData(std::shared_ptr<cudaPortalForApproxModDownParams> params_data, cudaStream_t workDataStream, cudaStream_t* pipelineStreams, cudaEvent_t workDataEvent, cudaEvent_t* pipelineEvents, int id) {
+cudaPortalForApproxModDownData::cudaPortalForApproxModDownData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ,
+                                                               const std::vector<std::vector<NativeInteger>>& PHatModq, // the only crypto-parameter we need
+                                                               cudaStream_t workDataStream, cudaStream_t* pipelineStreams, cudaEvent_t workDataEvent, cudaEvent_t* pipelineEvents, int id) {
     this->id = id;
-    this->paramsData = params_data;
 
-    this->ringDim = params_data->get_RingDim();
-    this->sizeP = params_data->get_sizeP();
-    this->sizeQ = params_data->get_sizeQ();
+    this->ringDim = ringDim;
+    this->sizeP = sizeP;
+    this->sizeQ = sizeQ;
+
+    PHatModq_size_x = PHatModq.size();
+    PHatModq_size_y = PHatModq[0].size();
 
     // partP: input data dimensions
     // cTilda
@@ -50,6 +54,11 @@ cudaPortalForApproxModDownData::~cudaPortalForApproxModDownData() {
 
 
 void cudaPortalForApproxModDownData::allocateHostData() {
+
+    // crypto param
+    size_t phatmodq_size = PHatModq_size_x * PHatModq_size_y * sizeof(uint128_t);
+    cudaHostAlloc((void**)&host_PHatModq , phatmodq_size, cudaHostAllocDefault);
+    CUDA_CHECK(cudaMallocAsync((void**)&device_PHatModq, phatmodq_size, stream));
 
     // host input batched data
     size_t input_data_size     = partP_empty_m_vectors_size_x * partP_empty_m_vectors_size_y * sizeof(unsigned long);
@@ -93,6 +102,11 @@ void cudaPortalForApproxModDownData::marshalCTildaQBatch(const std::vector<PolyI
     }
 }
 
+void cudaPortalForApproxModDownData::marshalPHatModqBatch(const std::vector<std::vector<NativeInteger>>& PHatModq, uint32_t index) {
+    for (uint32_t j = 0; j < PHatModq_size_y; ++j) {
+        host_PHatModq[index * PHatModq_size_y + j] = PHatModq[index][j].ConvertToInt<>();
+    }
+}
 
 void unmarshalWorkDataBatch(void *void_arg) {
     //printf("Unmarshalling\n");
@@ -133,6 +147,13 @@ void cudaPortalForApproxModDownData::copyInPartP_Batch(uint32_t ptrOffset, cudaS
     CUDA_CHECK(cudaMemcpyAsync(device_m_vectors_ptr, host_m_vectors_ptr, batchSize, cudaMemcpyHostToDevice, stream));
 }
 
+void cudaPortalForApproxModDownData::copyInPHatModqBatch(uint32_t index, cudaStream_t stream) {
+    uint128_t batchSize = PHatModq_size_y * sizeof(uint128_t);
+    uint32_t ptrOffset = index * PHatModq_size_y;
+    uint128_t* host_ptr = host_PHatModq + ptrOffset;
+    uint128_t* device_ptr = device_PHatModq + ptrOffset;
+    CUDA_CHECK(cudaMemcpyAsync(device_ptr, host_ptr, batchSize, cudaMemcpyHostToDevice, stream));
+}
 
 void cudaPortalForApproxModDownData::copyOutResultBatch(uint32_t ptrOffset, cudaStream_t stream) {
     size_t batchSize = ans_m_vectors_size_y * sizeof(unsigned long);
@@ -166,14 +187,13 @@ void cudaPortalForApproxModDownData::invokeKernelOfApproxSwitchCRTBasisPt1Batch(
     dim3 blocks = dim3(gpuBlocks, 1U, 1U); // Set the grid dimensions
     dim3 threads = dim3(gpuThreads, 1U, 1U); // Set the block dimensions
 
-    auto device_m_vectors_ptr   = device_partP_empty_m_vectors + ptr_offset;
-
-    uint128_t* QHatModp = paramsData->get_device_PHatModq(i);
+    auto device_m_vectors_ptr = device_partP_empty_m_vectors + ptr_offset;
+    auto device_QHatModp = device_PHatModq + i * PHatModq_size_y ;
 
     void *args[] = {&sizeQ, &i,
                     &device_m_vectors_ptr, &modulus,
                     &QHatInvModq, &QHatInvModqPrecon,
-                    &QHatModp,
+                    &device_QHatModp,
                     &device_sum};
 
     approxSwitchCRTBasisPt1BatchKernelWrapper(blocks, threads, args, stream);
@@ -230,6 +250,7 @@ void cudaPortalForApproxModDownData::freeHostMemory() {
     safeCudaFreeHost(host_cTilda_m_vectors);
     safeCudaFreeHost(host_cTildaQ_m_vectors);
     safeCudaFreeHost(host_ans_m_vectors);
+    safeCudaFreeHost(host_PHatModq);
 }
 
 void cudaPortalForApproxModDownData::freeDeviceMemory() {
@@ -239,11 +260,13 @@ void cudaPortalForApproxModDownData::freeDeviceMemory() {
     CUDA_CHECK(cudaFreeAsync(device_sum, stream));
     CUDA_CHECK(cudaFreeAsync(device_cTildaQ_m_vectors, stream));
     CUDA_CHECK(cudaFreeAsync(device_ans_m_vectors, stream));
+    CUDA_CHECK(cudaFreeAsync(device_PHatModq, stream));
     device_partP_empty_m_vectors = nullptr;
     device_partPSwitchedToQ_m_vectors = nullptr;
     device_sum = nullptr;
     device_cTildaQ_m_vectors = nullptr;
     device_ans_m_vectors = nullptr;
+    device_PHatModq = nullptr;
 }
 
 void cudaPortalForApproxModDownData::handleCUDAError(const std::string& operation, cudaError_t err) {

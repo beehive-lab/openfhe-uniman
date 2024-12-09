@@ -1613,6 +1613,10 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
                                                     tInvModp[i].ConvertToInt<>(),
                                                     tInvModpPrecon[i].ConvertToInt<>(), ptr_offset, pipelineStream);
 
+        portal->marshalPHatModqBatch(PHatModq, i);
+
+        portal->copyInPHatModqBatch(i, pipelineStream);
+
         portal->invokeKernelOfApproxSwitchCRTBasisPt1Batch(gpuBlocks, gpuThreads,
                                                            i, modulus.ConvertToInt<>(), ptr_offset,
                                                            PHatInvModp[i].ConvertToInt<>(), PHatInvModpPrecon[i].ConvertToInt<>(),

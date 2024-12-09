@@ -7,8 +7,7 @@
 #include <cuda_runtime.h>
 
 #include "cuda-utils/m_vectors.h"
-#include "cudaPortalForApproxModDownParams.h"
-//#include "cuda-utils/kernel-headers/shared_device_functions.cuh"
+#include "cuda-utils/cuda-data-utils.h"
 #include "cuda-utils/kernel-headers/approx-mod-down.cuh"
 #include "cuda-utils/unmarshal_data_batch.h"
 
@@ -23,8 +22,6 @@ private:
 
     int id;
 
-    std::shared_ptr<cudaPortalForApproxModDownParams> paramsData;
-
     cudaStream_t stream;
     cudaStream_t* pipelineStreams;
     cudaEvent_t  event;
@@ -34,6 +31,12 @@ private:
     uint32_t sizeQP;
     uint32_t sizeP;
     uint32_t sizeQ;
+
+    // a crypto-parameter
+    uint32_t    PHatModq_size_x;
+    uint32_t    PHatModq_size_y;
+    uint128_t*  host_PHatModq;
+    uint128_t*  device_PHatModq;
 
     // cTilda
     uint32_t            cTilda_m_vectors_size_x;
@@ -72,7 +75,7 @@ private:
 public:
 
     // Constructor
-    cudaPortalForApproxModDownData(std::shared_ptr<cudaPortalForApproxModDownParams> params_data, cudaStream_t workDataStream, cudaStream_t* pipelineStreams, cudaEvent_t workDataEvent, cudaEvent_t* pipelineEvents, int id);
+    cudaPortalForApproxModDownData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ, const std::vector<std::vector<NativeInteger>>& PHatModq, cudaStream_t workDataStream, cudaStream_t* pipelineStreams, cudaEvent_t workDataEvent, cudaEvent_t* pipelineEvents, int id);
 
     // Destructor
     ~cudaPortalForApproxModDownData();
@@ -85,7 +88,6 @@ public:
     cudaStream_t                                        getPipelineStream(int i) const { return pipelineStreams[i]; }
     cudaEvent_t                                         getEvent() const { return event;}
     cudaEvent_t                                         getPipelineEvent(int i) const { return pipelineEvents[i]; }
-    std::shared_ptr<cudaPortalForApproxModDownParams>   getParamsData() const { return paramsData; }
 
     uint32_t                                            get_partP_empty_size_x() const { return partP_empty_m_vectors_size_x; }
     uint32_t                                            get_partP_empty_size_y() const { return partP_empty_m_vectors_size_y; }
@@ -100,11 +102,13 @@ public:
     // Data Marshalling Functions
     void marshalCTildaBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t partP_index, uint32_t cTilda_index);
     void marshalCTildaQBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t index);
+    void marshalPHatModqBatch(const std::vector<std::vector<NativeInteger>>& PHatModq, uint32_t index);
     void unmarshalWorkDataBatchWrapper(std::vector<PolyImpl<NativeVector>>& ans_m_vectors, uint32_t i, uint32_t ptr_offset, cudaStream_t pipelineStream);
 
     // Data Transfer Functions
     void copyInCTildaQ_Batch(uint32_t ptrOffset, cudaStream_t stream);
     void copyInPartP_Batch(uint32_t ptrOffset, cudaStream_t stream);
+    void copyInPHatModqBatch(uint32_t index, cudaStream_t stream);
 
     void copyOutResultBatch(uint32_t ptrOffset, cudaStream_t stream);
 
