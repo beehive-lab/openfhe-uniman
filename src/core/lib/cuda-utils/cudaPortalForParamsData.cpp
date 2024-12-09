@@ -143,21 +143,17 @@ void cudaPortalForParamsData::handleCUDAError(const std::string& operation, cuda
 }
 
 void cudaPortalForParamsData::allocateHostParams() {
-    host_qhatinvmodq        = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
-    handleMallocError("host_qhatinvmodq", host_qhatinvmodq);
-    host_QHatInvModqPrecon  = (unsigned long*) malloc(sizeQ * sizeof(unsigned long));
-    handleMallocError("host_QHatInvModqPrecon", host_QHatInvModqPrecon);
-    host_qhatmodp           = (uint128_t*) malloc(sizeQ * sizeP * sizeof(uint128_t));
-    handleMallocError("host_qhatmodp", host_qhatmodp);
-    host_modpBarrettMu      = (uint128_t*) malloc(sizeP * sizeof(uint128_t));
-    handleMallocError("host_modpBarrettMu", host_modpBarrettMu);
+    cudaMallocHost((void**)&host_qhatinvmodq, sizeQ * sizeof(unsigned long), cudaHostAllocDefault);
+    cudaMallocHost((void**)&host_QHatInvModqPrecon, sizeQ * sizeof(unsigned long), cudaHostAllocDefault);
+    cudaMallocHost((void**)&host_qhatmodp, sizeQ * sizeP * sizeof(uint128_t), cudaHostAllocDefault);
+    cudaMallocHost((void**)&host_modpBarrettMu, sizeP * sizeof(uint128_t), cudaHostAllocDefault);
 }
 
 void cudaPortalForParamsData::freeHostMemory() const {
-    freePtrAndHandleError("host_qhatinvmodq", host_qhatinvmodq);
-    freePtrAndHandleError("host_QHatInvModqPrecon",host_QHatInvModqPrecon);
-    freePtrAndHandleError("host_qhatmodp",host_qhatmodp);
-    freePtrAndHandleError("host_modpBarrettMu", host_modpBarrettMu);
+    cudaFreeHost(host_qhatinvmodq);
+    cudaFreeHost(host_QHatInvModqPrecon);
+    cudaFreeHost(host_qhatmodp);
+    cudaFreeHost(host_modpBarrettMu);
 }
 
 void cudaPortalForParamsData::freeDeviceMemory() const {

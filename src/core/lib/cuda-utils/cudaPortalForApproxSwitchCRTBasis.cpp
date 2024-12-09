@@ -90,7 +90,7 @@ void cudaPortalForApproxSwitchCRTBasis::copyInWorkData() {
         return; // or handle error appropriately
     }
 
-    this->device_m_vectors_data_ptr = (unsigned long**)malloc(sizeQ * sizeof(unsigned long*));
+    cudaHostAlloc((void**)&this->device_m_vectors_data_ptr, sizeQ * sizeof(unsigned long*), cudaHostAllocDefault);
     if (!device_m_vectors_data_ptr) {
         printf("Error allocating device_m_vectors_data_ptr\n");
         return; // or handle error appropriately
@@ -142,7 +142,7 @@ void cudaPortalForApproxSwitchCRTBasis::copyInWorkData() {
         return; // or handle error appropriately
     }
 
-    this->device_ans_m_vectors_data_ptr = (unsigned long**)malloc(sizeP * sizeof(unsigned long*));
+    cudaHostAlloc((void**)&this->device_ans_m_vectors_data_ptr, sizeP * sizeof(unsigned long*), cudaHostAllocDefault);
 
     for (uint32_t p = 0; p < sizeP; ++p) {
         err = cudaMallocAsync((void**)&(device_ans_m_vectors_data_ptr[p]), ringDim * sizeof(unsigned long), stream);
@@ -236,14 +236,14 @@ void cudaPortalForApproxSwitchCRTBasis::invokeKernelOfApproxSwitchCRTBasis(int g
 // Resources Allocation/Deallocation - Error Handling - Misc Functions
 
 void cudaPortalForApproxSwitchCRTBasis::allocateHostData() {
-    host_m_vectors          = (m_vectors_struct*) malloc(sizeQ * sizeof(m_vectors_struct));
+    cudaHostAlloc((void**)&host_m_vectors, sizeQ * sizeof(m_vectors_struct), cudaHostAllocDefault);
     for (uint32_t q = 0; q < sizeQ; ++q) {
-        host_m_vectors[q].data                  = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
+        cudaHostAlloc((void**)&host_m_vectors[q].data, ringDim * sizeof(unsigned long), cudaHostAllocDefault);
     }
 
-    host_ans_m_vectors      = (m_vectors_struct*) malloc(sizeP * sizeof(m_vectors_struct));
+    cudaHostAlloc((void**)&host_ans_m_vectors, sizeP * sizeof(m_vectors_struct), cudaHostAllocDefault);
     for (uint32_t p = 0; p < sizeP; ++p) {
-        host_ans_m_vectors[p].data              = (unsigned long*) malloc(ringDim * sizeof(unsigned long));
+        cudaHostAlloc((void**)&host_ans_m_vectors[p].data, ringDim * sizeof(unsigned long), cudaHostAllocDefault);
     }
 }
 
@@ -266,19 +266,19 @@ void cudaPortalForApproxSwitchCRTBasis::handleCUDAError(const std::string& opera
 void cudaPortalForApproxSwitchCRTBasis::freeHostMemory() {
     // Free host_m_vectors[q].data memory
     for (uint32_t q = 0; q < sizeQ; ++q) {
-        handleFreeError("host_m_vectors[" + std::to_string(q) + "].data", host_m_vectors[q].data);
+        cudaFreeHost(host_m_vectors[q].data);
     }
 
     // Free host_m_vectors structure
-    handleFreeError("host_m_vectors", host_m_vectors);
+    cudaFreeHost(host_m_vectors);
 
     // Free host_ans_m_vectors[p].data memory
     for (uint32_t p = 0; p < sizeP; ++p) {
-        handleFreeError("host_ans_m_vectors[" + std::to_string(p) + "].data", host_ans_m_vectors[p].data);
+        cudaFreeHost(host_ans_m_vectors[p].data);
     }
 
     // Free host_ans_m_vectors structure
-    handleFreeError("host_ans_m_vectors", host_ans_m_vectors);
+    cudaFreeHost(host_ans_m_vectors);
 }
 
 void cudaPortalForApproxSwitchCRTBasis::freeDeviceMemory() {
@@ -291,7 +291,7 @@ void cudaPortalForApproxSwitchCRTBasis::freeDeviceMemory() {
             handleCUDAError("freeing device_m_vectors_data_ptr[" + std::to_string(q) + "]", err);
         }
     }
-    handleFreeError("device_m_vectors_data_ptr", device_m_vectors_data_ptr);
+    cudaFreeHost(device_m_vectors_data_ptr);
 
     // Free device_m_vectors memory
     if (device_m_vectors) {
@@ -314,7 +314,7 @@ void cudaPortalForApproxSwitchCRTBasis::freeDeviceMemory() {
             handleCUDAError("freeing device_ans_m_vectors_data_ptr[" + std::to_string(p) + "]", err);
         }
     }
-    handleFreeError("device_ans_m_vectors_data_ptr", device_ans_m_vectors_data_ptr);
+    cudaFreeHost(device_ans_m_vectors_data_ptr);
 
     // Free device_ans_m_vectors memory
     if (device_ans_m_vectors) {
