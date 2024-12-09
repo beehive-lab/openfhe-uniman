@@ -25,25 +25,15 @@ cudaPortalForApproxModDownParams::~cudaPortalForApproxModDownParams() {
 }
 
 void cudaPortalForApproxModDownParams::allocateHostParams() {
-    host_PInvModq           = (unsigned long*)  malloc(PInvModq_size * sizeof(unsigned long));
-    host_PInvModqPrecon     = (unsigned long*)  malloc(PInvModqPrecon_size * sizeof(unsigned long));
-    host_PHatInvModp        = (unsigned long*)  malloc(PHatInvModp_size * sizeof(unsigned long));
-    host_PHatInvModpPrecon  = (unsigned long*)  malloc(PHatInvModpPrecon_size * sizeof(unsigned long));
-    host_PHatModq           = (uint128_t*)      malloc(PHatModq_size_x * PHatModq_size_y * sizeof(uint128_t));
-    host_modqBarrettMu      = (uint128_t*)      malloc(modqBarrettMu_size * sizeof(uint128_t));
-    host_tInvModp           = (unsigned long*)  malloc(tInvModp_size * sizeof(unsigned long));
-    host_tInvModpPrecon     = (unsigned long*)  malloc(tInvModpPrecon_size * sizeof(unsigned long));
-    host_tModqPrecon        = (unsigned long*)  malloc(tModqPrecon_size * sizeof(unsigned long));
-
-    handleMallocError("host_PInvModq", host_PInvModq);
-    handleMallocError("host_PInvModqPrecon", host_PInvModqPrecon);
-    handleMallocError("host_PHatInvModp", host_PHatInvModp);
-    handleMallocError("host_PHatInvModpPrecon", host_PHatInvModpPrecon);
-    handleMallocError("host_PHatModq", host_PHatModq);
-    handleMallocError("host_modqBarrettMu", host_modqBarrettMu);
-    handleMallocError("host_tInvModp", host_tInvModp);
-    handleMallocError("host_tInvModpPrecon", host_tInvModpPrecon);
-    handleMallocError("host_tModqPrecon", host_tModqPrecon);
+    cudaHostAlloc((void**)&host_PInvModq, PInvModq_size * sizeof(unsigned long), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&host_PInvModqPrecon , PInvModqPrecon_size * sizeof(unsigned long), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&host_PHatInvModp , PHatInvModp_size * sizeof(unsigned long), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&host_PHatInvModpPrecon , PHatInvModpPrecon_size * sizeof(unsigned long), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&host_PHatModq , PHatModq_size_x * PHatModq_size_y * sizeof(uint128_t), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&host_modqBarrettMu , modqBarrettMu_size * sizeof(uint128_t), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&host_tInvModp , tInvModp_size * sizeof(unsigned long), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&host_tInvModpPrecon , tInvModpPrecon_size * sizeof(unsigned long), cudaHostAllocDefault);
+    cudaHostAlloc((void**)&host_tModqPrecon , tModqPrecon_size * sizeof(unsigned long), cudaHostAllocDefault);
 }
 
 // Data Marshaling Functions
@@ -111,15 +101,15 @@ void cudaPortalForApproxModDownParams::copyInParams() {
 // Resources Deallocation - Error Handling - Misc Functions
 
 void cudaPortalForApproxModDownParams::freeHostMemory() const {
-    freePtrAndHandleError("host_PInvModq", host_PInvModq);
-    freePtrAndHandleError("host_PInvModqPrecon", host_PInvModqPrecon);
-    freePtrAndHandleError("host_PHatInvModp", host_PHatInvModp);
-    freePtrAndHandleError("host_PHatInvModpPrecon", host_PHatInvModpPrecon);
-    freePtrAndHandleError("host_PHatModq", host_PHatModq);
-    freePtrAndHandleError("host_modqBarrettMu", host_modqBarrettMu);
-    freePtrAndHandleError("host_tInvModp", host_tInvModp);
-    freePtrAndHandleError("host_tInvModpPrecon", host_tInvModpPrecon);
-    freePtrAndHandleError("host_tModqPrecon", host_tModqPrecon);
+    cudaFreeHost(host_PInvModq);
+    cudaFreeHost(host_PInvModqPrecon);
+    cudaFreeHost(host_PHatInvModp);
+    cudaFreeHost(host_PHatInvModpPrecon);
+    cudaFreeHost(host_PHatModq);
+    cudaFreeHost(host_modqBarrettMu);
+    cudaFreeHost(host_tInvModp);
+    cudaFreeHost(host_tInvModpPrecon);
+    cudaFreeHost(host_tModqPrecon);
 }
 
 void cudaPortalForApproxModDownParams::freeDeviceMemory() const {
