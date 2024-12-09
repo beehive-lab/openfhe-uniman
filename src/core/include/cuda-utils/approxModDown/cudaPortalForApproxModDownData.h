@@ -97,33 +97,18 @@ public:
     uint128_t*                                          getDevice_sum() const { return device_sum; }
     ulong*                                              getDevice_partPSwitchedToQ_m_vectors() const { return device_partPSwitchedToQ_m_vectors; }
 
-    // Host allocations
-    void allocateHostCTilda(uint32_t cTilda_size_x, uint32_t cTilda_size_y);
-
     // Data Marshalling Functions
-    void marshalCTilda(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors);
-
     void marshalCTildaBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t partP_index, uint32_t cTilda_index);
     void marshalCTildaQBatch(const std::vector<PolyImpl<NativeVector>>& cTilda_m_vectors, uint32_t index);
-
-    void marshalWorkData(const std::vector<PolyImpl<NativeVector>>& partPSwitchedToQ_m_vectors);
-
-    void unmarshalWorkData(std::vector<PolyImpl<NativeVector>>& ans_m_vectors);
     void unmarshalWorkDataBatchWrapper(std::vector<PolyImpl<NativeVector>>& ans_m_vectors, uint32_t i, uint32_t ptr_offset, cudaStream_t pipelineStream);
 
     // Data Transfer Functions
-    void copyInCTilda();
     void copyInCTildaQ_Batch(uint32_t ptrOffset, cudaStream_t stream);
-    void copyInPartP_Empty();
     void copyInPartP_Batch(uint32_t ptrOffset, cudaStream_t stream);
-    void copyInWorkData();
 
-    void copyOutResult();
     void copyOutResultBatch(uint32_t ptrOffset, cudaStream_t stream);
 
-    // Kernel Invocation Function
-    void invokePartPFillKernel(int gpuBlocks, int gpuThreads);
-    void invokeKernelOfApproxModDown(int gpuBlocks, int gpuThreads);
+    // Kernel Invocation Functions
     void invokeKernelOfApproxModDownBatchPt1(int gpuBlocks, int gpuThreads, ulong modulus, ulong tInvModp, ulong tInvModpPrecon, uint32_t ptr_offset, cudaStream_t stream);
     void invokeKernelOfApproxSwitchCRTBasisPt1Batch(int gpuBlocks, int gpuThreads,
                                                     uint32_t i, ulong modulus, uint32_t ptr_offset,
@@ -134,7 +119,6 @@ public:
                                                     uint32_t i, ulong ans_modulus, uint32_t ptr_offset,
                                                     uint128_t modpBarrettMu, uint32_t t, ulong tModqPrecon,
                                                     cudaStream_t stream);
-    void invokeAnsFillKernel(int gpuBlocks, int gpuThreads);
     void invokeAnsFillBatchKernel(int gpuBlocks, int gpuThreads,
                                   uint32_t i, ulong modulus, uint32_t ptr_offset,
                                   ulong pInvModq, ulong pInvModqPrecon,
