@@ -29,7 +29,7 @@ int main() {
     // Access the singleton instance of cudaDataUtils
     cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
     // Set GPU configuration - Note: suitable for RTX 3050
-    cudaUtils.initialize(128, 512, 50, 65536, 7, 25, 26);
+    cudaUtils.initialize(128, 512, 25, 65536, 7, 25, 26);
     #endif
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
