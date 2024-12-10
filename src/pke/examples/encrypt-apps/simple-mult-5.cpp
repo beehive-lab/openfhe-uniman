@@ -29,8 +29,7 @@ int main() {
     // Access the singleton instance of cudaDataUtils
     cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
     // Set GPU configuration - Note: suitable for RTX 3050
-    cudaUtils.setGpuBlocks(32);
-    cudaUtils.setGpuThreads(512);
+    cudaUtils.initialize(32, 512, 50, 65536, 7, 25, 26);
     #endif
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
@@ -91,6 +90,10 @@ int main() {
     accumulateTimer(application, TOC_MS(timer));
 
     printTimers();
+
+    #if defined(WITH_CUDA)
+    cudaUtils.destroy();
+    #endif
 
     return 0;
 

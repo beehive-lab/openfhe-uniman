@@ -7,7 +7,8 @@ namespace lbcrypto {
 using PolyType = PolyImpl<NativeVector>;
 
 cudaPortalForApproxModDownData::cudaPortalForApproxModDownData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ,
-                                                               const std::vector<std::vector<NativeInteger>>& PHatModq, // the only crypto-parameter we need
+                                                               uint32_t PHatModq_size_x, uint32_t PHatModq_size_y, // the only crypto-parameter we need
+                                                               AMDBuffers* preAllocatedBuffers, // pre-allocated buffers to reuse
                                                                cudaStream_t workDataStream, cudaStream_t* pipelineStreams, cudaEvent_t workDataEvent, cudaEvent_t* pipelineEvents, int id) {
     this->id = id;
 
@@ -15,8 +16,8 @@ cudaPortalForApproxModDownData::cudaPortalForApproxModDownData(uint32_t ringDim,
     this->sizeP = sizeP;
     this->sizeQ = sizeQ;
 
-    PHatModq_size_x = PHatModq.size();
-    PHatModq_size_y = PHatModq[0].size();
+    this->PHatModq_size_x = PHatModq_size_x;
+    this->PHatModq_size_y = PHatModq_size_y;
 
     // partP: input data dimensions
     // cTilda
@@ -42,48 +43,27 @@ cudaPortalForApproxModDownData::cudaPortalForApproxModDownData(uint32_t ringDim,
     this->event = workDataEvent;
     this->pipelineEvents = pipelineEvents;
 
-    allocateHostData();
-}
+    // map buffer ptrs to the pre-allocated buffers
+    mapBuffers(preAllocatedBuffers);
 
-cudaPortalForApproxModDownData::~cudaPortalForApproxModDownData() {
-    //std::cout << "[DESTRUCTOR] Call destructor for " << this << "(cudaPortalForApproxModDown)" << std::endl;
-
-    freeHostMemory();
-    freeDeviceMemory();
-}
-
-
-void cudaPortalForApproxModDownData::allocateHostData() {
-
-    // crypto param
-    const size_t phatmodq_size = PHatModq_size_x * PHatModq_size_y * sizeof(uint128_t);
-    cudaHostAlloc(reinterpret_cast<void**>(&host_PHatModq) , phatmodq_size, cudaHostAllocDefault);
-    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_PHatModq), phatmodq_size, stream));
-
-    // host input batched data
-    const size_t input_data_size     = partP_empty_m_vectors_size_x * partP_empty_m_vectors_size_y * sizeof(unsigned long);
-    cudaHostAlloc(reinterpret_cast<void**>(&host_cTilda_m_vectors), input_data_size, cudaHostAllocDefault);
-
-    // device input batched data
-    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_partP_empty_m_vectors), input_data_size, stream));
-
-    // device work (intermediate) data
-    const size_t work_data_size = partPSwitchedToQ_m_vectors_size_x * partPSwitchedToQ_m_vectors_size_y * sizeof(unsigned long);
-    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_partPSwitchedToQ_m_vectors), work_data_size, stream));
-
-    // sum (intermediate)
-    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_sum), sizeQ * ringDim * sizeof(uint128_t), stream));
+    // set (or reset) intermediate sum values to zero
     CUDA_CHECK(cudaMemsetAsync(device_sum, 0, sizeQ * ringDim * sizeof(uint128_t), stream));
+}
 
-    // cTildaQ
-    const size_t cTildaQ_data_size = cTildaQ_m_vectors_size_x * cTildaQ_m_vectors_size_y * sizeof(ulong);
-    cudaHostAlloc(reinterpret_cast<void**>(&host_cTildaQ_m_vectors), cTildaQ_data_size, cudaHostAllocDefault);
-    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_cTildaQ_m_vectors), cTildaQ_data_size, stream));
+cudaPortalForApproxModDownData::~cudaPortalForApproxModDownData() = default;
 
-    // ans: output
-    const size_t ans_size = ans_m_vectors_size_x * ans_m_vectors_size_y * sizeof(ulong);
-    cudaMallocHost(reinterpret_cast<void**>(&host_ans_m_vectors), ans_size, cudaHostAllocDefault);
-    CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_ans_m_vectors), ans_size, stream));
+
+void cudaPortalForApproxModDownData::mapBuffers(const AMDBuffers* buffers) {
+    this->host_PHatModq                     = buffers->get_host_p_hat_modq();
+    this->device_PHatModq                   = buffers->get_device_p_hat_modq();
+    this->host_cTilda_m_vectors             = buffers->get_host_c_tilda();
+    this->device_partP_empty_m_vectors      = buffers->get_device_part_p_empty();
+    this->device_partPSwitchedToQ_m_vectors = buffers->get_device_part_p_switched_to_q();
+    this->device_sum                        = buffers->get_device_sum();
+    this->host_cTildaQ_m_vectors            = buffers->get_host_c_tilda_q();
+    this->device_cTildaQ_m_vectors          = buffers->get_device_c_tilda_q();
+    this->host_ans_m_vectors                = buffers->get_host_ans();
+    this->device_ans_m_vectors              = buffers->get_device_ans();
 }
 
 

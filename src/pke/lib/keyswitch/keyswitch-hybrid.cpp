@@ -570,11 +570,14 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
     cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
 
+    uint32_t PHatModq_size_x = cryptoParams->GetPHatModq().size();
+    uint32_t PHatModq_size_y = cryptoParams->GetPHatModq()[0].size();
+
     // At this point we invoke approxModDown 2 times. The first is assigned to a future for async execution.
     // This way approxModDown[0] is calculated concurently with approxModDown[1] while the host code is non-blocking
     // and the cost of new thread is paid only once.
-    std::future<DCRTPoly> resultCt0 = std::async(std::launch::async, [cTilda, paramsQl, cryptoParams, ringDim, sizeP, sizeQ, t, &cudaUtils]() {
-        auto workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(ringDim, sizeP, sizeQ, cryptoParams->GetPHatModq(), cudaUtils.getWorkDataStream0(), cudaUtils.getPipelineStreams0(), cudaUtils.getWorkDataEvent0(), cudaUtils.getEvents0(), 0);
+    std::future<DCRTPoly> resultCt0 = std::async(std::launch::async, [cTilda, paramsQl, cryptoParams, PHatModq_size_x, PHatModq_size_y, ringDim, sizeP, sizeQ, t, &cudaUtils]() {
+        auto workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(ringDim, sizeP, sizeQ, PHatModq_size_x, PHatModq_size_y, cudaUtils.getAMDBuffers0(), cudaUtils.getWorkDataStream0(), cudaUtils.getPipelineStreams0(), cudaUtils.getWorkDataEvent0(), cudaUtils.getEvents0(), 0);
         return (*cTilda)[0].ApproxModDownCUDABatched(paramsQl, cryptoParams->GetParamsP(),
                                           cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
                                           cryptoParams->GetPHatInvModp(), cryptoParams->GetPHatInvModpPrecon(),
@@ -585,7 +588,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     });
 
 
-    auto workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(ringDim, sizeP, sizeQ, cryptoParams->GetPHatModq(), cudaUtils.getWorkDataStream1(), cudaUtils.getPipelineStreams1(), cudaUtils.getWorkDataEvent1(), cudaUtils.getEvents1(), 1);
+    auto workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(ringDim, sizeP, sizeQ, PHatModq_size_x, PHatModq_size_y, cudaUtils.getAMDBuffers1(), cudaUtils.getWorkDataStream1(), cudaUtils.getPipelineStreams1(), cudaUtils.getWorkDataEvent1(), cudaUtils.getEvents1(), 1);
     DCRTPoly ct1 = (*cTilda)[1].ApproxModDownCUDABatched(paramsQl, cryptoParams->GetParamsP(),
                                           cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
                                           cryptoParams->GetPHatInvModp(), cryptoParams->GetPHatInvModpPrecon(),

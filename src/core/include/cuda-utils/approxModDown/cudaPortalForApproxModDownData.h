@@ -42,7 +42,6 @@ private:
     uint32_t            cTilda_m_vectors_size_x;
     uint32_t            cTilda_m_vectors_size_y; // values size
     unsigned long*      host_cTilda_m_vectors; // flat
-    unsigned long*      device_cTilda_m_vectors; // flat
 
     uint32_t            cTildaQ_m_vectors_size_x;
     uint32_t            cTildaQ_m_vectors_size_y;
@@ -60,7 +59,6 @@ private:
     // partPSwitchedToQ
     uint32_t            partPSwitchedToQ_m_vectors_size_x;
     uint32_t            partPSwitchedToQ_m_vectors_size_y;
-    unsigned long*      host_partPSwitchedToQ_m_vectors; //flat
     unsigned long*      device_partPSwitchedToQ_m_vectors; //flat
     //m_vectors_struct*   host_partPSwitchedToQ_m_vectors;
     //m_vectors_struct*   device_partPSwitchedToQ_m_vectors;
@@ -75,7 +73,10 @@ private:
 public:
 
     // Constructor
-    cudaPortalForApproxModDownData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ, const std::vector<std::vector<NativeInteger>>& PHatModq, cudaStream_t workDataStream, cudaStream_t* pipelineStreams, cudaEvent_t workDataEvent, cudaEvent_t* pipelineEvents, int id);
+    cudaPortalForApproxModDownData(uint32_t ringDim, uint32_t sizeP, uint32_t sizeQ,
+                                   uint32_t PHatModq_size_x, uint32_t PHatModq_size_y, // the only crypto-parameter we need
+                                   AMDBuffers* amdBuffers, // pre-allocated reusable buffers
+                                   cudaStream_t workDataStream, cudaStream_t* pipelineStreams, cudaEvent_t workDataEvent, cudaEvent_t* pipelineEvents, int id);
 
     // Destructor
     ~cudaPortalForApproxModDownData();
@@ -95,7 +96,6 @@ public:
 
     uint32_t                                            get_partPSwitchedToQ_size_x() const { return partPSwitchedToQ_m_vectors_size_x; }
     uint32_t                                            get_partPSwitchedToQ_size_y() const { return partPSwitchedToQ_m_vectors_size_y; }
-    ulong*                                              getHost_partPSwitchedToQ_m_vectors() const { return host_partPSwitchedToQ_m_vectors; }
     uint128_t*                                          getDevice_sum() const { return device_sum; }
     ulong*                                              getDevice_partPSwitchedToQ_m_vectors() const { return device_partPSwitchedToQ_m_vectors; }
 
@@ -132,7 +132,7 @@ public:
     void print_host_m_vectors();
 
 private:
-    void allocateHostData();
+    void mapBuffers(const AMDBuffers* buffers);
     static void handleFreeError(const std::string& operation, void* ptr);
     static void handleCUDAError(const std::string& operation, cudaError_t err);
     void freeHostMemory();
