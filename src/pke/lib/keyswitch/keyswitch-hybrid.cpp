@@ -570,6 +570,9 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
     cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
 
+    // At this point we invoke approxModDown 2 times. The first is assigned to a future for async execution.
+    // This way approxModDown[0] is calculated concurently with approxModDown[1] while the host code is non-blocking
+    // and the cost of new thread is paid only once.
     std::future<DCRTPoly> resultCt0 = std::async(std::launch::async, [cTilda, paramsQl, cryptoParams, ringDim, sizeP, sizeQ, t, &cudaUtils]() {
         auto workDataPortal0 = std::make_shared<cudaPortalForApproxModDownData>(ringDim, sizeP, sizeQ, cryptoParams->GetPHatModq(), cudaUtils.getWorkDataStream0(), cudaUtils.getPipelineStreams0(), cudaUtils.getWorkDataEvent0(), cudaUtils.getEvents0(), 0);
         return (*cTilda)[0].ApproxModDownCUDABatched(paramsQl, cryptoParams->GetParamsP(),
@@ -582,20 +585,17 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
     });
 
 
-    std::future<DCRTPoly> resultCt1 = std::async(std::launch::async, [cTilda, paramsQl, cryptoParams, ringDim, sizeP, sizeQ, t, &cudaUtils]() {
-        auto workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(ringDim, sizeP, sizeQ, cryptoParams->GetPHatModq(), cudaUtils.getWorkDataStream1(), cudaUtils.getPipelineStreams1(), cudaUtils.getWorkDataEvent1(), cudaUtils.getEvents1(), 1);
-        return (*cTilda)[1].ApproxModDownCUDABatched(paramsQl, cryptoParams->GetParamsP(),
+    auto workDataPortal1 = std::make_shared<cudaPortalForApproxModDownData>(ringDim, sizeP, sizeQ, cryptoParams->GetPHatModq(), cudaUtils.getWorkDataStream1(), cudaUtils.getPipelineStreams1(), cudaUtils.getWorkDataEvent1(), cudaUtils.getEvents1(), 1);
+    DCRTPoly ct1 = (*cTilda)[1].ApproxModDownCUDABatched(paramsQl, cryptoParams->GetParamsP(),
                                           cryptoParams->GetPInvModq(), cryptoParams->GetPInvModqPrecon(),
                                           cryptoParams->GetPHatInvModp(), cryptoParams->GetPHatInvModpPrecon(),
                                           cryptoParams->GetPHatModq(), cryptoParams->GetModqBarrettMu(),
                                           cryptoParams->GettInvModp(), cryptoParams->GettInvModpPrecon(),
                                           t, cryptoParams->GettModqPrecon(),
                                           workDataPortal1);
-    });
 
 
     DCRTPoly ct0 = resultCt0.get();
-    DCRTPoly ct1 = resultCt1.get();
     accumulateTimer(evalFastKeySwitchCoreTimer_GPU, TOC_MS(timer));
     //incrementInvocationCounter(approxModDownCounter_GPU);
     #endif
