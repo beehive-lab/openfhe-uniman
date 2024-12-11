@@ -4,28 +4,28 @@ namespace lbcrypto {
 
 cudaPortalForSwitchFormatBatch::cudaPortalForSwitchFormatBatch(ulong* device_m_vectors, const uint32_t m_vectors_sizeX,
                                                                const uint32_t m_vectors_sizeY, const int isInverse,
+                                                               AMDBuffers* preAllocatedBuffers,
                                                                cudaStream_t mainStream)
     :sizeX(m_vectors_sizeX), sizeY(m_vectors_sizeY), isInverse(isInverse), mainStream(mainStream) {
 
     this->device_m_vectors   = device_m_vectors;
-    const size_t buffer_size = sizeX * sizeY * sizeof(ulong);
 
     if (!isInverse) {
         //printf("(cudaPortalForSwitchFormatBatch) is Forward\n");
-        cudaMallocHost(reinterpret_cast<void**>(&host_rootOfUnityReverseTable), buffer_size,cudaHostAllocDefault);
-        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_rootOfUnityReverseTable), buffer_size, mainStream));
-        cudaMallocHost(reinterpret_cast<void**>(&host_rootOfUnityPreconReverseTable), buffer_size, cudaHostAllocDefault);
-        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_rootOfUnityPreconReverseTable), buffer_size, mainStream));
+        this->host_rootOfUnityReverseTable = preAllocatedBuffers->get_host_root_of_unity_rev();
+        this->device_rootOfUnityReverseTable = preAllocatedBuffers->get_device_root_of_unity_rev();
+        this->host_rootOfUnityPreconReverseTable = preAllocatedBuffers->get_host_root_of_unity_precon_rev();
+        this->device_rootOfUnityPreconReverseTable = preAllocatedBuffers->get_device_root_of_unity_precon_rev();
         device_rootOfUnityInverseReverseTable = nullptr;
         device_rootOfUnityInversePreconReverseTable = nullptr;
     } else {
         //printf("(cudaPortalForSwitchFormatBatch) is Inverse\n");
-        cudaMallocHost(reinterpret_cast<void**>(&host_rootOfUnityInverseReverseTable), buffer_size, cudaHostAllocDefault);
-        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_rootOfUnityInverseReverseTable), buffer_size, mainStream));
+        this->host_rootOfUnityInverseReverseTable = preAllocatedBuffers->get_host_root_of_unity_inv_rev();
+        this->device_rootOfUnityInverseReverseTable=  preAllocatedBuffers->get_device_root_of_unity_inv_rev();
         //printf("Allocating host_rootOfUnityInverseReverseTable with size: %lu\n", buffer_size);
         //printf("Pointer address: %p\n", host_rootOfUnityInverseReverseTable);
-        cudaMallocHost(reinterpret_cast<void**>(&host_rootOfUnityInversePreconReverseTable), buffer_size, cudaHostAllocDefault);
-        CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void**>(&device_rootOfUnityInversePreconReverseTable), buffer_size, mainStream));
+        this->host_rootOfUnityInversePreconReverseTable = preAllocatedBuffers->get_host_root_of_unity_inv_precon_rev();
+        this->device_rootOfUnityInversePreconReverseTable = preAllocatedBuffers->get_device_root_of_unity_inv_precon_rev();
         //printf("Allocating host_rootOfUnityInversePreconReverseTable with size: %lu\n", buffer_size);
         //printf("Pointer address: %p\n", host_rootOfUnityInversePreconReverseTable);
         device_rootOfUnityReverseTable = nullptr;
@@ -33,23 +33,7 @@ cudaPortalForSwitchFormatBatch::cudaPortalForSwitchFormatBatch(ulong* device_m_v
     }
 }
 
-cudaPortalForSwitchFormatBatch::~cudaPortalForSwitchFormatBatch() {
-    if (!isInverse) {
-        // forward NTT
-        SAFE_CUDA_FREE_HOST(host_rootOfUnityReverseTable);
-        SAFE_CUDA_FREE_HOST(host_rootOfUnityPreconReverseTable);
-
-        CUDA_SAFE_FREE(device_rootOfUnityReverseTable, mainStream);
-        CUDA_SAFE_FREE(device_rootOfUnityPreconReverseTable, mainStream);
-    } else {
-        // inverse NTT
-        SAFE_CUDA_FREE_HOST(host_rootOfUnityInverseReverseTable);
-        SAFE_CUDA_FREE_HOST(host_rootOfUnityInversePreconReverseTable);
-
-        CUDA_SAFE_FREE(device_rootOfUnityInverseReverseTable, mainStream);
-        CUDA_SAFE_FREE(device_rootOfUnityInversePreconReverseTable, mainStream);
-    }
-}
+cudaPortalForSwitchFormatBatch::~cudaPortalForSwitchFormatBatch() = default;
 
 void cudaPortalForSwitchFormatBatch::copyInTwiddleFactorsBatch(const uint32_t ptrOffset, cudaStream_t stream) const {
     const size_t twiddleFactorsBatchSize = sizeY * sizeof(ulong);

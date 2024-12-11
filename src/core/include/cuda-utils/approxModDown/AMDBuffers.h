@@ -54,6 +54,38 @@ public:
         return device_ans;
     }
 
+    ulong* get_host_root_of_unity_rev() const {
+        return host_rootOfUnityRev;
+    }
+
+    ulong* get_device_root_of_unity_rev() const {
+        return device_rootOfUnityRev;
+    }
+
+    ulong* get_host_root_of_unity_precon_rev() const {
+        return host_rootOfUnityPreconRev;
+    }
+
+    ulong* get_device_root_of_unity_precon_rev() const {
+        return device_rootOfUnityPreconRev;
+    }
+
+    ulong* get_host_root_of_unity_inv_rev() const {
+        return host_rootOfUnityInvRev;
+    }
+
+    ulong* get_device_root_of_unity_inv_rev() const {
+        return device_rootOfUnityInvRev;
+    }
+
+    ulong* get_host_root_of_unity_inv_precon_rev() const {
+        return host_rootOfUnityInvPreconRev;
+    }
+
+    ulong* get_device_root_of_unity_inv_precon_rev() const {
+        return device_rootOfUnityInvPreconRev;
+    }
+
 private:
     uint128_t*    host_PHatModq;            // p
     uint128_t*    device_PHatModq;          // p
@@ -65,6 +97,15 @@ private:
     ulong*        device_cTildaQ;           // q
     ulong*        host_ans;                 // q
     ulong*        device_ans;               // q
+
+    ulong*          host_rootOfUnityRev;            // q
+    ulong*          device_rootOfUnityRev;          // q
+    ulong*          host_rootOfUnityPreconRev;      // q
+    ulong*          device_rootOfUnityPreconRev;    // q
+    ulong*          host_rootOfUnityInvRev;         // p
+    ulong*          device_rootOfUnityInvRev;       // p
+    ulong*          host_rootOfUnityInvPreconRev;   // p
+    ulong*          device_rootOfUnityInvPreconRev; // p
 
     cudaStream_t  stream;
 
@@ -86,6 +127,15 @@ public:
         CUDA_CHECK(cudaHostAlloc    (reinterpret_cast<void**>(&host_ans),                q_elements * sizeof(ulong), cudaHostAllocDefault));
         CUDA_CHECK(cudaMallocAsync  (reinterpret_cast<void**>(&device_ans),              q_elements * sizeof(ulong), stream));
 
+        CUDA_CHECK(cudaHostAlloc    (reinterpret_cast<void**>(&host_rootOfUnityRev),            q_elements * sizeof(ulong), cudaHostAllocDefault));
+        CUDA_CHECK(cudaMallocAsync  (reinterpret_cast<void**>(&device_rootOfUnityRev),          q_elements * sizeof(ulong), stream));
+        CUDA_CHECK(cudaHostAlloc    (reinterpret_cast<void**>(&host_rootOfUnityPreconRev),      q_elements * sizeof(ulong), cudaHostAllocDefault));
+        CUDA_CHECK(cudaMallocAsync  (reinterpret_cast<void**>(&device_rootOfUnityPreconRev),    q_elements * sizeof(ulong), stream));
+        CUDA_CHECK(cudaHostAlloc    (reinterpret_cast<void**>(&host_rootOfUnityInvRev),         p_elements * sizeof(ulong), cudaHostAllocDefault));
+        CUDA_CHECK(cudaMallocAsync  (reinterpret_cast<void**>(&device_rootOfUnityInvRev),       p_elements * sizeof(ulong), stream));
+        CUDA_CHECK(cudaHostAlloc    (reinterpret_cast<void**>(&host_rootOfUnityInvPreconRev),   p_elements * sizeof(ulong), cudaHostAllocDefault));
+        CUDA_CHECK(cudaMallocAsync  (reinterpret_cast<void**>(&device_rootOfUnityInvPreconRev), p_elements * sizeof(ulong), stream));
+
         //CUDA_CHECK(cudaMemsetAsync(device_sum, 0, q_elements * sizeof(uint128_t), stream));
     }
 
@@ -100,6 +150,15 @@ public:
         CUDA_CHECK(cudaFreeAsync(device_cTildaQ, stream));
         CUDA_CHECK(cudaFreeHost(host_ans));
         CUDA_CHECK(cudaFreeAsync(device_ans, stream));
+
+        CUDA_CHECK(cudaFreeHost(host_rootOfUnityRev));
+        CUDA_CHECK(cudaFreeAsync(device_rootOfUnityRev, stream));
+        CUDA_CHECK(cudaFreeHost(host_rootOfUnityPreconRev));
+        CUDA_CHECK(cudaFreeAsync(device_rootOfUnityPreconRev, stream));
+        CUDA_CHECK(cudaFreeHost(host_rootOfUnityInvRev));
+        CUDA_CHECK(cudaFreeAsync(device_rootOfUnityInvRev, stream));
+        CUDA_CHECK(cudaFreeHost(host_rootOfUnityInvPreconRev));
+        CUDA_CHECK(cudaFreeAsync(device_rootOfUnityInvPreconRev, stream));
     }
 };
 }

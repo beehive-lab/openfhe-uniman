@@ -37,7 +37,7 @@ class cudaPortalForSwitchFormatBatch {
 
 public:
     // Constructor for functionality in batches
-    cudaPortalForSwitchFormatBatch(ulong* device_m_vectors, uint32_t m_vectors_sizeX, uint32_t m_vectors_sizeY, int isInverse, cudaStream_t mainStream);
+    cudaPortalForSwitchFormatBatch(ulong* device_m_vectors, uint32_t m_vectors_sizeX, uint32_t m_vectors_sizeY, int isInverse, AMDBuffers* preAllocatedBuffers, cudaStream_t mainStream);
 
     // Destructor
     ~cudaPortalForSwitchFormatBatch();

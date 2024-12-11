@@ -1555,6 +1555,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
     cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
     const int gpuBlocks = cudaUtils.getGpuBlocks();
     const int gpuThreads = cudaUtils.getGpuThreads();
+    AMDBuffers* preAllocatedBuffers = portal->whoAmI() == 0 ? cudaUtils.getAMDBuffers0() : cudaUtils.getAMDBuffers1();
 
     // switch format cuda portal obj (to COEFFICIENT)
     //nvtxRangePushA("partPSFPortal");
@@ -1562,7 +1563,8 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
         std::make_shared<cudaPortalForSwitchFormatBatch>(portal->getDevice_partP_empty_m_vectors(),
                                                          portal->get_partP_empty_size_x(),
                                                          portal->get_partP_empty_size_y(),
-                                                         1, portal->getStream());
+                                                         1, preAllocatedBuffers,
+                                                         portal->getStream());
 
     //nvtxRangePushA("init pipeline");
     const auto          cyclotomicOrder = partP.GetParams()->GetCyclotomicOrder();
@@ -1635,7 +1637,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
         std::make_shared<cudaPortalForSwitchFormatBatch>(portal->getDevice_partPSwitchedToQ_m_vectors(),
                                                          portal->get_partPSwitchedToQ_size_x(),
                                                          portal->get_partPSwitchedToQ_size_y(),
-                                                         0,
+                                                         0, preAllocatedBuffers,
                                                          portal->getStream());
 
     // enable sync on main stream
