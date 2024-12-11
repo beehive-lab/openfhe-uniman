@@ -131,6 +131,10 @@ public:
 
     void print_host_m_vectors();
 
+    int whoAmI() {
+        return id;
+    }
+
 private:
     void mapBuffers(const AMDBuffers* buffers);
     static void handleFreeError(const std::string& operation, void* ptr);
@@ -160,10 +164,6 @@ private:
             CUDA_CHECK(cudaFreeAsync(ptr, stream));  // Custom macro to check CUDA calls
             ptr = nullptr; // Set to nullptr to prevent dangling pointers
         }
-    }
-
-    int whoAmI() {
-        return id;
     }
 
 };
