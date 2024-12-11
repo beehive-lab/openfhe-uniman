@@ -7,10 +7,11 @@ using namespace lbcrypto;
 /**
  * Run configurations and input sizes:
  *
- * multiplications      = 24
+ * multiplications      = 48
  * plaintext modulus    = 131072
+ * cyclotomic order     = 131072    (?)
  * ring Dimension       = 65536     (is set internally by OpenFHE)
- * gpu blocks           = 128
+ * gpu blocks           = 64
  * gpu threads / block  = 512
  *
  */
@@ -22,14 +23,14 @@ int main() {
 
     // Sample Program: Step 1 - Set CryptoContext
     CCParams<CryptoContextBGVRNS> parameters;
-    parameters.SetMultiplicativeDepth(24);
+    parameters.SetMultiplicativeDepth(48);
     parameters.SetPlaintextModulus(786433);
 
     #if defined(WITH_CUDA)
     // Access the singleton instance of cudaDataUtils
     cudaDataUtils& cudaUtils = cudaDataUtils::getInstance();
     // Set GPU configuration - Note: suitable for RTX 3050
-    cudaUtils.initialize(128, 512, 25, 65536, 7, 25, 26);
+    cudaUtils.initialize(128, 512, 50, 65536, 12, 49, 50);
     #endif
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
@@ -77,6 +78,7 @@ int main() {
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);//10
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
@@ -84,6 +86,29 @@ int main() {
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);//20
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);//30
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
+    ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);//40
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
     ciphertextMultResult = cryptoContext->EvalMult(ciphertextMultResult, ciphertext2);
@@ -103,7 +128,7 @@ int main() {
     std::cout << "Plaintext #2: " << plaintext2 << std::endl;
 
     // Output results
-    std::cout << "\nResults of 24 homomorphic mults (1 * 1) : " << plaintextMultResult << std::endl;
+    std::cout << "\nResults of 48 homomorphic mults (1 * 1) : " << plaintextMultResult << std::endl;
 
     accumulateTimer(application, TOC_MS(timer));
 
