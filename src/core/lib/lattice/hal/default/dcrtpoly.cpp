@@ -1566,6 +1566,14 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
                                                          1, preAllocatedBuffers,
                                                          portal->getStream());
 
+    // switch format cuda portal obj (to EVALUATION)
+    std::shared_ptr<cudaPortalForSwitchFormatBatch> partPSwitchedToQSFPortal =
+        std::make_shared<cudaPortalForSwitchFormatBatch>(portal->getDevice_partPSwitchedToQ_m_vectors(),
+                                                         portal->get_partPSwitchedToQ_size_x(),
+                                                         portal->get_partPSwitchedToQ_size_y(),
+                                                         0, preAllocatedBuffers,
+                                                         portal->getStream());
+
     //nvtxRangePushA("init pipeline");
     const auto          cyclotomicOrder = partP.GetParams()->GetCyclotomicOrder();
     const uint32_t      CycloOrderHf        = (cyclotomicOrder >> 1);
@@ -1578,9 +1586,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
     constexpr auto      threadsPerBlockDim  = dim3(512, 1U, 1U);
     //nvtxRangePop();
 
-    // enable sync on main stream
-    CUDA_CHECK(cudaEventRecord(portal->getEvent(), portal->getStream()));
-
     // SizeP pipeline
     // pipeline dimension = sizeP
     for (uint32_t i = 0; i < partP.m_vectors.size(); i++) {
@@ -1588,9 +1593,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
         auto modulus = partP.m_vectors[i].GetModulus();
         auto pipelineStream = portal->getPipelineStream(i);
         auto pipelineEvent = portal->getPipelineEvent(i);
-
-        // sync each pipeline stream on main stream
-        CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, portal->getEvent(), 0));
 
         portal->marshalCTildaBatch(m_vectors, i, i + sizeQ);
 
@@ -1625,23 +1627,15 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
                                                            //ans.m_vectors[i].GetModulus().ConvertToInt(),
                                                            //modqBarrettMu[i],
                                                            pipelineStream);
-        ///
+        // enable sync on pipeline stream
         CUDA_CHECK(cudaEventRecord(pipelineEvent, pipelineStream));
-        // sync main stream on each pipeline stream (maybe useless ?)
-        CUDA_CHECK(cudaStreamWaitEvent(portal->getStream(), pipelineEvent, 0));
-        //CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, pipelineEvent, 0));
     }
 
-    // switch format cuda portal obj (to EVALUATION)
-    std::shared_ptr<cudaPortalForSwitchFormatBatch> partPSwitchedToQSFPortal =
-        std::make_shared<cudaPortalForSwitchFormatBatch>(portal->getDevice_partPSwitchedToQ_m_vectors(),
-                                                         portal->get_partPSwitchedToQ_size_x(),
-                                                         portal->get_partPSwitchedToQ_size_y(),
-                                                         0, preAllocatedBuffers,
-                                                         portal->getStream());
+    // wait for *all* sizeP-pipeline streams to complete
+    for (uint32_t p = 0; p < partP.m_vectors.size(); p++) {
+        CUDA_CHECK(cudaEventSynchronize(portal->getPipelineEvent(p)));
+    }
 
-    // enable sync on main stream
-    CUDA_CHECK(cudaEventRecord(portal->getEvent(), portal->getStream()));
 
     // sizeQ pipeline
     // pipeline dimension = sizeQ
@@ -1651,11 +1645,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
         auto modulus = partPSwitchedToQ.m_vectors[i].GetModulus();
         auto pipelineStream = portal->getPipelineStream(i);
         auto pipelineEvent = portal->getPipelineEvent(i);
-
-        // sync on main stream
-        //CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, pipelineEvent, 0));
-        CUDA_CHECK(cudaStreamWaitEvent(pipelineStream, portal->getEvent(), 0));
-        //CUDA_CHECK(cudaStreamSynchronize(portal->getStream()));
 
         ////
         portal->invokeKernelOfApproxSwitchCRTBasisPt2Batch(gpuBlocks, gpuThreads, i, modulus.ConvertToInt(), ptr_offset, modqBarrettMu[i], t_conv, tModqPrecon[i].ConvertToInt(), pipelineStream); // ok
@@ -1687,10 +1676,9 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
         ///
         // enable sync for each pipeline stream
         CUDA_CHECK(cudaEventRecord(pipelineEvent, pipelineStream));
-        //CUDA_CHECK(cudaStreamWaitEvent(portal->getStream(), pipelineEvent, 0));
     }
 
-    // wait for all pipeline streams to complete
+    // wait for *all* sizeQ-pipeline streams to complete
     for (uint32_t i = 0; i < partPSwitchedToQ.m_vectors.size(); i++) {
         CUDA_CHECK(cudaEventSynchronize(portal->getPipelineEvent(i)));
     }

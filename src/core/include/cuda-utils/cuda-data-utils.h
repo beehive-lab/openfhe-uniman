@@ -139,8 +139,8 @@ private:
         if (err != cudaSuccess) {
             throw std::runtime_error("CUDA error during workDataStream1 creation: " + std::string(cudaGetErrorString(err)));
         }
-        CUDA_CHECK(cudaEventCreate(&workDataEvent0));
-        CUDA_CHECK(cudaEventCreate(&workDataEvent1));
+        CUDA_CHECK(cudaEventCreateWithFlags(&workDataEvent0, cudaEventBlockingSync));
+        CUDA_CHECK(cudaEventCreateWithFlags(&workDataEvent1, cudaEventBlockingSync));
 
         pipelineStreams0 = (cudaStream_t*) malloc(numOfPipelineStreams * sizeof(cudaStream_t));
         pipelineStreams1 = (cudaStream_t*) malloc(numOfPipelineStreams * sizeof(cudaStream_t));
@@ -149,8 +149,8 @@ private:
         for (int i = 0; i < numOfPipelineStreams; i++) {
             CUDA_CHECK(cudaStreamCreateWithFlags(&pipelineStreams0[i], cudaStreamNonBlocking));
             CUDA_CHECK(cudaStreamCreateWithFlags(&pipelineStreams1[i], cudaStreamNonBlocking));
-            CUDA_CHECK(cudaEventCreate(&events0[i]));
-            CUDA_CHECK(cudaEventCreate(&events1[i]));
+            CUDA_CHECK(cudaEventCreateWithFlags(&events0[i], cudaEventBlockingSync));
+            CUDA_CHECK(cudaEventCreateWithFlags(&events1[i], cudaEventBlockingSync));
         }
     }
 
