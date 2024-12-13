@@ -11,65 +11,33 @@
 
 namespace lbcrypto {
 
-double application = 0;
+int numOfHomomorphicOperations = 0;
+
+double applicationTimer = 0;
+double operationsTimer = 0;
 
 double evalKeySwitchPrecomputeCoreTimer_CPU = 0;
 double evalKeySwitchPrecomputeCoreTimer_GPU = 0;
 double evalFastKeySwitchCoreTimer_CPU = 0;
 double evalFastKeySwitchCoreTimer_GPU = 0;
 
-double approxModDown_total = 0;
-double approxModDown_pre = 0;
-double approxModDown_post = 0;
-
-double switchFormatTimerCPU = 0;
-double switchFormatTimerGPU = 0;
-
-int approxModDown_invocations = 0;
-
-int    evalKeySwitchPrecomputeCoreCounter_CPU = 0;
-int    evalKeySwitchPrecomputeCoreCounter_GPU = 0;
-int    evalFastKeySwitchCoreCounter_CPU = 0;
-int    evalFastKeySwitchCoreCounter_GPU = 0;
+void setNumOfOperations(int numOfOperations) {
+    numOfHomomorphicOperations = numOfOperations;
+}
 
 void accumulateTimer(double &timer, double toc) {
     timer += toc;
 }
 
-void incrementInvocationCounter(int &counter) {
-    counter++;
-}
-
-double getEvalKeySwitchPrecomputeCoreTimer_CPU() {
-    return evalKeySwitchPrecomputeCoreTimer_CPU;
-}
-
-double getEvalKeySwitchPrecomputeCoreTimer_GPU() {
-    return evalKeySwitchPrecomputeCoreTimer_GPU;
-}
-
-double getEvalFastKeySwitchCoreTimer_CPU() {
-    return evalFastKeySwitchCoreTimer_CPU;
-}
-
-double getEvalFastKeySwitchCoreTimer_GPU() {
-    return evalFastKeySwitchCoreTimer_GPU;
-}
-
-/*int getApproxSwitchCRTBasisCounter_CPU() { return approxSwitchCRTBasisCounter_CPU; }
-int getApproxSwitchCRTBasisCounter_GPU() { return approxSwitchCRTBasisCounter_GPU; }
-int getApproxModDownCounter_CPU() { return approxModDownCounter_CPU; }
-int getApproxModDownCounter_GPU() { return approxModDownCounter_GPU; }*/
-
 void printTimers() {
-    std::cout << "Total execution time = " << application << " ms" << std::endl;
-    std::cout << "Total time in EvalKeySwitchPrecomputeCore_CPU = " << getEvalKeySwitchPrecomputeCoreTimer_CPU() << " ms" << std::endl;
-    std::cout << "Total time in EvalKeySwitchPrecomputeCore_GPU = " << getEvalKeySwitchPrecomputeCoreTimer_GPU() << " ms" << std::endl;
-    std::cout << "Total time in EvalFastKeySwitchCore_CPU = " << getEvalFastKeySwitchCoreTimer_CPU() << " ms" << std::endl;
-    std::cout << "Total time in EvalFastKeySwitchCore_GPU = " << getEvalFastKeySwitchCoreTimer_GPU() << " ms" << std::endl;
-    std::cout << "ApproxModDown: Total = " << approxModDown_total << " ms\n\tApproxModDown pre-proc = " << approxModDown_pre << " ms\n\tApproxModDown post-proc = " << approxModDown_post << " ms\n\tApproxModDown invocations = " << approxModDown_invocations << std::endl;
-    std::cout << "Switch format CPU = " << switchFormatTimerCPU << " ns" << std::endl;
-    std::cout << "Switch format GPU = " << switchFormatTimerGPU << " ns" << std::endl;
+    std::cout << "Total execution time = "                          << applicationTimer << " ms" << std::endl;
+    std::cout << "Homomorphic Operations Time = "                   << operationsTimer << " ms" << std::endl;
+    std::cout << "Homomorphic Operation/sec = "                     << (numOfHomomorphicOperations * 1000) / operationsTimer  << std::endl;
+    std::cout << "====================================="            << std::endl;
+    std::cout << "Total time in EvalKeySwitchPrecomputeCore_CPU = " << evalKeySwitchPrecomputeCoreTimer_CPU << " ms" << std::endl;
+    std::cout << "Total time in EvalKeySwitchPrecomputeCore_GPU = " << evalKeySwitchPrecomputeCoreTimer_GPU << " ms" << std::endl;
+    std::cout << "Total time in EvalFastKeySwitchCore_CPU = "       << evalFastKeySwitchCoreTimer_CPU << " ms" << std::endl;
+    std::cout << "Total time in EvalFastKeySwitchCore_GPU = "       << evalFastKeySwitchCoreTimer_GPU << " ms" << std::endl;
 }
 
 };

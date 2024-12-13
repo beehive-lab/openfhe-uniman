@@ -1753,11 +1753,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
     const std::vector<std::vector<NativeInteger>>& PHatModq, const std::vector<DoubleNativeInt>& modqBarrettMu,
     const std::vector<NativeInteger>& tInvModp, const std::vector<NativeInteger>& tInvModpPrecon,
     const NativeInteger& t, const std::vector<NativeInteger>& tModqPrecon) const {
-    //std::cout << "[START] ApproxModDown" << std::endl;
-
-    TimeVar timer, timer_total, switchFormatTimer;
-    TIC(timer);
-    TIC(timer_total);
 
     usint sizeQP = m_vectors.size();
     usint sizeP  = paramsP->GetParams().size();
@@ -1769,9 +1764,7 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
         partP.m_vectors[j] = m_vectors[i];
     }
 
-    TIC(switchFormatTimer);
     partP.SetFormat(COEFFICIENT);
-    accumulateTimer(switchFormatTimerCPU, TOC_NS(switchFormatTimer));
 
     // Multiply everything by -t^(-1) mod P (BGVrns only)
     if (t > 0) {
@@ -1780,12 +1773,9 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
             partP.m_vectors[j] *= tInvModp[j];
         }
     }
-    accumulateTimer(approxModDown_pre, TOC_MS(timer));
 
     DCRTPolyType partPSwitchedToQ =
         partP.ApproxSwitchCRTBasis(paramsP, paramsQ, PHatInvModp, PHatInvModpPrecon, PHatModq, modqBarrettMu);
-
-    TIC(timer);
 
     // Combine the switched DCRTPoly with the Q part of this to get the result
     DCRTPolyType ans(paramsQ, EVALUATION, true);
@@ -1809,11 +1799,6 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDown(
         ans.m_vectors[i] = diff * PInvModq[i];
     }
 
-    accumulateTimer(approxModDown_post, TOC_MS(timer));
-    accumulateTimer(approxModDown_total, TOC_MS(timer_total));
-    incrementInvocationCounter(approxModDown_invocations);
-
-    //std::cout << "[END] ApproxModDown" << std::endl;
     return ans;
 }
 
