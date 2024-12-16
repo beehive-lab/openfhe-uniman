@@ -5,7 +5,6 @@
 if (WITH_CUDA)
 	include(../../cuda/cuda-files.cmake)
 endif ()
-message("without cuda")
 
 # all files named *.c or */cpp are compiled to form the library
 file (GLOB_RECURSE CORE_SRC_FILES CONFIGURE_DEPENDS lib/*.c lib/*.cpp lib/utils/*.cpp)
