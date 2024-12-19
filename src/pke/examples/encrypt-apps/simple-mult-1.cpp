@@ -1,4 +1,5 @@
 #include <utils/timers.h>
+#define PROFILE 1
 
 #include "openfhe.h"
 
@@ -17,8 +18,9 @@ using namespace lbcrypto;
 
 int main() {
 
-    TimeVar timer;
-    TIC(timer);
+    TimeVar appTimer, homOptimer;
+    setNumOfOperations(1);
+    TIC(appTimer);
 
     // Sample Program: Step 1 - Set CryptoContext
     CCParams<CryptoContextBGVRNS> parameters;
@@ -67,8 +69,9 @@ int main() {
 
     // Sample Program: Step 4 - Evaluation
     // 1 Homomorphic multiplication
-
+    TIC(homOptimer);
     auto ciphertextMultResult = cryptoContext->EvalMult(ciphertext1, ciphertext2);
+    accumulateTimer(operationsTimer, TOC_NS(homOptimer));
 
     // Sample Program: Step 5 - Decryption
 
@@ -80,10 +83,9 @@ int main() {
     std::cout << "Plaintext #2: " << plaintext2 << std::endl;
 
     // Output results
-    std::cout << "\nResults of homomorphic computations" << std::endl;
-    std::cout << "#1 * #2 * #3: " << plaintextMultResult << std::endl;
+    std::cout << "\nResults of 1 homomorphic multiplication (1 * 1) : " << plaintextMultResult << std::endl;
 
-    accumulateTimer(application, TOC_MS(timer));
+    accumulateTimer(applicationTimer, TOC_NS(appTimer));
 
     printTimers();
 
