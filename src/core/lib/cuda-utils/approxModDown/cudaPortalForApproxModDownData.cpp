@@ -45,9 +45,6 @@ cudaPortalForApproxModDownData::cudaPortalForApproxModDownData(uint32_t ringDim,
 
     // map buffer ptrs to the pre-allocated buffers
     mapBuffers(preAllocatedBuffers);
-
-    // set (or reset) intermediate sum values to zero
-    CUDA_CHECK(cudaMemsetAsync(device_sum, 0, sizeQ * ringDim * sizeof(uint128_t), stream));
 }
 
 cudaPortalForApproxModDownData::~cudaPortalForApproxModDownData() = default;
@@ -118,6 +115,10 @@ void cudaPortalForApproxModDownData::unmarshalWorkDataBatchWrapper(std::vector<P
 }
 
 // Data Transfer Functions
+void cudaPortalForApproxModDownData::initSumInMainStream() const {
+    CUDA_CHECK(cudaMemsetAsync(device_sum, 0, sizeQ * ringDim * sizeof(uint128_t), stream));
+}
+
 void cudaPortalForApproxModDownData::copyInCTildaQ_Batch(const uint32_t ptrOffset, cudaStream_t stream) const {
     const auto device_m_vectors_ptr = device_cTildaQ_m_vectors + ptrOffset;
     const auto host_m_vectors_ptr   = host_cTildaQ_m_vectors + ptrOffset;

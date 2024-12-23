@@ -106,6 +106,7 @@ public:
     void unmarshalWorkDataBatchWrapper(std::vector<PolyImpl<NativeVector>>& ans_m_vectors, uint32_t i, uint32_t ptr_offset, cudaStream_t pipelineStream) const;
 
     // Data Transfer Functions
+    void initSumInMainStream() const;
     void copyInCTildaQ_Batch(uint32_t ptrOffset, cudaStream_t stream) const;
     void copyInPartP_Batch(uint32_t ptrOffset, cudaStream_t stream) const;
     void copyInPHatModqBatch(uint32_t index, cudaStream_t stream) const;

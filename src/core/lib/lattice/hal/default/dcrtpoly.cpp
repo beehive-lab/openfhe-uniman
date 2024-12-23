@@ -1557,6 +1557,11 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
     const int gpuThreads = cudaUtils.getGpuThreads();
     AMDBuffers* preAllocatedBuffers = portal->whoAmI() == 0 ? cudaUtils.getAMDBuffers0() : cudaUtils.getAMDBuffers1();
 
+    // set (or reset) intermediate sum values to zero
+    portal->initSumInMainStream();
+    // enable sync on main stream
+    CUDA_CHECK(cudaEventRecord(portal->getEvent(), portal->getStream()));
+
     // switch format cuda portal obj (to COEFFICIENT)
     //nvtxRangePushA("partPSFPortal");
     std::shared_ptr<cudaPortalForSwitchFormatBatch> partPSFPortal =
@@ -1593,6 +1598,9 @@ DCRTPolyImpl<VecType> DCRTPolyImpl<VecType>::ApproxModDownCUDABatched(
         auto modulus = partP.m_vectors[i].GetModulus();
         auto pipelineStream = portal->getPipelineStream(i);
         auto pipelineEvent = portal->getPipelineEvent(i);
+
+        // sync on main stream to ensure sum init to 0 has been completed
+        cudaStreamWaitEvent(pipelineStream, portal->getEvent());
 
         portal->marshalCTildaBatch(m_vectors, i, i + sizeQ);
 
