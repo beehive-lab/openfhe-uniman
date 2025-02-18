@@ -479,32 +479,12 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalKeySwitchPrecomputeC
         partCtClone.SetFormat(Format::COEFFICIENT);
 
         uint32_t sizePartQl = partsCt[part].GetNumOfElements();
-        //std::cout << "=====> [START] EvalKeySwitchPrecomputeCore" << std::endl;
-        #if !defined(WITH_CUDA)
-        TimeVar t;
-        TIC(t);
         partsCtCompl[part]  = partCtClone.ApproxSwitchCRTBasis(
             cryptoParams->GetParamsPartQ(part), cryptoParams->GetParamsComplPartQ(sizeQl - 1, part),
             cryptoParams->GetPartQlHatInvModq(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatInvModqPrecon(part, sizePartQl - 1),
             cryptoParams->GetPartQlHatModp(sizeQl - 1, part),
             cryptoParams->GetmodComplPartqBarrettMu(sizeQl - 1, part));
-        accumulateTimer(evalKeySwitchPrecomputeCoreTimer_CPU, TOC_MS(t));
-        //incrementInvocationCounter(approxSwitchCRTBasisCounter_CPU);
-        #else
-        TimeVar t;
-        TIC(t);
-        partsCtCompl[part]  = partCtClone.ApproxSwitchCRTBasisCUDA(
-            cryptoParams->GetParamsPartQ(part), cryptoParams->GetParamsComplPartQ(sizeQl - 1, part),
-            cryptoParams->GetPartQlHatInvModq(part, sizePartQl - 1),
-            cryptoParams->GetPartQlHatInvModqPrecon(part, sizePartQl - 1),
-            cryptoParams->GetPartQlHatModp(sizeQl - 1, part),
-            cryptoParams->GetmodComplPartqBarrettMu(sizeQl - 1, part));
-        accumulateTimer(evalKeySwitchPrecomputeCoreTimer_GPU, TOC_MS(t));
-        //incrementInvocationCounter(approxSwitchCRTBasisCounter_GPU);
-        #endif
-
-        //std::cout << "=====> [END] EvalKeySwitchPrecomputeCore" << std::endl;
 
         partsCtCompl[part].SetFormat(Format::EVALUATION);
 
