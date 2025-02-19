@@ -109,13 +109,13 @@ int main() {
     // Output results
     std::cout << "\nResults of 24 homomorphic multiplications (1 * 1) : " << plaintextMultResult << std::endl;
 
-    accumulateTimer(applicationTimer, TOC_MS(appTimer));
-
-    printTimers();
-
     #if defined(WITH_CUDA)
     cudaUtils.destroy();
     #endif
+
+    accumulateTimer(applicationTimer, TOC_MS(appTimer));
+
+    printTimers();
 
     return 0;
 

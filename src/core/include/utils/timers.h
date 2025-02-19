@@ -10,10 +10,8 @@ namespace lbcrypto {
 extern double applicationTimer;
 extern double operationsTimer;
 
-extern double evalKeySwitchPrecomputeCoreTimer_CPU;
-extern double evalKeySwitchPrecomputeCoreTimer_GPU;
-extern double evalFastKeySwitchCoreTimer_CPU;
-extern double evalFastKeySwitchCoreTimer_GPU;
+extern double approxModDownTimer_CPU;
+extern double approxModDownTimer_GPU;
 
 void setNumOfOperations(int numOfOperations);
 void accumulateTimer(double &timer, double toc);

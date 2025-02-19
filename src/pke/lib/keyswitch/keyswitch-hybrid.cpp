@@ -535,7 +535,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
                                               cryptoParams->GetModqBarrettMu(), cryptoParams->GettInvModp(),
                                               cryptoParams->GettInvModpPrecon(), t, cryptoParams->GettModqPrecon());
 
-    accumulateTimer(evalFastKeySwitchCoreTimer_CPU, TOC_MS(timer));
+    accumulateTimer(approxModDownTimer_CPU, TOC_MS(timer));
     //incrementInvocationCounter(approxModDownCounter_CPU);
     #else
     TimeVar timer;
@@ -579,7 +579,7 @@ std::shared_ptr<std::vector<DCRTPoly>> KeySwitchHYBRID::EvalFastKeySwitchCore(
 
 
     DCRTPoly ct0 = resultCt0.get();
-    accumulateTimer(evalFastKeySwitchCoreTimer_GPU, TOC_MS(timer));
+    accumulateTimer(approxModDownTimer_GPU, TOC_MS(timer));
     //incrementInvocationCounter(approxModDownCounter_GPU);
     #endif
 

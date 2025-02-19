@@ -16,10 +16,8 @@ int numOfHomomorphicOperations = 0;
 double applicationTimer = 0;
 double operationsTimer = 0;
 
-double evalKeySwitchPrecomputeCoreTimer_CPU = 0;
-double evalKeySwitchPrecomputeCoreTimer_GPU = 0;
-double evalFastKeySwitchCoreTimer_CPU = 0;
-double evalFastKeySwitchCoreTimer_GPU = 0;
+double approxModDownTimer_CPU = 0;
+double approxModDownTimer_GPU = 0;
 
 void setNumOfOperations(int numOfOperations) {
     numOfHomomorphicOperations = numOfOperations;
@@ -34,10 +32,8 @@ void printTimers() {
     std::cout << "Homomorphic Operations Time = "                   << operationsTimer << " ms" << std::endl;
     std::cout << "Homomorphic Operation/sec = "                     << (numOfHomomorphicOperations * 1000) / operationsTimer  << std::endl;
     std::cout << "====================================="            << std::endl;
-    std::cout << "Total time in EvalKeySwitchPrecomputeCore_CPU = " << evalKeySwitchPrecomputeCoreTimer_CPU << " ms" << std::endl;
-    std::cout << "Total time in EvalKeySwitchPrecomputeCore_GPU = " << evalKeySwitchPrecomputeCoreTimer_GPU << " ms" << std::endl;
-    std::cout << "Total time in EvalFastKeySwitchCore_CPU = "       << evalFastKeySwitchCoreTimer_CPU << " ms" << std::endl;
-    std::cout << "Total time in EvalFastKeySwitchCore_GPU = "       << evalFastKeySwitchCoreTimer_GPU << " ms" << std::endl;
+    std::cout << "Total time in ApproxModDown_CPU = "               << approxModDownTimer_CPU << " ms" << std::endl;
+    std::cout << "Total time in ApproxModDown_GPU = "               << approxModDownTimer_GPU << " ms" << std::endl;
 }
 
 };
