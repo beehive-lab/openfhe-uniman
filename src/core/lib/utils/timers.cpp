@@ -28,12 +28,12 @@ void accumulateTimer(double &timer, double toc) {
 }
 
 void printTimers() {
-    std::cout << "Total execution time = "                          << applicationTimer << " ms" << std::endl;
-    std::cout << "Homomorphic Operations Time = "                   << operationsTimer << " ms" << std::endl;
-    std::cout << "Homomorphic Operation/sec = "                     << (numOfHomomorphicOperations * 1000) / operationsTimer  << std::endl;
-    std::cout << "====================================="            << std::endl;
-    std::cout << "Total time in ApproxModDown_CPU = "               << approxModDownTimer_CPU << " ms" << std::endl;
-    std::cout << "Total time in ApproxModDown_GPU = "               << approxModDownTimer_GPU << " ms" << std::endl;
+    std::cout << "Total execution time = " << applicationTimer << " ms" << std::endl;
+    std::cout << "Time for " << numOfHomomorphicOperations << " Homomorphic Multiplications = " << operationsTimer << " ms" << std::endl;
+    std::cout << "Homomorphic Multiplications/sec = " << (numOfHomomorphicOperations * 1000) / operationsTimer  << std::endl;
+    std::cout << "=====================================" << std::endl;
+    std::cout << "Total time in ApproxModDown_CPU = " << approxModDownTimer_CPU << " ms" << std::endl;
+    std::cout << "Total time in ApproxModDown_GPU = " << approxModDownTimer_GPU << " ms" << std::endl;
 }
 
 };
